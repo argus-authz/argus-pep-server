@@ -66,14 +66,18 @@ public class PEPDaemonServlet extends BaseHttpServlet {
     /** {@inheritDoc} */
     protected void doPost(HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws ServletException,
             IOException {
+        HessianInput hin = new HessianInput(new Base64.InputStream(httpRequest.getInputStream()));
+        
         ByteArrayOutputStream responseOut = new ByteArrayOutputStream();
         HessianOutput hout = new HessianOutput(responseOut);
         
-        requestHandler.handle(new HessianInput(new Base64.InputStream(httpRequest.getInputStream())),hout);
-        
+        requestHandler.handle(hin,hout);
+        hout.flush();
         responseOut.flush();
-        httpResponse.getWriter().write(Base64.encodeBytes(responseOut.toByteArray()));
         
+        httpResponse.getWriter().write(Base64.encodeBytes(responseOut.toByteArray()));
+        httpResponse.flushBuffer();
+        return;
     }
 
     /** {@inheritDoc} */

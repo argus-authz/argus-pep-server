@@ -1,9 +1,9 @@
 #! /bin/bash
 
-# This script starts and stop the PDP daemon.
+# This script starts and stop the PEP daemon.
 
-# PDP home directory
 HOME="$(cd "${0%/*}/.." && pwd)"
+CONF="$HOME/conf/pepd.ini"
 
 # Source our environment setup script
 . $HOME/bin/env.sh
@@ -13,11 +13,16 @@ function start {
     JVMOPTS="-Dorg.glite.authz.pep.home=$HOME $JVMOPTS"
     
     # Run the PDP
-    $JAVACMD $JVMOPTS 'org.glite.authz.pep.server.PEPDaemon' $HOME/conf/pepd.ini &
+    $JAVACMD $JVMOPTS 'org.glite.authz.pep.server.PEPDaemon' $CONF &
 }
 
 function stop {
-    curl --connect-timeout 3 --max-time 5 -s --show-error http://127.0.0.1:8155/shutdown
+    SPORT=`grep shutdownPort $CONF | sed 's/ //g' | awk 'BEGIN {FS="="}{print $2}'`
+    if [ -z "$SPORT" ]; then
+      SPORT=8155
+    fi
+    
+    curl --connect-timeout 3 --max-time 5 -s --show-error http://127.0.0.1:$SPORT/shutdown
     ECODE=$?
     if [ "$ECODE" != 0 ] ; then
        echo "Shutdown failed.  curl returned error code of" $ECODE
