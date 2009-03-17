@@ -146,6 +146,10 @@ public class PEPDaemonRequestHandler {
 
             // send the request to the PDP
             response = sendRequestToPDP(request);
+            if(response == null){
+                daemonConfig.getMetrics().incrementTotalAuthorizationRequestErrors();
+                response = buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, null);
+            }
             log.debug("Hessian response gotten from PDP's XACML response\n{}", response.toString());
 
             // run obligations handlers over the response
