@@ -24,6 +24,7 @@ import java.util.List;
 import net.jcip.annotations.ThreadSafe;
 
 import org.glite.authz.common.AuthzServiceConstants;
+import org.glite.authz.common.logging.LoggingConstants;
 import org.glite.authz.common.model.Request;
 import org.glite.authz.common.model.Response;
 import org.glite.authz.common.model.Result;
@@ -50,9 +51,12 @@ import org.opensaml.xacml.ctx.RequestType;
 import org.opensaml.xacml.ctx.StatusCodeType;
 import org.opensaml.xacml.profile.saml.XACMLAuthzDecisionQueryType;
 import org.opensaml.xacml.profile.saml.XACMLAuthzDecisionStatementType;
+import org.opensaml.xml.io.MarshallingException;
 import org.opensaml.xml.security.SecurityException;
+import org.opensaml.xml.util.XMLHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Element;
 
 import com.caucho.hessian.io.AbstractHessianInput;
 import com.caucho.hessian.io.AbstractHessianOutput;
@@ -63,6 +67,12 @@ public class PEPDaemonRequestHandler {
 
     /** Class logger. */
     private final Logger log = LoggerFactory.getLogger(PEPDaemonRequestHandler.class);
+
+    /** Audit log. */
+    private final Logger auditLog = LoggerFactory.getLogger(LoggingConstants.AUDIT_CATEGORY);
+
+    /** Protocol message log. */
+    private final Logger messageLog = LoggerFactory.getLogger(LoggingConstants.MESSAGE_CATEGORY);
 
     /** The daemon's configuration. */
     private PEPDaemonConfiguration daemonConfig;
@@ -132,7 +142,7 @@ public class PEPDaemonRequestHandler {
         try {
             // get the simple model request
             request = (Request) input.readObject(Request.class);
-            log.debug("Received Hessian request\n{}", request.toString());
+            messageLog.debug("Incomming hessian request\n{}", request.toString());
 
             // run the policy information points over the request
             for (PolicyInformationPoint pip : daemonConfig.getPolicyInformationPoints()) {
@@ -146,7 +156,7 @@ public class PEPDaemonRequestHandler {
 
             // send the request to the PDP
             response = sendRequestToPDP(request);
-            if(response == null){
+            if (response == null) {
                 daemonConfig.getMetrics().incrementTotalAuthorizationRequestErrors();
                 response = buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, null);
             }
@@ -164,6 +174,7 @@ public class PEPDaemonRequestHandler {
         }
 
         // write out response
+        messageLog.debug("Outgoing hessian response\n{}", response.toString());
         output.writeObject(response);
         output.flush();
     }
@@ -179,6 +190,16 @@ public class PEPDaemonRequestHandler {
      */
     private Response sendRequestToPDP(Request authzRequest) {
         Envelope soapRequest = buildSOAPMessage(XACMLConverter.requestToXACML(authzRequest));
+
+        if (messageLog.isDebugEnabled()) {
+            try {
+                Element messageDom = Configuration.getMarshallerFactory().getMarshaller(soapRequest).marshall(
+                        soapRequest);
+                messageLog.debug("Outgoing SOAP request\n{}", XMLHelper.prettyPrintXML(messageDom));
+            } catch (MarshallingException e) {
+                log.error("Unable to marshall outbound SOAP message");
+            }
+        }
 
         HttpSOAPRequestParameters reqParams = new HttpSOAPRequestParameters(
                 "http://www.oasis-open.org/committees/security");
@@ -199,6 +220,10 @@ public class PEPDaemonRequestHandler {
                 daemonConfig.getSOAPClient().send(pdpEndpoint, messageContext);
                 authzResponse = extractResponse(pdpEndpoint, (Envelope) messageContext.getInboundMessage());
                 if (authzResponse != null) {
+                    if (messageLog.isDebugEnabled()) {
+                        messageLog.debug("Incoming SOAP response\n{}", XMLHelper.prettyPrintXML(messageContext
+                                .getInboundMessage().getDOM()));
+                    }
                     return authzResponse;
                 }
             } catch (SOAPClientException e) {

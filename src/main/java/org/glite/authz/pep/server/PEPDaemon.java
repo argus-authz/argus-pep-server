@@ -27,10 +27,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.glite.authz.common.config.ConfigurationException;
-import org.glite.authz.common.config.LoggingReloadTask;
 import org.glite.authz.common.http.JettyRunThread;
 import org.glite.authz.common.http.JettyShutdownCommand;
 import org.glite.authz.common.http.JettyShutdownService;
+import org.glite.authz.common.logging.LoggingReloadTask;
 import org.glite.authz.common.util.Files;
 import org.glite.authz.pep.server.config.PEPDaemonConfiguration;
 import org.glite.authz.pep.server.config.PEPDaemonIniConfigurationParser;

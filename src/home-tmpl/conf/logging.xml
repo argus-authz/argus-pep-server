@@ -6,14 +6,14 @@
         Loggers define indicate which packages/categories are logged, at which level, and to which appender.
         Levels: OFF, ERROR, WARN, INFO, DEBUG, TRACE, ALL
     -->
-    <!-- Logs IdP, but not OpenSAML, messages -->
+    <!-- Logs PEP messages -->
     <logger name="org.glite">
         <level value="INFO" />
     </logger>
 
-    <!-- Logs OpenSAML, but not IdP, messages -->
-    <logger name="org.opensaml">
-        <level value="WARN" />
+    <!-- Logs incoming and outgoing Hessian and SAML messages, set level to DEBUG to enable -->
+    <logger name="org.glite.authz.message.protocol" additivity="false">
+        <level value="OFF" />
     </logger>
     
     <!-- 
@@ -24,12 +24,12 @@
     <!-- 
         Logging appenders define where and how logging messages are logged.
      -->
-    <appender name="PEP_ACCESS" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <File>${org.glite.authz.pep.home}/logs/pep-access.log</File>
+    <appender name="ACCESS" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${org.glite.authz.pep.home}/logs/access.log</File>
         <ImmediateFlush>true</ImmediateFlush>
 
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <FileNamePattern>${org.glite.authz.pep.home}/logs/pep-access-%d{yyyy-MM-dd}.log</FileNamePattern>
+            <FileNamePattern>${org.glite.authz.pep.home}/logs/access-%d{yyyy-MM-dd}.log</FileNamePattern>
         </rollingPolicy>
 
         <layout class="ch.qos.logback.classic.PatternLayout">
@@ -37,12 +37,12 @@
         </layout>
     </appender>
 
-    <appender name="PEP_AUDIT" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <File>${org.glite.authz.pep.home}/logs/pep-audit.log</File>
+    <appender name="AUDIT" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${org.glite.authz.pep.home}/logs/audit.log</File>
         <ImmediateFlush>true</ImmediateFlush>
 
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <FileNamePattern>${org.glite.authz.pep.home}/logs/pep-audit-%d{yyyy-MM-dd}.log</FileNamePattern>
+            <FileNamePattern>${org.glite.authz.pep.home}/logs/audit-%d{yyyy-MM-dd}.log</FileNamePattern>
         </rollingPolicy>
 
         <layout class="ch.qos.logback.classic.PatternLayout">
@@ -50,15 +50,15 @@
         </layout>
     </appender>
 
-    <appender name="PEP_PROCESS" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <File>${org.glite.authz.pep.home}/logs/pep-process.log</File>
+    <appender name="PROCESS" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${org.glite.authz.pep.home}/logs/process.log</File>
         <!-- Uncomment this if application is terminating in such as way that the last few log messages are not written to disk -->
         <!--
         <ImmediateFlush>true</ImmediateFlush>
         -->
         
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <FileNamePattern>${org.glite.authz.pep.home}/logs/pep-process-%d{yyyy-MM-dd}.log</FileNamePattern>
+            <FileNamePattern>${org.glite.authz.pep.home}/logs/process-%d{yyyy-MM-dd}.log</FileNamePattern>
         </rollingPolicy>
 
         <layout class="ch.qos.logback.classic.PatternLayout">
@@ -67,19 +67,19 @@
         </layout>
     </appender>
   
-    <logger name="PEP-Access">
+    <logger name="org.glite.authz.access">
         <level value="ALL" />
-        <appender-ref ref="PEP_ACCESS" />
+        <appender-ref ref="ACCESS" />
     </logger>
     
-    <logger name="PEP-Audit">
+    <logger name="org.glite.authz.audit">
         <level value="ALL" />
-        <appender-ref ref="PEP_AUDIT" />
-    </logger>   
+        <appender-ref ref="AUDIT" />
+    </logger> 
 
     <root>
         <level value="ERROR" />
-        <appender-ref ref="PEP_PROCESS" />
+        <appender-ref ref="PROCESS" />
     </root>
 
 </configuration>

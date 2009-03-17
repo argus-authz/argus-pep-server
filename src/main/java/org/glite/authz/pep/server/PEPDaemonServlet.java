@@ -25,16 +25,23 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.glite.authz.common.http.BaseHttpServlet;
+import org.glite.authz.common.logging.AccessLogEntry;
+import org.glite.authz.common.logging.LoggingConstants;
 import org.glite.authz.common.util.Base64;
 import org.glite.authz.pep.server.config.PEPDaemonConfiguration;
 import org.opensaml.DefaultBootstrap;
 import org.opensaml.xml.ConfigurationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.caucho.hessian.io.HessianInput;
 import com.caucho.hessian.io.HessianOutput;
 
 /** Adapts a {@link PEPDaemonRequestHandler} in to a Servlet. */
 public class PEPDaemonServlet extends BaseHttpServlet {
+    
+    /** Access log. */
+    private final Logger accessLog = LoggerFactory.getLogger(LoggingConstants.ACCESS_CATEGORY);
 
     /** Name of the initialization parameter that holds the path to the PEP daemon configuration file. */
     public static final String CONFIG_FILE_INIT_PARAM_NAME = "pep-daemon-configuration";
@@ -66,6 +73,8 @@ public class PEPDaemonServlet extends BaseHttpServlet {
     /** {@inheritDoc} */
     protected void doPost(HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws ServletException,
             IOException {
+        accessLog.debug(new AccessLogEntry(httpRequest).toString());
+
         HessianInput hin = new HessianInput(new Base64.InputStream(httpRequest.getInputStream()));
         
         ByteArrayOutputStream responseOut = new ByteArrayOutputStream();
