@@ -24,14 +24,6 @@
             </snapshots>
         </repository>
         <repository>
-            <id>jboss.org</id>
-            <name>JBoss</name>
-            <url>http://repository.jboss.com/maven2</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <repository>
             <id>INFN</id>
             <name>INFN</name>
             <url>http://pcceccanti.cnaf.infn.it:11250/archiva/repository/internal
@@ -48,6 +40,21 @@
             <groupId>org.glite.authz</groupId>
             <artifactId>pdp-pep-common</artifactId>
             <version>SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>net.sf.ehcache</groupId>
+            <artifactId>ehcache</artifactId>
+            <version>1.5.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>net.sf.jsr107cache</groupId>
+                    <artifactId>jsr107cache</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.opensaml</groupId>

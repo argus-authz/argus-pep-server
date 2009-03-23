@@ -26,10 +26,14 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.Status;
+
 import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.common.http.JettyRunThread;
 import org.glite.authz.common.http.JettyShutdownCommand;
 import org.glite.authz.common.http.JettyShutdownService;
+import org.glite.authz.common.logging.AccessLoggingFilter;
 import org.glite.authz.common.logging.LoggingReloadTask;
 import org.glite.authz.common.util.Files;
 import org.glite.authz.pep.server.config.PEPDaemonConfiguration;
@@ -38,6 +42,7 @@ import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.nio.SelectChannelConnector;
 import org.mortbay.jetty.servlet.Context;
+import org.mortbay.jetty.servlet.FilterHolder;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.concurrent.ThreadPool;
 import org.opensaml.DefaultBootstrap;
@@ -90,6 +95,14 @@ public final class PEPDaemon {
         JettyRunThread pepDaemonServiceThread = new JettyRunThread(pepDaemonService);
         pepDaemonServiceThread.setName("PEP Deamon Service");
         shutdownCommands.add(new JettyShutdownCommand(pepDaemonService));
+        shutdownCommands.add(new Runnable(){
+            public void run() {
+                CacheManager cacheMgr = CacheManager.getInstance();
+                if(cacheMgr != null  && cacheMgr.getStatus() == Status.STATUS_ALIVE){
+                    cacheMgr.shutdown();
+                }
+            }
+        });
 
         if (daemonConfig.getShutdownPort() == 0) {
             JettyShutdownService.startJettyShutdownService(8155, shutdownCommands);
@@ -125,10 +138,14 @@ public final class PEPDaemon {
         connector.setRequestBufferSize(daemonConfig.getReceiveBufferSize());
         connector.setResponseBufferSize(daemonConfig.getSendBufferSize());
         httpServer.setConnectors(new Connector[] { connector });
+        
 
         Context servletContext = new Context(httpServer, "/", false, false);
         servletContext.setDisplayName("PEP Daemon");
         servletContext.setAttribute(PEPDaemonConfiguration.BINDING_NAME, daemonConfig);
+        
+        FilterHolder accessLoggingFilter = new FilterHolder(new AccessLoggingFilter());
+        servletContext.addFilter(accessLoggingFilter, "/*", Context.REQUEST);
 
         ServletHolder daemonRequestServlet = new ServletHolder(new PEPDaemonServlet());
         daemonRequestServlet.setName("PEP Daemon Servlet");

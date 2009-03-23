@@ -67,12 +67,12 @@
         </layout>
     </appender>
   
-    <logger name="org.glite.authz.access">
+    <logger name="org.glite.authz.access"  additivity="false">
         <level value="ALL" />
         <appender-ref ref="ACCESS" />
     </logger>
     
-    <logger name="org.glite.authz.audit">
+    <logger name="org.glite.authz.audit"  additivity="false">
         <level value="ALL" />
         <appender-ref ref="AUDIT" />
     </logger> 

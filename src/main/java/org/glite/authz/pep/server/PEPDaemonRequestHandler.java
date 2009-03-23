@@ -22,6 +22,9 @@ import java.util.Iterator;
 import java.util.List;
 
 import net.jcip.annotations.ThreadSafe;
+import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.store.MemoryStoreEvictionPolicy;
 
 import org.glite.authz.common.AuthzServiceConstants;
 import org.glite.authz.common.logging.LoggingConstants;
@@ -58,9 +61,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
 
-import com.caucho.hessian.io.AbstractHessianInput;
-import com.caucho.hessian.io.AbstractHessianOutput;
-
 /** Handles an incoming daemon {@link Request}. */
 @ThreadSafe
 public class PEPDaemonRequestHandler {
@@ -68,14 +68,14 @@ public class PEPDaemonRequestHandler {
     /** Class logger. */
     private final Logger log = LoggerFactory.getLogger(PEPDaemonRequestHandler.class);
 
-    /** Audit log. */
-    private final Logger auditLog = LoggerFactory.getLogger(LoggingConstants.AUDIT_CATEGORY);
-
     /** Protocol message log. */
-    private final Logger messageLog = LoggerFactory.getLogger(LoggingConstants.MESSAGE_CATEGORY);
+    private final Logger protocolLog = LoggerFactory.getLogger(LoggingConstants.PROTOCOL_MESSAGE_CATEGORY);
 
     /** The daemon's configuration. */
     private PEPDaemonConfiguration daemonConfig;
+
+    /** Cache used to store response to a request. */
+    private final Cache responseCache;
 
     /** Generator for message IDs. */
     private static IdentifierGenerator idGenerator;
@@ -103,6 +103,16 @@ public class PEPDaemonRequestHandler {
             throw new IllegalArgumentException("Daemon configuration may not be null");
         }
         daemonConfig = config;
+
+        if (daemonConfig.getMaxCachedResponses() > 0) {
+            CacheManager cacheMgr = CacheManager.getInstance();
+            responseCache = new Cache("org.glite.authz.pep.server.responseCache", daemonConfig.getMaxCachedResponses(),
+                    MemoryStoreEvictionPolicy.LFU, false, null, false, daemonConfig.getCachedResponseTTL(),
+                    daemonConfig.getCachedResponseTTL(), false, Long.MAX_VALUE, null, null);
+            cacheMgr.addCache(responseCache);
+        } else {
+            responseCache = null;
+        }
 
         try {
             idGenerator = new SecureRandomIdentifierGenerator();
@@ -134,16 +144,11 @@ public class PEPDaemonRequestHandler {
      * 
      * @throws IOException thrown if there is an error writing a response to the output stream
      */
-    public void handle(AbstractHessianInput input, AbstractHessianOutput output) throws IOException {
+    public Response handle(Request request) throws IOException {
         daemonConfig.getMetrics().incrementTotalAuthorizationRequests();
 
-        Request request = null;
         Response response = null;
         try {
-            // get the simple model request
-            request = (Request) input.readObject(Request.class);
-            messageLog.debug("Incomming hessian request\n{}", request.toString());
-
             // run the policy information points over the request
             for (PolicyInformationPoint pip : daemonConfig.getPolicyInformationPoints()) {
                 if (pip.populateRequest(request)) {
@@ -152,31 +157,54 @@ public class PEPDaemonRequestHandler {
                     log.debug("PIP {} did not apply to this request", pip.getId());
                 }
             }
-            log.debug("Hessian request after PIPs have been run\n{}", request.toString());
+            protocolLog.info("Hessian request after PIPs have been run\n{}", request.toString());
 
-            // send the request to the PDP
+            // check to see if we have a cached response, if not, make the request to the PDP
+            if (responseCache != null) {
+                log.debug("Checking if a response has already been cached for this request");
+                net.sf.ehcache.Element cacheElement = responseCache.get(request);
+                if (cacheElement != null) {
+                    response = (Response) cacheElement.getValue();
+                    if (response != null) {
+                        log.debug("Cached response found, using it");
+                        return response;
+                    }
+                }
+            }
+
+            // no cached response so make request to PDP
+            log.debug("Response not found in cache, sending request to PDP");
             response = sendRequestToPDP(request);
+
+            // if the response is still null, something went wrong
             if (response == null) {
+                log.debug("No response received from registered PDPs");
                 daemonConfig.getMetrics().incrementTotalAuthorizationRequestErrors();
                 response = buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, null);
+            }else{
+                log.debug("Received response from PDP");
             }
-            log.debug("Hessian response gotten from PDP's XACML response\n{}", response.toString());
 
             // run obligations handlers over the response
             if (daemonConfig.getObligationService() != null) {
+                log.debug("Processing obligations");
                 daemonConfig.getObligationService().processObligations(request, response.getResults().get(0));
-                log.debug("Hessian response after obligation service run\n{}", response.toString());
             }
+
+            // now cache the result
+            if (responseCache != null) {
+                log.debug("Caching response for request");
+                responseCache.put(new net.sf.ehcache.Element(request, response));
+            }
+            
+            protocolLog.info("Complete hessian response\n{}", response.toString());
         } catch (Exception e) {
             daemonConfig.getMetrics().incrementTotalAuthorizationRequestErrors();
             log.error("Error preocessing authorization request", e);
             response = buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, null);
         }
 
-        // write out response
-        messageLog.debug("Outgoing hessian response\n{}", response.toString());
-        output.writeObject(response);
-        output.flush();
+        return response;
     }
 
     /**
@@ -191,11 +219,11 @@ public class PEPDaemonRequestHandler {
     private Response sendRequestToPDP(Request authzRequest) {
         Envelope soapRequest = buildSOAPMessage(XACMLConverter.requestToXACML(authzRequest));
 
-        if (messageLog.isDebugEnabled()) {
+        if (protocolLog.isDebugEnabled()) {
             try {
                 Element messageDom = Configuration.getMarshallerFactory().getMarshaller(soapRequest).marshall(
                         soapRequest);
-                messageLog.debug("Outgoing SOAP request\n{}", XMLHelper.prettyPrintXML(messageDom));
+                protocolLog.debug("Outgoing SOAP request\n{}", XMLHelper.prettyPrintXML(messageDom));
             } catch (MarshallingException e) {
                 log.error("Unable to marshall outbound SOAP message");
             }
@@ -220,8 +248,8 @@ public class PEPDaemonRequestHandler {
                 daemonConfig.getSOAPClient().send(pdpEndpoint, messageContext);
                 authzResponse = extractResponse(pdpEndpoint, (Envelope) messageContext.getInboundMessage());
                 if (authzResponse != null) {
-                    if (messageLog.isDebugEnabled()) {
-                        messageLog.debug("Incoming SOAP response\n{}", XMLHelper.prettyPrintXML(messageContext
+                    if (protocolLog.isDebugEnabled()) {
+                        protocolLog.debug("Incoming SOAP response\n{}", XMLHelper.prettyPrintXML(messageContext
                                 .getInboundMessage().getDOM()));
                     }
                     return authzResponse;

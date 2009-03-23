@@ -25,8 +25,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.glite.authz.common.http.BaseHttpServlet;
-import org.glite.authz.common.logging.AccessLogEntry;
 import org.glite.authz.common.logging.LoggingConstants;
+import org.glite.authz.common.model.Request;
+import org.glite.authz.common.model.Response;
 import org.glite.authz.common.util.Base64;
 import org.glite.authz.pep.server.config.PEPDaemonConfiguration;
 import org.opensaml.DefaultBootstrap;
@@ -39,15 +40,9 @@ import com.caucho.hessian.io.HessianOutput;
 
 /** Adapts a {@link PEPDaemonRequestHandler} in to a Servlet. */
 public class PEPDaemonServlet extends BaseHttpServlet {
-    
-    /** Access log. */
-    private final Logger accessLog = LoggerFactory.getLogger(LoggingConstants.ACCESS_CATEGORY);
 
-    /** Name of the initialization parameter that holds the path to the PEP daemon configuration file. */
-    public static final String CONFIG_FILE_INIT_PARAM_NAME = "pep-daemon-configuration";
-
-    /** Serial version UID. */
-    private static final long serialVersionUID = -3190215376394138266L;
+    /** Protocol message log. */
+    private final Logger protocolLog = LoggerFactory.getLogger(LoggingConstants.PROTOCOL_MESSAGE_CATEGORY);
 
     /** The request handler being adapted in to this Servlet. */
     private PEPDaemonRequestHandler requestHandler;
@@ -73,18 +68,24 @@ public class PEPDaemonServlet extends BaseHttpServlet {
     /** {@inheritDoc} */
     protected void doPost(HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws ServletException,
             IOException {
-        accessLog.debug(new AccessLogEntry(httpRequest).toString());
 
+        // get the simple model request
         HessianInput hin = new HessianInput(new Base64.InputStream(httpRequest.getInputStream()));
-        
-        ByteArrayOutputStream responseOut = new ByteArrayOutputStream();
-        HessianOutput hout = new HessianOutput(responseOut);
-        
-        requestHandler.handle(hin,hout);
+        Request request = (Request) hin.readObject(Request.class);
+        protocolLog.debug("Incomming hessian request\n{}", request.toString());
+
+        // do the authorization
+        Response response = requestHandler.handle(request);
+
+        // write out response
+        protocolLog.debug("Outgoing hessian response\n{}", response.toString());
+
+        ByteArrayOutputStream responseBytes = new ByteArrayOutputStream();
+        HessianOutput hout = new HessianOutput(responseBytes);
+        hout.writeObject(response);
         hout.flush();
-        responseOut.flush();
-        
-        httpResponse.getWriter().write(Base64.encodeBytes(responseOut.toByteArray()));
+
+        httpResponse.getWriter().write(Base64.encodeBytes(responseBytes.toByteArray()));
         httpResponse.flushBuffer();
         return;
     }

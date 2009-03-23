@@ -30,21 +30,72 @@ public class PEPDaemonConfigurationBuilder extends AbstractServiceConfigurationB
     /** Registered policy decision point endpoints. */
     private List<String> pdpEndpoints;
 
-    /** Constrcutor. */
+    /** Maximum number of responses to keep cached. */
+    private int maxCachedResponses;
+
+    /** Number milliseconds for which a response cache entry is valid. */
+    private long cachedResponseTTL;
+
+    /** Constructor. */
     public PEPDaemonConfigurationBuilder() {
         super();
         pdpEndpoints = new ArrayList<String>();
     }
 
+    /**
+     * Constructor that initializes this builder with the properties from the prototype configuration
+     * 
+     * @param prototype the prototype configuration
+     */
     public PEPDaemonConfigurationBuilder(PEPDaemonConfiguration prototype) {
         super(prototype);
+
         if (prototype.getPDPEndpoints() != null) {
             pdpEndpoints = new ArrayList<String>(prototype.getPDPEndpoints());
         } else {
             pdpEndpoints = new ArrayList<String>();
         }
+
+        cachedResponseTTL = prototype.getCachedResponseTTL();
+        maxCachedResponses = prototype.getMaxCachedResponses();
     }
-    
+
+    /**
+     * Gets the duration, in milliseconds, responses will be cached.
+     * 
+     * @return duration, in milliseconds, responses will be cached
+     */
+    public long getCachedResponseTTL() {
+        return cachedResponseTTL;
+    }
+
+    /**
+     * Gets the maximum number of responses that will be cached.
+     * 
+     * @return maximum number of responses that will be cached
+     */
+    public int getMaxCachedResponses() {
+        return maxCachedResponses;
+    }
+
+    /**
+     * Sets the duration, in milliseconds, responses will be cached.
+     * 
+     * @param ttl duration, in milliseconds, responses will be cached
+     */
+    public void setCachedResponseTTL(long ttl) {
+        cachedResponseTTL = ttl;
+    }
+
+    /**
+     * Sets the maximum number of responses that will be cached.
+     * 
+     * @param max maximum number of responses that will be cached
+     */
+    public void setMaxCachedResponses(int max) {
+        maxCachedResponses = max;
+    }
+
     /**
      * Gets a mutable list of registered PDP endpoints.
      * 
@@ -53,12 +104,14 @@ public class PEPDaemonConfigurationBuilder extends AbstractServiceConfigurationB
     public List<String> getPDPEndpoints() {
         return pdpEndpoints;
     }
-    
+
     /** {@inheritDoc} */
     public PEPDaemonConfiguration build() {
         PEPDaemonConfiguration config = new PEPDaemonConfiguration();
         populateConfiguration(config);
         config.setPDPEndpoints(pdpEndpoints);
+        config.setCachedResponseTTL(cachedResponseTTL);
+        config.setMaxCachedResponses(maxCachedResponses);
         return config;
     }
 }
