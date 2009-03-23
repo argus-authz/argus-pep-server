@@ -92,7 +92,7 @@ public class PEPDaemonConfiguration extends AbstractServiceConfiguration {
      * @param max maximum number of responses that will be cached, must be greater than zero
      */
     protected final synchronized void setMaxCachedResponses(int max) {
-        if(max < 1){
+        if(max < 0){
             throw new IllegalArgumentException("Max resonse cache size must be greater than zero");
         }
         

@@ -97,7 +97,7 @@ public final class PEPDaemonIniConfigurationParser extends
      * @return the value
      */
     protected int getMaxCachedResponses(Section configSection) {
-        return IniConfigUtil.getInt(configSection, MAX_CACHED_RESP_PROP, DEFAULT_MAX_CACHED_RESP, 1, Integer.MAX_VALUE);
+        return IniConfigUtil.getInt(configSection, MAX_CACHED_RESP_PROP, DEFAULT_MAX_CACHED_RESP, 0, Integer.MAX_VALUE);
     }
 
     /**
@@ -119,7 +119,20 @@ public final class PEPDaemonIniConfigurationParser extends
             e.printStackTrace(System.err);
         }
 
+        log.debug("Processing PEP Daemon {} configuration section", SERVICE_SECTION_HEADER);
         processServiceSection(daemonIni, configBuilder);
+        
+        Section configSection = daemonIni.get(SERVICE_SECTION_HEADER);
+        
+        int cachedResponseTTL = getCacheResponseTTL(configSection) * 1000;
+        log.debug("cached response TTL: {}ms", cachedResponseTTL);
+        configBuilder.setCachedResponseTTL(cachedResponseTTL);
+
+        int maxCachedResponses = getMaxCachedResponses(configSection);
+        log.debug("max cached resposnes: {}", maxCachedResponses);
+        configBuilder.setMaxCachedResponses(maxCachedResponses);
+
+        log.debug("Processing PEP Daemon {} configuration section", PDP_SECTION_HEADER);
         processPDPConfiguration(daemonIni, configBuilder);
 
         return configBuilder.build();
@@ -149,15 +162,8 @@ public final class PEPDaemonIniConfigurationParser extends
             configBuilder.getPDPEndpoints().add(pdpEndpoints.nextToken());
         }
 
-        int cachedResponseTTL = getCacheResponseTTL(configSection) * 1000;
-        log.debug("cached response TTL: {}ms", cachedResponseTTL);
-        configBuilder.setCachedResponseTTL(cachedResponseTTL);
-
-        int maxCachedResponses = getMaxCachedResponses(configSection);
-        log.debug("max cached resposnes: {}", maxCachedResponses);
-        configBuilder.setMaxCachedResponses(maxCachedResponses);
-
-        HttpClientBuilder soapClientBuilder = buildSOAPClientBuilder(configSection);
+        HttpClientBuilder soapClientBuilder = buildSOAPClientBuilder(configSection,
+                configBuilder.getKeyManager(), configBuilder.getTrustManager());
         BasicParserPool parserPool = new BasicParserPool();
         parserPool.setMaxPoolSize(soapClientBuilder.getMaxTotalConnections());
         configBuilder.setSoapClient(new HttpSOAPClient(soapClientBuilder.buildClient(), parserPool));

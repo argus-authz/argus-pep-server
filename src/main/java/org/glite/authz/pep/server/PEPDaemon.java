@@ -46,6 +46,8 @@ import org.mortbay.jetty.servlet.FilterHolder;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.concurrent.ThreadPool;
 import org.opensaml.DefaultBootstrap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The daemon component for the PEP.
@@ -60,6 +62,9 @@ public final class PEPDaemon {
 
     /** System property name PDP_HOME path is bound to. */
     public static final String PEP_HOME_PROP = "org.glite.authz.pep.home";
+    
+    /** Class logger. */
+    private static final Logger log = LoggerFactory.getLogger(PEPDaemon.class);
 
     /** Constructor. */
     private PEPDaemon() {
@@ -111,6 +116,7 @@ public final class PEPDaemon {
         }
 
         pepDaemonServiceThread.start();
+        log.info("PEP Daemon started");
     }
 
     private static Server createPEPDaemonService(PEPDaemonConfiguration daemonConfig) {
