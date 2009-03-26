@@ -19,6 +19,7 @@ package org.glite.authz.pep.server;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.security.Security;
 import java.util.ArrayList;
 import java.util.Timer;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -29,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Status;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.common.http.JettyRunThread;
 import org.glite.authz.common.http.JettyShutdownCommand;
@@ -82,6 +84,8 @@ public final class PEPDaemon {
             errorAndExit("Invalid configuration file", null);
         }
 
+        Security.addProvider(new BouncyCastleProvider());
+        
         ArrayList<Runnable> shutdownCommands = new ArrayList<Runnable>();
 
         final Timer configFileReloadTasks = new Timer(true);

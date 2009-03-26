@@ -7,12 +7,12 @@
         Levels: OFF, ERROR, WARN, INFO, DEBUG, TRACE, ALL
     -->
     <!-- Logs PEP messages -->
-    <logger name="org.glite">
+    <logger name="org.glite.authz">
         <level value="INFO" />
     </logger>
 
-    <!-- Logs incoming and outgoing Hessian and SAML messages, set level to DEBUG to enable -->
-    <logger name="org.glite.authz.message.protocol" additivity="false">
+    <!-- Logs incoming and outgoing Hessian and SAML messages, set level to ALL to enable -->
+    <logger name="org.glite.authz.message.protocol">
         <level value="OFF" />
     </logger>
     
