@@ -413,9 +413,8 @@ public class PEPDaemonRequestHandler {
      * @param messageContext current message context
      */
     private void writeAuditLogEntry(AuthzRequestContext messageContext) {
-        AuditLogEntry entry = new AuditLogEntry(daemonConfig.getEntityId(), messageContext.getOutboundMessageId(),
-                messageContext.getRespondingPDP(), messageContext.getInboundMessageId(), messageContext
-                        .getAuthorizationDecision());
+        AuditLogEntry entry = new AuditLogEntry(messageContext.getOutboundMessageId(), messageContext
+                .getRespondingPDP(), messageContext.getInboundMessageId(), messageContext.getAuthorizationDecision());
         auditLog.info(entry.toString());
     }
 

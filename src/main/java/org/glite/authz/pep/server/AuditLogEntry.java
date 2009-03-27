@@ -28,9 +28,6 @@ public class AuditLogEntry {
     /** Request timestamp. */
     private long requestTime;
 
-    /** Entity ID of the requester. */
-    private String requesterId;
-
     /** ID of the SAML authorization request message. */
     private String requestId;
 
@@ -52,9 +49,8 @@ public class AuditLogEntry {
      * @param decision the authorization decision
      * @param response ID of the SAML authorization response message
      */
-    public AuditLogEntry(String requester, String request, String responder, String response, String decision) {
+    public AuditLogEntry(String request, String responder, String response, String decision) {
         requestTime = new DateTime().toDateTimeISO().getMillis();
-        requesterId = Strings.safeTrimOrNullString(requester);
         requestId = Strings.safeTrimOrNullString(request);
         responderId = Strings.safeTrimOrNullString(responder);
         responseId = Strings.safeTrimOrNullString(response);
@@ -89,15 +85,6 @@ public class AuditLogEntry {
     }
 
     /**
-     * Gets the entity ID of the authorization decision requester.
-     * 
-     * @return entity ID of the authorization decision requester
-     */
-    public String getRequesterId() {
-        return requesterId;
-    }
-
-    /**
      * Gets the time, in milliseconds since the Unix epoch, in UTC, that the request was made.
      * 
      * @return time the request was made
@@ -120,9 +107,6 @@ public class AuditLogEntry {
         StringBuilder entryString = new StringBuilder();
 
         entryString.append(getRequestTime());
-        entryString.append("|");
-
-        entryString.append(getRequesterId());
         entryString.append("|");
 
         entryString.append(getRequestId());
