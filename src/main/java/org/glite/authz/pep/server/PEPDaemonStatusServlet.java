@@ -24,10 +24,13 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import net.jcip.annotations.ThreadSafe;
+
 import org.glite.authz.common.http.BaseHttpServlet;
 import org.glite.authz.pep.server.config.PEPDaemonConfiguration;
 
 /** A Servlet that reports basic daemon status and metrics. */
+@ThreadSafe
 public class PEPDaemonStatusServlet extends BaseHttpServlet {
 
     /** Serial version UID. */
@@ -55,6 +58,7 @@ public class PEPDaemonStatusServlet extends BaseHttpServlet {
 
         httpResponse.setContentType("text/plain");
         PrintWriter out = httpResponse.getWriter();
+        out.println("service: " + Version.getServiceName());
         out.println("status: ok");
         out.println("start time: " + metrics.getStartupTime());
         out.println("number of processors: " + runtime.availableProcessors());

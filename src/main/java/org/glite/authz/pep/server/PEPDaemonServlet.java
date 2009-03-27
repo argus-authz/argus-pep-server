@@ -24,6 +24,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import net.jcip.annotations.ThreadSafe;
+
 import org.glite.authz.common.http.BaseHttpServlet;
 import org.glite.authz.common.logging.LoggingConstants;
 import org.glite.authz.common.model.Request;
@@ -39,6 +41,7 @@ import com.caucho.hessian.io.HessianInput;
 import com.caucho.hessian.io.HessianOutput;
 
 /** Adapts a {@link PEPDaemonRequestHandler} in to a Servlet. */
+@ThreadSafe
 public class PEPDaemonServlet extends BaseHttpServlet {
 
     /** Protocol message log. */

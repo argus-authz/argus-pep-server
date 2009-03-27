@@ -179,19 +179,15 @@
                     <archive>
                         <index>true</index>
                         <manifestEntries>
-                            <Main-Class>org.glite.authz.pep.server.Version
-                            </Main-Class>
+                            <Main-Class>org.glite.authz.pep.server.Version</Main-Class>
                         </manifestEntries>
                         <manifestSections>
                             <manifestSection>
-                                <name>org/glite/authz/pep/server</name>
+                                <name>org/glite/authz/pep/server/</name>
                                 <manifestEntries>
-                                    <Implementation-Title>${pom.artifactId}
-                                    </Implementation-Title>
-                                    <Implementation-Version>${pom.version}
-                                    </Implementation-Version>
-                                    <Implementation-Vendor>EGEE Collaboration
-                                    </Implementation-Vendor>
+                                    <Implementation-Title>${pom.artifactId}</Implementation-Title>
+                                    <Implementation-Version>${pom.version}</Implementation-Version>
+                                    <Implementation-Vendor>EGEE Collaboration</Implementation-Vendor>
                                 </manifestEntries>
                             </manifestSection>
                         </manifestSections>

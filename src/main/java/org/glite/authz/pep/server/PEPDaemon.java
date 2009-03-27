@@ -31,12 +31,14 @@ import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Status;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.glite.authz.common.AuthorizationServiceException;
 import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.common.http.JettyRunThread;
 import org.glite.authz.common.http.JettyShutdownCommand;
 import org.glite.authz.common.http.JettyShutdownService;
 import org.glite.authz.common.logging.AccessLoggingFilter;
 import org.glite.authz.common.logging.LoggingReloadTask;
+import org.glite.authz.common.pip.PolicyInformationPoint;
 import org.glite.authz.common.util.Files;
 import org.glite.authz.pep.server.config.PEPDaemonConfiguration;
 import org.glite.authz.pep.server.config.PEPDaemonIniConfigurationParser;
@@ -98,12 +100,32 @@ public final class PEPDaemon {
 
         DefaultBootstrap.bootstrap();
 
-        PEPDaemonConfiguration daemonConfig = parseConfiguration(args[0]);
+        final PEPDaemonConfiguration daemonConfig = parseConfiguration(args[0]);
+        for(PolicyInformationPoint pip : daemonConfig.getPolicyInformationPoints()){
+            if(pip != null){
+                log.debug("Starting PIP {}", pip.getId());
+                pip.start();
+            }
+        }
 
         Server pepDaemonService = createPEPDaemonService(daemonConfig);
         JettyRunThread pepDaemonServiceThread = new JettyRunThread(pepDaemonService);
         pepDaemonServiceThread.setName("PEP Deamon Service");
         shutdownCommands.add(new JettyShutdownCommand(pepDaemonService));
+        shutdownCommands.add(new Runnable(){
+            public void run() {
+                for(PolicyInformationPoint pip : daemonConfig.getPolicyInformationPoints()){
+                    if(pip != null){
+                        try{
+                            log.debug("Stopping PIP {}", pip.getId());
+                            pip.stop();
+                        }catch(AuthorizationServiceException e){
+                            log.error("Unable to stop PIP " + pip.getId());
+                        }
+                    }
+                }
+            }
+        });
         shutdownCommands.add(new Runnable(){
             public void run() {
                 CacheManager cacheMgr = CacheManager.getInstance();
@@ -120,7 +142,7 @@ public final class PEPDaemon {
         }
 
         pepDaemonServiceThread.start();
-        log.info("PEP Daemon started");
+        log.info(Version.getServiceIdentifier() + " started");
     }
 
     private static Server createPEPDaemonService(PEPDaemonConfiguration daemonConfig) {

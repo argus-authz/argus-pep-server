@@ -54,6 +54,7 @@ import org.opensaml.xacml.ctx.RequestType;
 import org.opensaml.xacml.ctx.StatusCodeType;
 import org.opensaml.xacml.profile.saml.XACMLAuthzDecisionQueryType;
 import org.opensaml.xacml.profile.saml.XACMLAuthzDecisionStatementType;
+import org.opensaml.xml.XMLObject;
 import org.opensaml.xml.io.MarshallingException;
 import org.opensaml.xml.security.SecurityException;
 import org.opensaml.xml.util.XMLHelper;
@@ -67,6 +68,9 @@ public class PEPDaemonRequestHandler {
 
     /** Class logger. */
     private final Logger log = LoggerFactory.getLogger(PEPDaemonRequestHandler.class);
+
+    /** Audit log. */
+    private final Logger auditLog = LoggerFactory.getLogger(LoggingConstants.AUDIT_CATEGORY);
 
     /** Protocol message log. */
     private final Logger protocolLog = LoggerFactory.getLogger(LoggingConstants.PROTOCOL_MESSAGE_CATEGORY);
@@ -147,6 +151,8 @@ public class PEPDaemonRequestHandler {
     public Response handle(Request request) throws IOException {
         daemonConfig.getMetrics().incrementTotalAuthorizationRequests();
 
+        AuthzRequestContext messageContext = buildMessageContext();
+
         Response response = null;
         try {
             // run the policy information points over the request
@@ -171,18 +177,16 @@ public class PEPDaemonRequestHandler {
                     }
                 }
             }
+            log.debug("Response not found in cache");
 
             // no cached response so make request to PDP
-            log.debug("Response not found in cache, sending request to PDP");
-            response = sendRequestToPDP(request);
+            response = sendRequestToPDP(messageContext, request);
 
             // if the response is still null, something went wrong
             if (response == null) {
                 log.debug("No response received from registered PDPs");
                 daemonConfig.getMetrics().incrementTotalAuthorizationRequestErrors();
                 response = buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, null);
-            }else{
-                log.debug("Received response from PDP");
             }
 
             // run obligations handlers over the response
@@ -193,10 +197,11 @@ public class PEPDaemonRequestHandler {
 
             // now cache the result
             if (responseCache != null) {
-                log.debug("Caching response for request");
+                log.debug("Caching response {} for request {}", messageContext.getOutboundMessageId(), messageContext
+                        .getInboundMessageId());
                 responseCache.put(new net.sf.ehcache.Element(request, response));
             }
-            
+
             protocolLog.info("Complete hessian response\n{}", response.toString());
         } catch (Exception e) {
             daemonConfig.getMetrics().incrementTotalAuthorizationRequestErrors();
@@ -204,7 +209,24 @@ public class PEPDaemonRequestHandler {
             response = buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, null);
         }
 
+        writeAuditLogEntry(messageContext);
         return response;
+    }
+
+    /**
+     * Builds the message context for the given request.
+     * 
+     * @return the constructed message context.
+     */
+    private AuthzRequestContext buildMessageContext() {
+        AuthzRequestContext messageContext = new AuthzRequestContext();
+        messageContext.setCommunicationProfileId(AuthzServiceConstants.XACML_SAML_PROFILE_URI);
+        messageContext.setOutboundMessageIssuer(daemonConfig.getEntityId());
+        messageContext.setSOAPRequestParameters(new HttpSOAPRequestParameters(
+                "http://www.oasis-open.org/committees/security"));
+
+        // TODO fill in security policy resolver
+        return messageContext;
     }
 
     /**
@@ -212,47 +234,30 @@ public class PEPDaemonRequestHandler {
      * one endpoint responses with an HTTP 200 status code. If PDP returns a 200 then null is returned, indicating that
      * the response could not be sent to any PDP.
      * 
+     * @param messageContext current request context
      * @param soapRequest the SOAP request to sent
      * 
      * @return the returned response
      */
-    private Response sendRequestToPDP(Request authzRequest) {
-        Envelope soapRequest = buildSOAPMessage(XACMLConverter.requestToXACML(authzRequest));
-
-        if (protocolLog.isDebugEnabled()) {
-            try {
-                Element messageDom = Configuration.getMarshallerFactory().getMarshaller(soapRequest).marshall(
-                        soapRequest);
-                protocolLog.debug("Outgoing SOAP request\n{}", XMLHelper.prettyPrintXML(messageDom));
-            } catch (MarshallingException e) {
-                log.error("Unable to marshall outbound SOAP message");
-            }
-        }
-
-        HttpSOAPRequestParameters reqParams = new HttpSOAPRequestParameters(
-                "http://www.oasis-open.org/committees/security");
-
-        // TODO fill in security policy resolver
-        BasicSOAPMessageContext messageContext = new BasicSOAPMessageContext();
-        messageContext.setCommunicationProfileId(AuthzServiceConstants.XACML_SAML_PROFILE_URI);
-        messageContext.setOutboundMessage(soapRequest);
-        messageContext.setOutboundMessageIssuer(daemonConfig.getEntityId());
-        messageContext.setSOAPRequestParameters(reqParams);
+    private Response sendRequestToPDP(AuthzRequestContext messageContext, Request authzRequest) {
+        Envelope soapRequest = buildSOAPMessage(messageContext, XACMLConverter.requestToXACML(authzRequest));
+        logSOAPProtocolMessage(soapRequest, true);
 
         Iterator<String> pdpItr = daemonConfig.getPDPEndpoints().iterator();
         String pdpEndpoint = null;
-        Response authzResponse;
+        Response authzResponse = null;
         while (pdpItr.hasNext()) {
             try {
                 pdpEndpoint = pdpItr.next();
+                log.debug("Sending request {} to {}", messageContext.getOutboundMessageId(), pdpEndpoint);
                 daemonConfig.getSOAPClient().send(pdpEndpoint, messageContext);
-                authzResponse = extractResponse(pdpEndpoint, (Envelope) messageContext.getInboundMessage());
+                authzResponse = extractResponse(messageContext, pdpEndpoint, (Envelope) messageContext
+                        .getInboundMessage());
                 if (authzResponse != null) {
-                    if (protocolLog.isDebugEnabled()) {
-                        protocolLog.debug("Incoming SOAP response\n{}", XMLHelper.prettyPrintXML(messageContext
-                                .getInboundMessage().getDOM()));
-                    }
-                    return authzResponse;
+                    logSOAPProtocolMessage(messageContext.getInboundMessage(), false);
+                    messageContext.setRespondingPDP(pdpEndpoint);
+                    messageContext.setAuthorizationDecision(authzResponse.getResults().get(0).getDecisionString());
+                    break;
                 }
             } catch (SOAPClientException e) {
                 log.error("Error sending request to PDP endpoint " + pdpEndpoint, e);
@@ -262,18 +267,26 @@ public class PEPDaemonRequestHandler {
             }
         }
 
-        log.error("No PDP endpoint was able to answer the authorization request");
-        return null;
+        if (authzResponse != null) {
+            log.debug("A decision of {} was reached by {} in response to request {}", new Object[] {
+                    authzResponse.getResults().get(0).getDecisionString(), messageContext.getRespondingPDP(),
+                    messageContext.getOutboundMessageId() });
+            return authzResponse;
+        } else {
+            log.error("No PDP endpoint was able to answer the authorization request");
+            return null;
+        }
     }
 
     /**
      * Creates a SOAP message within which lies the XACML request.
      * 
+     * @param messageContext current request context
      * @param bodyMessage the message that should be placed in the SOAP body
      * 
      * @return the generated SOAP envelope containing the message
      */
-    private Envelope buildSOAPMessage(RequestType authzRequest) {
+    private Envelope buildSOAPMessage(AuthzRequestContext messageContext, RequestType authzRequest) {
         Issuer issuer = issuerBuilder.buildObject();
         issuer.setFormat(Issuer.ENTITY);
         issuer.setValue(daemonConfig.getEntityId());
@@ -295,17 +308,21 @@ public class PEPDaemonRequestHandler {
         Envelope envelope = envelopeBuilder.buildObject();
         envelope.setBody(body);
 
+        messageContext.setOutboundMessage(envelope);
+        messageContext.setOutboundMessageId(samlRequest.getID());
+
         return envelope;
     }
 
     /**
      * Extracts the response from a PDP response. If more than one assertion is present
      * 
+     * @param messageContext current request context
      * @param soapResponse the SOAP response containing the XACML-SAML authorization response
      * 
      * @return the extract response
      */
-    private Response extractResponse(String pdpEndpoint, Envelope soapResponse) {
+    private Response extractResponse(AuthzRequestContext messageContext, String pdpEndpoint, Envelope soapResponse) {
         org.opensaml.saml2.core.Response samlResponse = (org.opensaml.saml2.core.Response) soapResponse.getBody()
                 .getOrderedChildren().get(0);
 
@@ -332,6 +349,7 @@ public class PEPDaemonRequestHandler {
             return null;
         }
 
+        messageContext.setInboundMessageId(samlResponse.getID());
         XACMLAuthzDecisionStatementType authzStatement = (XACMLAuthzDecisionStatementType) authzStatements.get(0);
         return XACMLConverter.responseFromXACML(authzStatement.getResponse(), authzStatement.getRequest());
     }
@@ -362,5 +380,130 @@ public class PEPDaemonRequestHandler {
         response.setRequest(request);
         response.getResults().add(result);
         return response;
+    }
+
+    /**
+     * Logs an inbound/outbound SOAP message.
+     * 
+     * @param message the message to log
+     * @param isRequest whether the message is a request
+     */
+    private void logSOAPProtocolMessage(XMLObject message, boolean isRequest) {
+        if (message == null) {
+            return;
+        }
+
+        if (protocolLog.isDebugEnabled()) {
+            try {
+                Element messageDom = Configuration.getMarshallerFactory().getMarshaller(message).marshall(message);
+                if (isRequest) {
+                    protocolLog.debug("Outgoing SOAP request\n{}", XMLHelper.prettyPrintXML(messageDom));
+                } else {
+                    protocolLog.debug("Inbound SOAP response\n{}", XMLHelper.prettyPrintXML(messageDom));
+                }
+            } catch (MarshallingException e) {
+                log.error("Unable to marshall SOAP message");
+            }
+        }
+    }
+
+    /**
+     * Writes a PEP daemon audit log entry.
+     * 
+     * @param messageContext current message context
+     */
+    private void writeAuditLogEntry(AuthzRequestContext messageContext) {
+        AuditLogEntry entry = new AuditLogEntry(daemonConfig.getEntityId(), messageContext.getOutboundMessageId(),
+                messageContext.getRespondingPDP(), messageContext.getInboundMessageId(), messageContext
+                        .getAuthorizationDecision());
+        auditLog.info(entry.toString());
+    }
+
+    /** An authorization request message context. */
+    private class AuthzRequestContext extends BasicSOAPMessageContext {
+
+        /** ID of the outbound authorization request. */
+        private String outboundMessageId;
+
+        /** URL to the PDP that responded to the authorization response. */
+        private String respondingPDP;
+
+        /** ID of the inbound authorization response. */
+        private String inboundMessageId;
+
+        /** The result of the authorization request. */
+        private String authzDecision;
+
+        /**
+         * Gets the ID of the outbound authorization request.
+         * 
+         * @return ID of the outbound authorization request
+         */
+        public String getOutboundMessageId() {
+            return outboundMessageId;
+        }
+
+        /**
+         * Sets the ID of the outbound authorization request.
+         * 
+         * @param id ID of the outbound authorization request
+         */
+        public void setOutboundMessageId(String id) {
+            outboundMessageId = id;
+        }
+
+        /**
+         * Gets the URL to the PDP that responded to the authorization request.
+         * 
+         * @return URL to the PDP that responded the authorization request
+         */
+        public String getRespondingPDP() {
+            return respondingPDP;
+        }
+
+        /**
+         * Sets the URL to the PDP that responded the authorization request.
+         * 
+         * @param pdp URL to the PDP that responded the authorization request
+         */
+        public void setRespondingPDP(String pdp) {
+            respondingPDP = pdp;
+        }
+
+        /**
+         * Gets the ID of the inbound authorization response.
+         * 
+         * @return ID of the inbound authorization response
+         */
+        public String getInboundMessageId() {
+            return inboundMessageId;
+        }
+
+        /**
+         * Sets the ID of the inbound authorization response.
+         * 
+         * @param id ID of the inbound authorization response
+         */
+        public void setInboundMessageId(String id) {
+            inboundMessageId = id;
+        }
+
+        /**
+         * Gets the result of the authorization request.
+         * 
+         * @return result of the authorization request
+         */
+        public String getAuthorizationDecision() {
+            return authzDecision;
+        }
+
+        /**
+         * Sets the result of the authorization request.
+         * 
+         * @param decision result of the authorization request
+         */
+        public void setAuthorizationDecision(String decision) {
+            authzDecision = decision;
+        }
     }
 }
