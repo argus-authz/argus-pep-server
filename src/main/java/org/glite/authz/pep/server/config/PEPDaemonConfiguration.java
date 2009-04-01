@@ -6,8 +6,8 @@ import java.util.List;
 
 import net.jcip.annotations.ThreadSafe;
 
+import org.glite.authz.common.ServiceMetrics;
 import org.glite.authz.common.config.AbstractServiceConfiguration;
-import org.glite.authz.pep.server.PEPDaemonMetrics;
 
 /** Implementation of {@link PEPDaemonConfiguration}. */
 @ThreadSafe
@@ -22,16 +22,12 @@ public class PEPDaemonConfiguration extends AbstractServiceConfiguration {
     /** Number milliseconds for which a response cache entry is valid. */
     private long cachedResponseTTL;
 
-    /** Daemon metrics. */
-    private PEPDaemonMetrics metrics;
-
     /** Constructor. */
     public PEPDaemonConfiguration() {
-        super();
+        super(new ServiceMetrics("pep daemon"));
         pdpEndpoints = null;
         maxCachedResponses = 0;
         cachedResponseTTL = 0;
-        metrics = new PEPDaemonMetrics();
     }
 
     /**
@@ -53,15 +49,6 @@ public class PEPDaemonConfiguration extends AbstractServiceConfiguration {
     }
 
     /**
-     * Gets the usage metrics for the service.
-     * 
-     * @return usage metrics for the service
-     */
-    public PEPDaemonMetrics getMetrics() {
-        return metrics;
-    }
-
-    /**
      * Gets an immutable list of PDP endpoints (URLs) to which requests may be sent.
      * 
      * @return list of PDP endpoints to which requests may be sent
@@ -76,10 +63,10 @@ public class PEPDaemonConfiguration extends AbstractServiceConfiguration {
      * @param ttl duration, in milliseconds, responses will be cached
      */
     protected final synchronized void setCachedResponseTTL(long ttl) {
-        if(ttl < 1){
+        if (ttl < 1) {
             throw new IllegalArgumentException("Cache response time to live must be greater than zero");
         }
-        
+
         if (cachedResponseTTL != 0) {
             throw new IllegalStateException("Cached response TTL has already been set, it may not be changed.");
         }
@@ -92,10 +79,10 @@ public class PEPDaemonConfiguration extends AbstractServiceConfiguration {
      * @param max maximum number of responses that will be cached, must be greater than zero
      */
     protected final synchronized void setMaxCachedResponses(int max) {
-        if(max < 0){
+        if (max < 0) {
             throw new IllegalArgumentException("Max resonse cache size must be greater than zero");
         }
-        
+
         if (maxCachedResponses != 0) {
             throw new IllegalStateException("Max response cache size has already been set, it may not be changed.");
         }
@@ -118,7 +105,4 @@ public class PEPDaemonConfiguration extends AbstractServiceConfiguration {
 
         pdpEndpoints = Collections.unmodifiableList(endpoints);
     }
-
-    // TODO extra metrics to super class
-
 }

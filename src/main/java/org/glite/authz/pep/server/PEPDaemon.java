@@ -36,6 +36,7 @@ import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.common.http.JettyRunThread;
 import org.glite.authz.common.http.JettyShutdownCommand;
 import org.glite.authz.common.http.JettyShutdownService;
+import org.glite.authz.common.http.ServiceStatusServlet;
 import org.glite.authz.common.logging.AccessLoggingFilter;
 import org.glite.authz.common.logging.LoggingReloadTask;
 import org.glite.authz.common.pip.PolicyInformationPoint;
@@ -183,7 +184,7 @@ public final class PEPDaemon {
         daemonRequestServlet.setName("PEP Daemon Servlet");
         servletContext.addServlet(daemonRequestServlet, "/authz");
 
-        ServletHolder daemonStatusServlet = new ServletHolder(new PEPDaemonStatusServlet());
+        ServletHolder daemonStatusServlet = new ServletHolder(new ServiceStatusServlet());
         daemonStatusServlet.setName("PEP Status Servlet");
         servletContext.addServlet(daemonStatusServlet, "/status");
 

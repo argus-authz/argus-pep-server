@@ -27,7 +27,7 @@ function start {
 }
 
 function stop {
-    SHOST=`grep hostname $CONF | sed 's/ //g' | awk 'BEGIN {FS="="}{print $2}'`
+    SHOST="127.0.0.1"
     SPORT=`grep shutdownPort $CONF | sed 's/ //g' | awk 'BEGIN {FS="="}{print $2}'`
     if [ -z "$SPORT" ]; then
       SPORT=8155
@@ -40,9 +40,9 @@ function print_help {
    echo "PEP Daemon control script"
    echo ""
    echo "Usage:"
-   echo "  pepdctl.sh status  - print PEP daemon status"
-   echo "  pepdctl.sh start   - to start the service"
-   echo "  pepdctl.sh stop    - to stop the service" 
+   echo "  $0 status  - print PEP daemon status"
+   echo "  $0 start   - to start the service"
+   echo "  $0 stop    - to stop the service" 
    echo ""
 }
 

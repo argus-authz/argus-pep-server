@@ -119,20 +119,10 @@ public final class PEPDaemonIniConfigurationParser extends
             e.printStackTrace(System.err);
         }
 
-        log.debug("Processing PEP Daemon {} configuration section", SERVICE_SECTION_HEADER);
+        log.info("Processing PEP Daemon {} configuration section", SERVICE_SECTION_HEADER);
         processServiceSection(daemonIni, configBuilder);
-        
-        Section configSection = daemonIni.get(SERVICE_SECTION_HEADER);
-        
-        int cachedResponseTTL = getCacheResponseTTL(configSection) * 1000;
-        log.debug("cached response TTL: {}ms", cachedResponseTTL);
-        configBuilder.setCachedResponseTTL(cachedResponseTTL);
 
-        int maxCachedResponses = getMaxCachedResponses(configSection);
-        log.debug("max cached resposnes: {}", maxCachedResponses);
-        configBuilder.setMaxCachedResponses(maxCachedResponses);
-
-        log.debug("Processing PEP Daemon {} configuration section", PDP_SECTION_HEADER);
+        log.info("Processing PEP Daemon {} configuration section", PDP_SECTION_HEADER);
         processPDPConfiguration(daemonIni, configBuilder);
 
         return configBuilder.build();
@@ -156,11 +146,19 @@ public final class PEPDaemonIniConfigurationParser extends
         }
 
         String pdpEndpointStr = IniConfigUtil.getString(configSection, PDP_PROP);
-        log.debug("PDP endpoints: {}", pdpEndpointStr);
+        log.info("PDP endpoints: {}", pdpEndpointStr);
         StringTokenizer pdpEndpoints = new StringTokenizer(pdpEndpointStr, " ");
         while (pdpEndpoints.hasMoreTokens()) {
             configBuilder.getPDPEndpoints().add(pdpEndpoints.nextToken());
         }
+        
+        int cachedResponseTTL = getCacheResponseTTL(configSection) * 1000;
+        log.info("cached response TTL: {}ms", cachedResponseTTL);
+        configBuilder.setCachedResponseTTL(cachedResponseTTL);
+
+        int maxCachedResponses = getMaxCachedResponses(configSection);
+        log.info("max cached resposnes: {}", maxCachedResponses);
+        configBuilder.setMaxCachedResponses(maxCachedResponses);
 
         HttpClientBuilder soapClientBuilder = buildSOAPClientBuilder(configSection,
                 configBuilder.getKeyManager(), configBuilder.getTrustManager());

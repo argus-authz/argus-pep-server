@@ -149,7 +149,7 @@ public class PEPDaemonRequestHandler {
      * @throws IOException thrown if there is an error writing a response to the output stream
      */
     public Response handle(Request request) throws IOException {
-        daemonConfig.getMetrics().incrementTotalAuthorizationRequests();
+        daemonConfig.getServiceMetrics().incrementTotalServiceRequests();
 
         AuthzRequestContext messageContext = buildMessageContext();
 
@@ -185,7 +185,7 @@ public class PEPDaemonRequestHandler {
             // if the response is still null, something went wrong
             if (response == null) {
                 log.debug("No response received from registered PDPs");
-                daemonConfig.getMetrics().incrementTotalAuthorizationRequestErrors();
+                daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
                 response = buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, null);
             }
 
@@ -197,14 +197,14 @@ public class PEPDaemonRequestHandler {
 
             // now cache the result
             if (responseCache != null) {
-                log.debug("Caching response {} for request {}", messageContext.getOutboundMessageId(), messageContext
-                        .getInboundMessageId());
+                log.debug("Caching response {} for request {}", messageContext.getInboundMessageId(), messageContext
+                        .getOutboundMessageId());
                 responseCache.put(new net.sf.ehcache.Element(request, response));
             }
 
             protocolLog.info("Complete hessian response\n{}", response.toString());
         } catch (Exception e) {
-            daemonConfig.getMetrics().incrementTotalAuthorizationRequestErrors();
+            daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
             log.error("Error preocessing authorization request", e);
             response = buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, null);
         }
