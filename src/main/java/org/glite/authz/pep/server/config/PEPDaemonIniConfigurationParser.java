@@ -152,13 +152,13 @@ public final class PEPDaemonIniConfigurationParser extends
             configBuilder.getPDPEndpoints().add(pdpEndpoints.nextToken());
         }
         
-        int cachedResponseTTL = getCacheResponseTTL(configSection) * 1000;
-        log.info("cached response TTL: {}ms", cachedResponseTTL);
-        configBuilder.setCachedResponseTTL(cachedResponseTTL);
-
         int maxCachedResponses = getMaxCachedResponses(configSection);
         log.info("max cached resposnes: {}", maxCachedResponses);
         configBuilder.setMaxCachedResponses(maxCachedResponses);
+        
+        int cachedResponseTTL = getCacheResponseTTL(configSection) * 1000;
+        log.info("cached response TTL: {}ms", cachedResponseTTL);
+        configBuilder.setCachedResponseTTL(cachedResponseTTL);
 
         HttpClientBuilder soapClientBuilder = buildSOAPClientBuilder(configSection,
                 configBuilder.getKeyManager(), configBuilder.getTrustManager());
