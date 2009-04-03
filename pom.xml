@@ -31,6 +31,22 @@
             </snapshots>
         </repository>
         <repository>
+            <id>switchrelease</id>
+            <name>SWITCH Releases</name>
+            <url>http://www.switch.ch/grid/authz/docs/maven2/release</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>switchsnapshots</id>
+            <name>SWITCH Snapshots</name>
+            <url>http://www.switch.ch/grid/authz/docs/maven2/snapshot</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        <repository>
             <id>INFN</id>
             <name>INFN</name>
             <url>http://pcceccanti.cnaf.infn.it:11250/archiva/repository/internal
