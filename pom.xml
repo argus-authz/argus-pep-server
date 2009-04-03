@@ -6,7 +6,7 @@
     <groupId>org.glite.authz</groupId>
     <artifactId>pepd</artifactId>
     <name>gLite Authorization Service: PEP Daemon</name>
-    <version>SNAPSHOT</version>
+    <version>1.0-SNAPSHOT</version>
 
     <description>XACML based authorization service developed within the gLite project.
     </description>
@@ -15,12 +15,19 @@
 
     <repositories>
         <repository>
-            <id>shibboleth.internet2.edu</id>
-            <name>Internet2</name>
-            <url>http://shibboleth.internet2.edu/downloads/maven2
-            </url>
+            <id>i2release</id>
+            <name>Internet2 Releases</name>
+            <url>http://shibboleth.internet2.edu/downloads/maven2</url>
             <snapshots>
                 <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>i2snapshots</id>
+            <name>Internet2 Snapshots</name>
+            <url>http://shibboleth.internet2.edu/downloads/maven2snaps</url>
+            <snapshots>
+                <enabled>true</enabled>
             </snapshots>
         </repository>
         <repository>
@@ -39,7 +46,7 @@
         <dependency>
             <groupId>org.glite.authz</groupId>
             <artifactId>pdp-pep-common</artifactId>
-            <version>SNAPSHOT</version>
+            <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>net.sf.ehcache</groupId>
@@ -55,11 +62,6 @@
                     <artifactId>jsr107cache</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.opensaml</groupId>
-            <artifactId>opensaml</artifactId>
-            <version>2.2.4</version>
         </dependency>
         <dependency>
             <groupId>org.mortbay.jetty</groupId>
@@ -243,6 +245,17 @@
             </plugin>
         </plugins>
     </reporting>
+    
+    <distributionManagement>
+        <repository>
+            <id>release-repo</id>
+            <url>${dist.release.url}</url>
+        </repository>
+        <snapshotRepository>
+            <id>snapshot-repo</id>
+            <url>${dist.snapshot.url}</url>
+        </snapshotRepository>
+    </distributionManagement>
 
     <developers>
         <developer>
