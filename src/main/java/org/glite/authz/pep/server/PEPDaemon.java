@@ -36,6 +36,7 @@ import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.common.http.JettyRunThread;
 import org.glite.authz.common.http.JettyShutdownCommand;
 import org.glite.authz.common.http.JettyShutdownService;
+import org.glite.authz.common.http.JettySslSelectChannelConnector;
 import org.glite.authz.common.http.ServiceStatusServlet;
 import org.glite.authz.common.logging.AccessLoggingFilter;
 import org.glite.authz.common.logging.LoggingReloadTask;
@@ -160,18 +161,8 @@ public final class PEPDaemon {
         ThreadPool threadPool = new ThreadPool(5, daemonConfig.getMaxRequests(), 1, TimeUnit.SECONDS, requestQueue);
         httpServer.setThreadPool(threadPool);
 
-        SelectChannelConnector connector = new SelectChannelConnector();
-        connector.setHost(daemonConfig.getHostname());
-        if (daemonConfig.getPort() == 0) {
-            connector.setPort(8154);
-        } else {
-            connector.setPort(daemonConfig.getPort());
-        }
-        connector.setMaxIdleTime(daemonConfig.getConnectionTimeout());
-        connector.setRequestBufferSize(daemonConfig.getReceiveBufferSize());
-        connector.setResponseBufferSize(daemonConfig.getSendBufferSize());
-        httpServer.setConnectors(new Connector[] { connector });
-        
+        Connector connector = createServiceConnector(daemonConfig);
+        httpServer.setConnectors(new Connector[] { connector });        
 
         Context servletContext = new Context(httpServer, "/", false, false);
         servletContext.setDisplayName("PEP Daemon");
@@ -189,6 +180,39 @@ public final class PEPDaemon {
         servletContext.addServlet(daemonStatusServlet, "/status");
 
         return httpServer;
+    }
+    
+    /**
+     * Creates the HTTP connector used to receive authorization requests.
+     * 
+     * @param daemonConfig the daemon configuration
+     * 
+     * @return the created connector
+     */
+    private static Connector createServiceConnector(PEPDaemonConfiguration daemonConfig){
+        Connector connector;
+        if(!daemonConfig.isSslEnabled()){
+            connector = new SelectChannelConnector();
+        }else{
+            if(daemonConfig.getKeyManager() == null){
+                log.error("Service port was meant to be SSL enabled but no service key/certificate was specified in the configuration file");
+            }
+            if(daemonConfig.getTrustManager() == null){
+                log.error("Service port was meant to be SSL enabled but no trust information directory was specified in the configuration file");
+            }
+            connector = new JettySslSelectChannelConnector(daemonConfig.getKeyManager(), daemonConfig.getTrustManager());
+        }
+        connector.setHost(daemonConfig.getHostname());
+        if (daemonConfig.getPort() == 0) {
+            connector.setPort(8154);
+        } else {
+            connector.setPort(daemonConfig.getPort());
+        }
+        connector.setMaxIdleTime(daemonConfig.getConnectionTimeout());
+        connector.setRequestBufferSize(daemonConfig.getReceiveBufferSize());
+        connector.setResponseBufferSize(daemonConfig.getSendBufferSize());
+        
+        return connector;
     }
 
     /**

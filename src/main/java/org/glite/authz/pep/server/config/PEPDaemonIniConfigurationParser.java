@@ -20,11 +20,14 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.StringTokenizer;
 
+import javax.net.ssl.X509TrustManager;
+
 import net.jcip.annotations.ThreadSafe;
 
 import org.glite.authz.common.config.AbstractIniServiceConfigurationParser;
 import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.common.config.IniConfigUtil;
+import org.glite.voms.VOMSTrustManager;
 import org.ini4j.Ini;
 import org.ini4j.Ini.Section;
 import org.opensaml.ws.soap.client.http.HttpClientBuilder;
@@ -35,8 +38,7 @@ import org.slf4j.LoggerFactory;
 
 /** Parser for a {@link org.glite.authz.pep.server.PEPDaemon} configuration file. */
 @ThreadSafe
-public final class PEPDaemonIniConfigurationParser extends
-        AbstractIniServiceConfigurationParser<PEPDaemonConfiguration> {
+public class PEPDaemonIniConfigurationParser extends AbstractIniServiceConfigurationParser<PEPDaemonConfiguration> {
 
     /** The name of the {@value} INI header which contains the property for configuring the PDP interaction. */
     public static final String PDP_SECTION_HEADER = "PDP";
@@ -53,6 +55,9 @@ public final class PEPDaemonIniConfigurationParser extends
     /** The name of the {@value} property which gives the time-to-live, in seconds, for a cached item. */
     public static final String CACHED_RESP_TTL_PROP = "cachedResponseTTL";
 
+    /** Default value of the {@value AbstractIniServiceConfigurationParser#PORT_PROP} property, {@value} . */
+    public static final int DEFAULT_PORT = 8154;
+    
     /** Default value of the {@value #MAX_CACHED_RESP_PROP} property, {@value} . */
     public static final int DEFAULT_MAX_CACHED_RESP = 500;
 
@@ -74,6 +79,11 @@ public final class PEPDaemonIniConfigurationParser extends
     /** {@inheritDoc} */
     public PEPDaemonConfiguration parse(String iniString) throws ConfigurationException {
         return parseIni(new StringReader(iniString));
+    }
+    
+    /** {@inheritDoc} */
+    protected int getPort(Section configSection) {
+        return IniConfigUtil.getInt(configSection, PORT_PROP, DEFAULT_PORT, 1, 65535);
     }
 
     /**
@@ -151,19 +161,24 @@ public final class PEPDaemonIniConfigurationParser extends
         while (pdpEndpoints.hasMoreTokens()) {
             configBuilder.getPDPEndpoints().add(pdpEndpoints.nextToken());
         }
-        
+
         int maxCachedResponses = getMaxCachedResponses(configSection);
         log.info("max cached resposnes: {}", maxCachedResponses);
         configBuilder.setMaxCachedResponses(maxCachedResponses);
-        
+
         int cachedResponseTTL = getCacheResponseTTL(configSection) * 1000;
         log.info("cached response TTL: {}ms", cachedResponseTTL);
         configBuilder.setCachedResponseTTL(cachedResponseTTL);
 
-        HttpClientBuilder soapClientBuilder = buildSOAPClientBuilder(configSection,
-                configBuilder.getKeyManager(), configBuilder.getTrustManager());
-        BasicParserPool parserPool = new BasicParserPool();
-        parserPool.setMaxPoolSize(soapClientBuilder.getMaxTotalConnections());
-        configBuilder.setSoapClient(new HttpSOAPClient(soapClientBuilder.buildClient(), parserPool));
+        try {
+            X509TrustManager trustManager = new VOMSTrustManager(configBuilder.getTrustMaterialStore());
+            HttpClientBuilder soapClientBuilder = buildSOAPClientBuilder(configSection, configBuilder.getKeyManager(),
+                    trustManager);
+            BasicParserPool parserPool = new BasicParserPool();
+            parserPool.setMaxPoolSize(soapClientBuilder.getMaxTotalConnections());
+            configBuilder.setSoapClient(new HttpSOAPClient(soapClientBuilder.buildClient(), parserPool));
+        } catch (Exception e) {
+            throw new ConfigurationException("Unable to read X.509 trust material information.", e);
+        }
     }
 }
