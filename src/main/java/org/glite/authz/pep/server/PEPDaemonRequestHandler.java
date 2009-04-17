@@ -45,8 +45,9 @@ import org.opensaml.saml2.core.Assertion;
 import org.opensaml.saml2.core.Issuer;
 import org.opensaml.saml2.core.Statement;
 import org.opensaml.ws.soap.client.BasicSOAPMessageContext;
-import org.opensaml.ws.soap.client.SOAPClientException;
+import org.opensaml.ws.soap.client.SOAPFaultException;
 import org.opensaml.ws.soap.client.http.HttpSOAPRequestParameters;
+import org.opensaml.ws.soap.common.SOAPException;
 import org.opensaml.ws.soap.common.SOAPObjectBuilder;
 import org.opensaml.ws.soap.soap11.Body;
 import org.opensaml.ws.soap.soap11.Envelope;
@@ -259,7 +260,9 @@ public class PEPDaemonRequestHandler {
                     messageContext.setAuthorizationDecision(authzResponse.getResults().get(0).getDecisionString());
                     break;
                 }
-            } catch (SOAPClientException e) {
+            } catch (SOAPFaultException e){
+                log.warn("Recieved SOAP Fault " + e.getFault().getCode() + " from PDP endpoint: " + pdpEndpoint, e);
+            } catch (SOAPException e) {
                 log.error("Error sending request to PDP endpoint " + pdpEndpoint, e);
             } catch (SecurityException e) {
                 log.error("Response from PDP endpoint " + pdpEndpoint + " did not meet message security requirements",
