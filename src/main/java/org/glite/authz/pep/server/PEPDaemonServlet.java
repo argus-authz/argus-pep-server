@@ -44,6 +44,9 @@ import com.caucho.hessian.io.HessianOutput;
 @ThreadSafe
 public class PEPDaemonServlet extends BaseHttpServlet {
 
+    /** Serial version UID. */
+    private static final long serialVersionUID = -4114670420901954784L;
+
     /** Protocol message log. */
     private final Logger protocolLog = LoggerFactory.getLogger(LoggingConstants.PROTOCOL_MESSAGE_CATEGORY);
 

@@ -43,6 +43,8 @@
             <includes>
                 <include>*.sh</include>
             </includes>
+            <fileMode>0755</fileMode>
+            <directoryMode>0755</directoryMode>
         </fileSet>
         <fileSet>
             <directory>src/script/bat</directory>

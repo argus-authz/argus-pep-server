@@ -6,7 +6,7 @@
     <groupId>org.glite.authz</groupId>
     <artifactId>pepd</artifactId>
     <name>gLite Authorization Service: PEP Daemon</name>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.0-b1</version>
 
     <description>XACML based authorization service developed within the gLite project.
     </description>
@@ -62,7 +62,7 @@
         <dependency>
             <groupId>org.glite.authz</groupId>
             <artifactId>pdp-pep-common</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>1.0.0-b1</version>
         </dependency>
         <dependency>
             <groupId>net.sf.ehcache</groupId>
@@ -82,6 +82,11 @@
         <dependency>
             <groupId>org.mortbay.jetty</groupId>
             <artifactId>jetty</artifactId>
+            <version>6.1.14</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mortbay.jetty</groupId>
+            <artifactId>jetty-sslengine</artifactId>
             <version>6.1.14</version>
         </dependency>
         <dependency>
@@ -261,6 +266,15 @@
             </plugin>
         </plugins>
     </reporting>
+    
+    <profiles>
+        <profile>
+            <id>etics</id>
+            <build>
+                <finalName>pepd</finalName>
+            </build>
+        </profile>
+    </profiles>
     
     <distributionManagement>
         <repository>
