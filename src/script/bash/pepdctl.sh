@@ -9,8 +9,8 @@ CONF="$HOME/conf/pepd.ini"
 . $HOME/bin/env.sh
 
 function status {
-    SHOST=`grep hostname $CONF | sed 's/ //g' | awk 'BEGIN {FS="="}{print $2}'`
-    SPORT=`grep port $CONF | sed 's/ //g' | awk 'BEGIN {FS="="}{print $2}'`
+    SHOST=`sed 's/ //g' $CONF | grep "^hostname" | awk 'BEGIN {FS="="}{print $2}'`
+    SPORT=`sed 's/ //g' $CONF | grep "^port" | awk 'BEGIN {FS="="}{print $2}'`
     if [ -z "$SPORT" ]; then
       SPORT=8154
     fi
@@ -28,7 +28,7 @@ function start {
 
 function stop {
     SHOST="127.0.0.1"
-    SPORT=`grep shutdownPort $CONF | sed 's/ //g' | awk 'BEGIN {FS="="}{print $2}'`
+    SPORT=`sed 's/ //g' $CONF | grep "^shutdownPort" | awk 'BEGIN {FS="="}{print $2}'`
     if [ -z "$SPORT" ]; then
       SPORT=8155
     fi
