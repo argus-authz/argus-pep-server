@@ -28,12 +28,14 @@ import net.sf.ehcache.store.MemoryStoreEvictionPolicy;
 
 import org.glite.authz.common.AuthzServiceConstants;
 import org.glite.authz.common.logging.LoggingConstants;
+import org.glite.authz.common.model.Obligation;
 import org.glite.authz.common.model.Request;
 import org.glite.authz.common.model.Response;
 import org.glite.authz.common.model.Result;
 import org.glite.authz.common.model.Status;
 import org.glite.authz.common.model.StatusCode;
 import org.glite.authz.common.model.XACMLConverter;
+import org.glite.authz.common.obligation.provider.gridmap.posix.GridMapPosixAccountMappingObligationHandler;
 import org.glite.authz.common.pip.PolicyInformationPoint;
 import org.glite.authz.pep.server.config.PEPDaemonConfiguration;
 import org.joda.time.DateTime;
@@ -193,7 +195,16 @@ public class PEPDaemonRequestHandler {
             // run obligations handlers over the response
             if (daemonConfig.getObligationService() != null) {
                 log.debug("Processing obligations");
-                daemonConfig.getObligationService().processObligations(request, response.getResults().get(0));
+                // TODO remove this once the XACML engine properly handles obligations
+                Result result = response.getResults().get(0);
+                if(result.getDecision() == Result.DECISION_PERMIT){
+                    Obligation uidMappingObligation = new Obligation();
+                    uidMappingObligation.setFulfillOn(Result.DECISION_PERMIT);
+                    uidMappingObligation.setId(GridMapPosixAccountMappingObligationHandler.MAPPING_OB_ID);
+                    result.getObligations().add(uidMappingObligation);
+                }
+                
+                daemonConfig.getObligationService().processObligations(request, result);
             }
 
             // now cache the result
