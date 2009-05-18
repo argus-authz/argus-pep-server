@@ -11,11 +11,16 @@ CONF="$HOME/conf/pepd.ini"
 function status {
     SHOST=`sed 's/ //g' $CONF | grep "^hostname" | awk 'BEGIN {FS="="}{print $2}'`
     SPORT=`sed 's/ //g' $CONF | grep "^port" | awk 'BEGIN {FS="="}{print $2}'`
+    SPORTSSL=`sed 's/ //g' $CONF | grep "^enableSSL" | awk 'BEGIN {FS="="}{print $2}'`
     if [ -z "$SPORT" ]; then
       SPORT=8154
     fi
     
-    $JAVACMD $JVMOPTS 'org.glite.authz.pep.server.PEPDaemonAdminCLI' "status" $SHOST $SPORT
+    if [ -z "$SPORTSSL" ]; then
+      SPORTSSL="false"
+    fi
+    
+    $JAVACMD $JVMOPTS 'org.glite.authz.pep.server.PEPDaemonAdminCLI' "status" $SHOST $SPORT $SPORTSSL
 }
 
 function start {        
