@@ -35,7 +35,9 @@ import org.glite.authz.common.model.Result;
 import org.glite.authz.common.model.Status;
 import org.glite.authz.common.model.StatusCode;
 import org.glite.authz.common.model.XACMLConverter;
+import org.glite.authz.common.obligation.ObligationProcessingException;
 import org.glite.authz.common.obligation.provider.gridmap.posix.GridMapPosixAccountMappingObligationHandler;
+import org.glite.authz.common.pip.PIPProcessingException;
 import org.glite.authz.common.pip.PolicyInformationPoint;
 import org.glite.authz.pep.server.config.PEPDaemonConfiguration;
 import org.joda.time.DateTime;
@@ -215,6 +217,14 @@ public class PEPDaemonRequestHandler {
             }
 
             protocolLog.info("Complete hessian response\n{}", response.toString());
+        } catch (PIPProcessingException e){
+            daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
+            log.error("Error preocessing authorization request", e);
+            response = buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, e.getMessage());
+        } catch (ObligationProcessingException e){
+            daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
+            log.error("Error preocessing authorization request", e);
+            response = buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, e.getMessage());
         } catch (Exception e) {
             daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
             log.error("Error preocessing authorization request", e);
