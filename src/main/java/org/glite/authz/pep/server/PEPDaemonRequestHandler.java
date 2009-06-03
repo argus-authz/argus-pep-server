@@ -36,7 +36,7 @@ import org.glite.authz.common.model.Status;
 import org.glite.authz.common.model.StatusCode;
 import org.glite.authz.common.model.XACMLConverter;
 import org.glite.authz.common.obligation.ObligationProcessingException;
-import org.glite.authz.common.obligation.provider.gridmap.posix.GridMapPosixAccountMappingObligationHandler;
+import org.glite.authz.common.obligation.provider.dfpmap.DFPMObligationHandler;
 import org.glite.authz.common.pip.PIPProcessingException;
 import org.glite.authz.common.pip.PolicyInformationPoint;
 import org.glite.authz.pep.server.config.PEPDaemonConfiguration;
@@ -202,7 +202,7 @@ public class PEPDaemonRequestHandler {
                 if(result.getDecision() == Result.DECISION_PERMIT){
                     Obligation uidMappingObligation = new Obligation();
                     uidMappingObligation.setFulfillOn(Result.DECISION_PERMIT);
-                    uidMappingObligation.setId(GridMapPosixAccountMappingObligationHandler.MAPPING_OB_ID);
+                    uidMappingObligation.setId(DFPMObligationHandler.MAPPING_OB_ID);
                     result.getObligations().add(uidMappingObligation);
                 }
                 
@@ -219,11 +219,11 @@ public class PEPDaemonRequestHandler {
             protocolLog.info("Complete hessian response\n{}", response.toString());
         } catch (PIPProcessingException e){
             daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
-            log.error("Error preocessing authorization request", e);
+            log.error("Error preocessing policy information points", e);
             response = buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, e.getMessage());
         } catch (ObligationProcessingException e){
             daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
-            log.error("Error preocessing authorization request", e);
+            log.error("Error preocessing obligation handlers", e);
             response = buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, e.getMessage());
         } catch (Exception e) {
             daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
