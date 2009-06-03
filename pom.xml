@@ -6,7 +6,7 @@
     <groupId>org.glite.authz</groupId>
     <artifactId>pepd</artifactId>
     <name>gLite Authorization Service: PEP Daemon</name>
-    <version>1.0.0-b1</version>
+    <version>1.0.0-RC1</version>
 
     <description>XACML based authorization service developed within the gLite project.
     </description>
@@ -15,7 +15,7 @@
 
     <repositories>
         <repository>
-            <id>i2release</id>
+            <id>internet2</id>
             <name>Internet2 Releases</name>
             <url>http://shibboleth.internet2.edu/downloads/maven2</url>
             <snapshots>
@@ -23,27 +23,11 @@
             </snapshots>
         </repository>
         <repository>
-            <id>i2snapshots</id>
-            <name>Internet2 Snapshots</name>
-            <url>http://shibboleth.internet2.edu/downloads/maven2snaps</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>switchrelease</id>
+            <id>switch</id>
             <name>SWITCH Releases</name>
             <url>http://www.switch.ch/grid/authz/docs/maven2/release</url>
             <snapshots>
                 <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>switchsnapshots</id>
-            <name>SWITCH Snapshots</name>
-            <url>http://www.switch.ch/grid/authz/docs/maven2/snapshot</url>
-            <snapshots>
-                <enabled>true</enabled>
             </snapshots>
         </repository>
         <repository>
@@ -62,7 +46,7 @@
         <dependency>
             <groupId>org.glite.authz</groupId>
             <artifactId>pdp-pep-common</artifactId>
-            <version>1.0.0-b1</version>
+            <version>1.0.0-RC1</version>
         </dependency>
         <dependency>
             <groupId>net.sf.ehcache</groupId>
@@ -82,17 +66,17 @@
         <dependency>
             <groupId>org.mortbay.jetty</groupId>
             <artifactId>jetty</artifactId>
-            <version>6.1.14</version>
+            <version>6.1.18</version>
         </dependency>
         <dependency>
             <groupId>org.mortbay.jetty</groupId>
             <artifactId>jetty-sslengine</artifactId>
-            <version>6.1.14</version>
+            <version>6.1.18</version>
         </dependency>
         <dependency>
             <groupId>org.mortbay.jetty</groupId>
             <artifactId>jetty-java5-threadpool</artifactId>
-            <version>6.1.14</version>
+            <version>6.1.18</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
