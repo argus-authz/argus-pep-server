@@ -30,15 +30,6 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
-        <repository>
-            <id>INFN</id>
-            <name>INFN</name>
-            <url>http://pcceccanti.cnaf.infn.it:11250/archiva/repository/internal
-            </url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
     </repositories>
 
     <dependencies>
