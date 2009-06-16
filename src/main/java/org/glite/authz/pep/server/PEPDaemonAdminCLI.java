@@ -22,7 +22,10 @@ import java.net.ConnectException;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
+import org.glite.authz.common.http.NoTrustTrustManager;
 import org.glite.authz.common.util.Strings;
+import org.opensaml.ws.soap.client.http.HttpClientBuilder;
+import org.opensaml.ws.soap.client.http.TLSProtocolSocketFactory;
 import org.slf4j.LoggerFactory;
 
 import ch.qos.logback.classic.Level;
@@ -106,7 +109,9 @@ public class PEPDaemonAdminCLI {
      * @param port port to connect to
      */
     private static void executeCommand(GetMethod command, String host, int port) {
-        HttpClient httpClient = new HttpClient();
+        HttpClientBuilder clientBuilder = new HttpClientBuilder();
+        clientBuilder.setHttpsProtocolSocketFactory(new TLSProtocolSocketFactory(null, new NoTrustTrustManager()));
+        HttpClient httpClient = clientBuilder.buildClient();
 
         try {
             httpClient.executeMethod(command);

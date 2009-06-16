@@ -111,6 +111,8 @@ public final class PEPDaemon {
         }
 
         Server pepDaemonService = createPEPDaemonService(daemonConfig);
+        pepDaemonService.setGracefulShutdown(5000);
+        
         JettyRunThread pepDaemonServiceThread = new JettyRunThread(pepDaemonService);
         pepDaemonServiceThread.setName("PEP Deamon Service");
         shutdownCommands.add(new JettyShutdownCommand(pepDaemonService));
