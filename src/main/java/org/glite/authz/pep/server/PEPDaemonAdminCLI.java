@@ -18,6 +18,8 @@ package org.glite.authz.pep.server;
 
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
@@ -52,12 +54,17 @@ public class PEPDaemonAdminCLI {
         Logger rootLogger = lc.getLogger(LoggerContext.ROOT_NAME);
         rootLogger.setLevel(Level.OFF);
 
-        String host = args[1];
-        if(host.equals("0.0.0.0")){
-            host = "127.0.0.1";
-        }
-        if(host.equals("[::]")){
-            host = "[::1]";
+        String host = null;
+        try{
+            InetAddress[] addresses;
+            if(args.length == 1){
+                addresses = InetAddress.getAllByName(null);
+            }else{
+                addresses = InetAddress.getAllByName(args[1]);
+            }
+            host = addresses[0].getHostName();
+        }catch(UnknownHostException e){
+            errorAndExit("The host " + args[1] + " is not a valid hostname or IP address");
         }
         
         if (Strings.safeEquals(args[0], "status")) {
