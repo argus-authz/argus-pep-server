@@ -12,6 +12,8 @@
             <excludes>
                 <exclude>org.apache.xerces:*</exclude>
                 <exclude>org.apache.xalan:*</exclude>
+                <exclude>log4j:log4j:*</exclude>
+                <exclude>javax.servlet:servlet-api:jar:2.3</exclude>
             </excludes>
             <includes>
                 <include>*:jar:*</include>
