@@ -1,5 +1,6 @@
 /*
- * Copyright 2009 EGEE Collaboration
+ * Copyright 2009 Members of the EGEE Collaboration.
+ * See http://www.eu-egee.org/partners for details on the copyright holders. 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
