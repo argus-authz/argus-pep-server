@@ -23,9 +23,9 @@ for i in $LIBS
 do
     # if the directory is empty, then it will return the input string
     # this is stupid, so case for it
-    if [ "$i" != "${LIBS}" ] ; then
+    if [ -f "$i" ] ; then
         LOCALCLASSPATH="$LOCALCLASSPATH":"$i"
     fi
 done
-
+#JVMOPTS="-Djava.net.preferIPv4Stack=true $JVMOPTS"
 JVMOPTS="-Djava.endorsed.dirs=$HOME/lib/endorsed -classpath $LOCALCLASSPATH $JVMOPTS"
