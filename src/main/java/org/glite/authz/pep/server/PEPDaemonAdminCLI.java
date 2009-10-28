@@ -52,7 +52,7 @@ public class PEPDaemonAdminCLI {
         }
 
         LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
-        Logger rootLogger = lc.getLogger(LoggerContext.ROOT_NAME);
+        Logger rootLogger = lc.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         rootLogger.setLevel(Level.OFF);
 
         String host = null;

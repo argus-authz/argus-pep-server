@@ -85,7 +85,7 @@ public class PEPDaemonRequestHandler {
     private PEPDaemonConfiguration daemonConfig;
 
     /** Cache used to store response to a request. */
-    private final Cache responseCache;
+    private Cache responseCache;
 
     /** Generator for message IDs. */
     private static IdentifierGenerator idGenerator;
@@ -114,8 +114,9 @@ public class PEPDaemonRequestHandler {
         }
         daemonConfig = config;
 
+
         if (daemonConfig.getMaxCachedResponses() > 0) {
-            CacheManager cacheMgr = CacheManager.getInstance();
+            CacheManager cacheMgr = CacheManager.create();
             responseCache = new Cache("org.glite.authz.pep.server.responseCache", daemonConfig.getMaxCachedResponses(),
                     MemoryStoreEvictionPolicy.LFU, false, null, false, daemonConfig.getCachedResponseTTL(),
                     daemonConfig.getCachedResponseTTL(), false, Long.MAX_VALUE, null, null);
@@ -123,7 +124,7 @@ public class PEPDaemonRequestHandler {
         } else {
             responseCache = null;
         }
-
+        
         try {
             idGenerator = new SecureRandomIdentifierGenerator();
         } catch (NoSuchAlgorithmException e) {

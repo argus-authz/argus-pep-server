@@ -131,14 +131,17 @@ public final class PEPDaemon {
                 }
             }
         });
-        shutdownCommands.add(new Runnable(){
-            public void run() {
-                CacheManager cacheMgr = CacheManager.getInstance();
-                if(cacheMgr != null  && cacheMgr.getStatus() == Status.STATUS_ALIVE){
-                    cacheMgr.shutdown();
+        
+        if(daemonConfig.getMaxCachedResponses() > 0){
+            shutdownCommands.add(new Runnable(){
+                public void run() {
+                    CacheManager cacheMgr = CacheManager.getInstance();
+                    if(cacheMgr != null  && cacheMgr.getStatus() == Status.STATUS_ALIVE){
+                        cacheMgr.shutdown();
+                    }
                 }
-            }
-        });
+            });
+        }
 
         if (daemonConfig.getShutdownPort() == 0) {
             JettyShutdownService.startJettyShutdownService(8155, shutdownCommands);
