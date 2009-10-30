@@ -6,7 +6,7 @@
     <groupId>org.glite.authz</groupId>
     <artifactId>pepd</artifactId>
     <name>gLite Authorization Service: PEP Daemon</name>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
 
     <description>XACML based authorization service developed within the gLite project.
     </description>
