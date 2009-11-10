@@ -24,6 +24,7 @@ import net.jcip.annotations.ThreadSafe;
 
 import org.glite.authz.common.ServiceMetrics;
 import org.glite.authz.common.config.AbstractServiceConfiguration;
+import org.glite.authz.pep.server.Version;
 
 /** Implementation of {@link PEPDaemonConfiguration}. */
 @ThreadSafe
@@ -40,7 +41,7 @@ public class PEPDaemonConfiguration extends AbstractServiceConfiguration {
 
     /** Constructor. */
     public PEPDaemonConfiguration() {
-        super(new ServiceMetrics("pep daemon"));
+        super(new ServiceMetrics(Version.getServiceIdentifier()));
         pdpEndpoints = null;
         maxCachedResponses = 0;
         cachedResponseTTL = 0;

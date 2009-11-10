@@ -186,9 +186,14 @@ public class PEPDaemonRequestHandler {
             }
             log.debug("Response not found in cache");
 
-            // no cached response so make request to PDP
+            // no cached response so make request to PDP and cache the result
             response = sendRequestToPDP(messageContext, request);
-
+            if (responseCache != null && response != null) {
+                log.debug("Caching response {} for request {}", messageContext.getInboundMessageId(), messageContext
+                        .getOutboundMessageId());
+                responseCache.put(new net.sf.ehcache.Element(request, response));
+            }
+            
             // if the response is still null, something went wrong
             if (response == null) {
                 log.debug("No response received from registered PDPs");
@@ -209,13 +214,6 @@ public class PEPDaemonRequestHandler {
                 }
                 
                 daemonConfig.getObligationService().processObligations(request, result);
-            }
-
-            // now cache the result
-            if (responseCache != null) {
-                log.debug("Caching response {} for request {}", messageContext.getInboundMessageId(), messageContext
-                        .getOutboundMessageId());
-                responseCache.put(new net.sf.ehcache.Element(request, response));
             }
 
             protocolLog.info("Complete hessian response\n{}", response.toString());

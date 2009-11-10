@@ -1,0 +1,5 @@
+Changes in Release 1.0.4
+===========================================
+- Response caching now occurs after response a valid response is returned from
+  the PDP but before obligation processing occurs.
+- Add service version to status page
