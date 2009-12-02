@@ -2,22 +2,28 @@
 <projectDescription>
 	<name>pep-daemon</name>
 	<comment></comment>
-    <projects>
-    </projects>
-    <buildSpec>
-        <buildCommand>
-            <name>org.eclipse.jdt.core.javabuilder</name>
-            <arguments>
-            </arguments>
-        </buildCommand>
-        <buildCommand>
-            <name>org.eclipse.iam.jdt.core.mavenIncrementalBuilder</name>
-            <arguments>
-            </arguments>
-        </buildCommand>
-    </buildSpec>
-    <natures>
-        <nature>org.eclipse.iam.jdt.core.mavenNature</nature>
-        <nature>org.eclipse.jdt.core.javanature</nature>
-    </natures>
+	<projects>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.eclipse.jdt.core.javabuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+		<buildCommand>
+			<name>org.eclipse.iam.jdt.core.mavenIncrementalBuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+		<buildCommand>
+			<name>net.sf.eclipsecs.core.CheckstyleBuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>org.eclipse.iam.jdt.core.mavenNature</nature>
+		<nature>org.eclipse.jdt.core.javanature</nature>
+		<nature>net.sf.eclipsecs.core.CheckstyleNature</nature>
+	</natures>
 </projectDescription>
