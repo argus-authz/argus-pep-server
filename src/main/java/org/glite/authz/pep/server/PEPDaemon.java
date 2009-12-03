@@ -153,6 +153,13 @@ public final class PEPDaemon {
         log.info(Version.getServiceIdentifier() + " started");
     }
 
+    /**
+     * Creates the PEP daemon service to run.
+     * 
+     * @param daemonConfig the configuration for the service
+     * 
+     * @return a configured PEP daemon server
+     */
     private static Server createPEPDaemonService(PEPDaemonConfiguration daemonConfig) {
         Server httpServer = new Server();
         httpServer.setSendServerVersion(false);
@@ -207,6 +214,9 @@ public final class PEPDaemon {
                 log.error("Service port was meant to be SSL enabled but no trust information directory was specified in the configuration file");
             }
             connector = new JettySslSelectChannelConnector(daemonConfig.getKeyManager(), daemonConfig.getTrustManager());
+            if(daemonConfig.isClientCertAuthRequired()){
+                ((JettySslSelectChannelConnector)connector).setWantClientAuth(true);
+            }
         }
         connector.setHost(daemonConfig.getHostname());
         if (daemonConfig.getPort() == 0) {

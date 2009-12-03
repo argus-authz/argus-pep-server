@@ -111,7 +111,7 @@ public class PEPDaemonConfiguration extends AbstractServiceConfiguration {
      * 
      * @param endpoints list of PDP endpoints (URLs) to which requests may be sent
      */
-    protected synchronized final void setPDPEndpoints(List<String> endpoints) {
+    protected final synchronized void setPDPEndpoints(List<String> endpoints) {
         if (endpoints == null || endpoints.size() == 0) {
             return;
         }
