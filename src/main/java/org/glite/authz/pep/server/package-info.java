@@ -17,10 +17,11 @@
 
 /** 
  * A policy enforcement point daemon.  This daemon takes the Hessian 1 authorization request protocol supported 
- * by the policy enforcement point client and turns them in to XACML over SAML requests that may then be sent to a PDP.  
+ * by the policy enforcement point client and turns them in to XACML over SAML requests that may then be sent to a PDP.
  * See the package {@code org.glite.authz.common.model} package for the Hessian data model used by this request.
  * 
  * @see <a href="http://hessian.caucho.com/doc/hessian-1.0-spec.xtp">Hessian 1 specification</a>
  * @see <a href="http://switch.ch/grid/support/documents/">SOAP Profile for XACML-SAML</a>
  */
+
 package org.glite.authz.pep.server;

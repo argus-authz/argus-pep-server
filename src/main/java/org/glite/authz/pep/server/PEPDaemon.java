@@ -71,7 +71,7 @@ public final class PEPDaemon {
     public static final String PEP_HOME_PROP = "org.glite.authz.pep.home";
     
     /** Class logger. */
-    private static final Logger log = LoggerFactory.getLogger(PEPDaemon.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PEPDaemon.class);
 
     /** Constructor. */
     private PEPDaemon() {
@@ -106,7 +106,7 @@ public final class PEPDaemon {
         final PEPDaemonConfiguration daemonConfig = parseConfiguration(args[0]);
         for(PolicyInformationPoint pip : daemonConfig.getPolicyInformationPoints()){
             if(pip != null){
-                log.debug("Starting PIP {}", pip.getId());
+                LOG.debug("Starting PIP {}", pip.getId());
                 pip.start();
             }
         }
@@ -122,10 +122,10 @@ public final class PEPDaemon {
                 for(PolicyInformationPoint pip : daemonConfig.getPolicyInformationPoints()){
                     if(pip != null){
                         try{
-                            log.debug("Stopping PIP {}", pip.getId());
+                            LOG.debug("Stopping PIP {}", pip.getId());
                             pip.stop();
                         }catch(AuthorizationServiceException e){
-                            log.error("Unable to stop PIP " + pip.getId());
+                            LOG.error("Unable to stop PIP " + pip.getId());
                         }
                     }
                 }
@@ -150,7 +150,7 @@ public final class PEPDaemon {
         }
 
         pepDaemonServiceThread.start();
-        log.info(Version.getServiceIdentifier() + " started");
+        LOG.info(Version.getServiceIdentifier() + " started");
     }
 
     /**
@@ -208,10 +208,10 @@ public final class PEPDaemon {
             connector = new SelectChannelConnector();
         }else{
             if(daemonConfig.getKeyManager() == null){
-                log.error("Service port was meant to be SSL enabled but no service key/certificate was specified in the configuration file");
+                LOG.error("Service port was meant to be SSL enabled but no service key/certificate was specified in the configuration file");
             }
             if(daemonConfig.getTrustManager() == null){
-                log.error("Service port was meant to be SSL enabled but no trust information directory was specified in the configuration file");
+                LOG.error("Service port was meant to be SSL enabled but no trust information directory was specified in the configuration file");
             }
             connector = new JettySslSelectChannelConnector(daemonConfig.getKeyManager(), daemonConfig.getTrustManager());
             if(daemonConfig.isClientCertAuthRequired()){
@@ -283,7 +283,8 @@ public final class PEPDaemon {
      */
     private static void initializeLogging(String loggingConfigFilePath, Timer reloadTasks) {
         LoggingReloadTask reloadTask = new LoggingReloadTask(loggingConfigFilePath);
-        int refreshPeriod = 5 * 60 * 1000; // check/reload every 5 minutes
+        // check/reload every 5 minutes
+        int refreshPeriod = 5 * 60 * 1000;
         reloadTask.run();
         reloadTasks.scheduleAtFixedRate(reloadTask, refreshPeriod, refreshPeriod);
     }

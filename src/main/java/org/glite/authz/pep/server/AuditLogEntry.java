@@ -44,7 +44,6 @@ public class AuditLogEntry {
     /**
      * Constructor.
      * 
-     * @param requester entity ID of the authorization decision requester
      * @param request ID of the SAML authorization request message
      * @param responder URL of the PDP that responded to the authorization request
      * @param decision the authorization decision

@@ -44,7 +44,7 @@ public class PEPDaemonConfigurationBuilder extends AbstractServiceConfigurationB
     }
 
     /**
-     * Constructor that initializes this builder with the properties from the prototype configuration
+     * Constructor that initializes this builder with the properties from the prototype configuration.
      * 
      * @param prototype the prototype configuration
      */

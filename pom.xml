@@ -17,6 +17,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <slf4j.groupId>org.slf4j</slf4j.groupId>
         <slf4j.version>1.5.8</slf4j.version>
+        <logback.groupId>ch.qos.logback</logback.groupId>
+        <logback.version>0.9.18</logback.version>
     </properties>
 
     <repositories>
@@ -66,9 +68,14 @@
             <version>6.1.18</version>
         </dependency>
         <dependency>
-            <groupId>ch.qos.logback</groupId>
+            <groupId>${logback.groupId}</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>0.9.17</version>
+            <version>${logback.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${logback.groupId}</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>${logback.version}</version>
         </dependency>
         <dependency>
             <groupId>${slf4j.groupId}</groupId>
@@ -157,7 +164,6 @@
                 <configuration>
                     <descriptors>
                         <descriptor>src/main/assembly/bin.xml</descriptor>
-                        <descriptor>src/main/assembly/src.xml</descriptor>
                     </descriptors>
                     <tarLongFileMode>gnu</tarLongFileMode>
                 </configuration>

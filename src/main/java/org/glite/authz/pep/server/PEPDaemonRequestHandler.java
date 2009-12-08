@@ -72,21 +72,6 @@ import org.w3c.dom.Element;
 @ThreadSafe
 public class PEPDaemonRequestHandler {
 
-    /** Class logger. */
-    private final Logger log = LoggerFactory.getLogger(PEPDaemonRequestHandler.class);
-
-    /** Audit log. */
-    private final Logger auditLog = LoggerFactory.getLogger(LoggingConstants.AUDIT_CATEGORY);
-
-    /** Protocol message log. */
-    private final Logger protocolLog = LoggerFactory.getLogger(LoggingConstants.PROTOCOL_MESSAGE_CATEGORY);
-
-    /** The daemon's configuration. */
-    private PEPDaemonConfiguration daemonConfig;
-
-    /** Cache used to store response to a request. */
-    private Cache responseCache;
-
     /** Generator for message IDs. */
     private static IdentifierGenerator idGenerator;
 
@@ -101,6 +86,21 @@ public class PEPDaemonRequestHandler {
 
     /** Builder of Issuer XMLObjects. */
     private static SAMLObjectBuilder<Issuer> issuerBuilder;
+    
+    /** Class logger. */
+    private final Logger log = LoggerFactory.getLogger(PEPDaemonRequestHandler.class);
+
+    /** Audit log. */
+    private final Logger auditLog = LoggerFactory.getLogger(LoggingConstants.AUDIT_CATEGORY);
+
+    /** Protocol message log. */
+    private final Logger protocolLog = LoggerFactory.getLogger(LoggingConstants.PROTOCOL_MESSAGE_CATEGORY);
+
+    /** The daemon's configuration. */
+    private PEPDaemonConfiguration daemonConfig;
+
+    /** Cache used to store response to a request. */
+    private Cache responseCache;
 
     /**
      * Constructor.
@@ -150,8 +150,9 @@ public class PEPDaemonRequestHandler {
      * the incoming connection. The {@link org.opensaml.xacml.ctx.ResponseType} from the PDP is then turned in to a
      * {@link Response}, serialized and then written out.
      * 
-     * @param input the input stream containing incoming, serialized, {@link Request}
-     * @param output the output stream to which the serialized {@link Response} is written
+     * @param request the request to be evaluated
+     * 
+     * @return the response to the given request
      * 
      * @throws IOException thrown if there is an error writing a response to the output stream
      */
@@ -257,7 +258,7 @@ public class PEPDaemonRequestHandler {
      * the response could not be sent to any PDP.
      * 
      * @param messageContext current request context
-     * @param soapRequest the SOAP request to sent
+     * @param authzRequest the authorization request to be sent
      * 
      * @return the returned response
      */
@@ -294,7 +295,7 @@ public class PEPDaemonRequestHandler {
         if (authzResponse != null) {
             log.debug("A decision of {} was reached by {} in response to request {}", new Object[] {
                     authzResponse.getResults().get(0).getDecisionString(), messageContext.getRespondingPDP(),
-                    messageContext.getOutboundMessageId() });
+                    messageContext.getOutboundMessageId(), });
             return authzResponse;
         } else {
             log.error("No PDP endpoint was able to answer the authorization request");
@@ -306,7 +307,7 @@ public class PEPDaemonRequestHandler {
      * Creates a SOAP message within which lies the XACML request.
      * 
      * @param messageContext current request context
-     * @param bodyMessage the message that should be placed in the SOAP body
+     * @param authzRequest the authorization request to be sent
      * 
      * @return the generated SOAP envelope containing the message
      */
@@ -342,6 +343,7 @@ public class PEPDaemonRequestHandler {
      * Extracts the response from a PDP response. If more than one assertion is present
      * 
      * @param messageContext current request context
+     * @param pdpEndpoint the endpoint to which the message should be sent
      * @param soapResponse the SOAP response containing the XACML-SAML authorization response
      * 
      * @return the extract response
