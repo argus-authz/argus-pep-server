@@ -44,13 +44,13 @@
         <!-- Compile Dependencies-->
         <dependency>
             <groupId>org.glite.authz</groupId>
-            <artifactId>pdp-pep-common</artifactId>
-            <version>1.0.4</version>
+            <artifactId>peplib</artifactId>
+            <version>1.0.0</version>
         </dependency>
         <dependency>
             <groupId>net.sf.ehcache</groupId>
             <artifactId>ehcache-core</artifactId>
-            <version>1.7.0</version>
+            <version>1.7.1</version>
         </dependency>
         <dependency>
             <groupId>org.mortbay.jetty</groupId>
@@ -91,6 +91,14 @@
             <groupId>${slf4j.groupId}</groupId>
             <artifactId>log4j-over-slf4j</artifactId>
             <version>${slf4j.version}</version>
+        </dependency>
+        
+        <!-- Provided Dependencies -->
+        <dependency>
+            <groupId>net.jcip</groupId>
+            <artifactId>jcip-annotations</artifactId>
+            <version>1.0</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Runtime Dependencies -->

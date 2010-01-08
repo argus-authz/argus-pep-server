@@ -23,6 +23,8 @@ import java.util.List;
 import net.jcip.annotations.NotThreadSafe;
 
 import org.glite.authz.common.config.AbstractServiceConfigurationBuilder;
+import org.glite.authz.pep.pip.PolicyInformationPoint;
+import org.glite.authz.pep.obligation.ObligationService;
 
 /** A builder of {@link PEPDaemonConfiguration}s. */
 @NotThreadSafe
@@ -36,11 +38,18 @@ public class PEPDaemonConfigurationBuilder extends AbstractServiceConfigurationB
 
     /** Number milliseconds for which a response cache entry is valid. */
     private long cachedResponseTTL;
+    
+    /** Registered policy information points. */
+    private List<PolicyInformationPoint> pips;
+
+    /** Obligation processing service. */
+    private ObligationService obligationService;
 
     /** Constructor. */
     public PEPDaemonConfigurationBuilder() {
         super();
         pdpEndpoints = new ArrayList<String>();
+        pips = new ArrayList<PolicyInformationPoint>();
     }
 
     /**
@@ -105,6 +114,33 @@ public class PEPDaemonConfigurationBuilder extends AbstractServiceConfigurationB
     public List<String> getPDPEndpoints() {
         return pdpEndpoints;
     }
+    
+    /**
+     * Gets the registered policy information points.
+     * 
+     * @return registered policy information points
+     */
+    public List<PolicyInformationPoint> getPolicyInformationPoints() {
+        return pips;
+    }
+
+    /**
+     * Gets the obligation processing service.
+     * 
+     * @return obligation processing service
+     */
+    public ObligationService getObligationService() {
+        return obligationService;
+    }
+
+    /**
+     * Sets the obligation processing service.
+     * 
+     * @param service obligation processing service
+     */
+    public void setObligationService(ObligationService service) {
+        obligationService = service;
+    }
 
     /** {@inheritDoc} */
     public PEPDaemonConfiguration build() {
@@ -113,6 +149,8 @@ public class PEPDaemonConfigurationBuilder extends AbstractServiceConfigurationB
         config.setPDPEndpoints(pdpEndpoints);
         config.setCachedResponseTTL(cachedResponseTTL);
         config.setMaxCachedResponses(maxCachedResponses);
+        config.setPolicyInformationPoints(pips);
+        config.setObligationService(obligationService);
         return config;
     }
 }

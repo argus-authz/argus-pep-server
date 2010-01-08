@@ -19,6 +19,7 @@ package org.glite.authz.pep.server.config;
 
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.List;
 import java.util.StringTokenizer;
 
 import javax.net.ssl.X509TrustManager;
@@ -28,6 +29,10 @@ import net.jcip.annotations.ThreadSafe;
 import org.glite.authz.common.config.AbstractIniServiceConfigurationParser;
 import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.common.config.IniConfigUtil;
+import org.glite.authz.pep.obligation.IniOHConfigurationParserHelper;
+import org.glite.authz.pep.obligation.ObligationService;
+import org.glite.authz.pep.pip.IniPIPConfigurationParserHelper;
+import org.glite.authz.pep.pip.PolicyInformationPoint;
 import org.glite.voms.VOMSTrustManager;
 import org.ini4j.Ini;
 import org.ini4j.Ini.Section;
@@ -70,6 +75,7 @@ public class PEPDaemonIniConfigurationParser extends AbstractIniServiceConfigura
 
     /** Constructor. */
     public PEPDaemonIniConfigurationParser() {
+        super();
     }
 
     /** {@inheritDoc} */
@@ -171,6 +177,16 @@ public class PEPDaemonIniConfigurationParser extends AbstractIniServiceConfigura
         log.info("cached response TTL: {}ms", cachedResponseTTL);
         configBuilder.setCachedResponseTTL(cachedResponseTTL);
 
+        List<PolicyInformationPoint> pips = IniPIPConfigurationParserHelper.processPolicyInformationPoints(iniFile,
+                configSection, configBuilder);
+        log.info("total policy information points: {}", pips.size());
+        configBuilder.getPolicyInformationPoints().addAll(pips);
+
+        ObligationService service = IniOHConfigurationParserHelper.processObligationHandlers(iniFile, configSection,
+                configBuilder);
+        log.info("total obligation handlers: {}", service.getObligationHandlers().size());
+        configBuilder.setObligationService(service);
+        
         try {
             X509TrustManager trustManager = new VOMSTrustManager(configBuilder.getTrustMaterialStore());
             HttpClientBuilder soapClientBuilder = buildSOAPClientBuilder(configSection, configBuilder.getKeyManager(),

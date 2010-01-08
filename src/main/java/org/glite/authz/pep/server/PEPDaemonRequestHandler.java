@@ -36,10 +36,9 @@ import org.glite.authz.common.model.Result;
 import org.glite.authz.common.model.Status;
 import org.glite.authz.common.model.StatusCode;
 import org.glite.authz.common.model.XACMLConverter;
-import org.glite.authz.common.obligation.ObligationProcessingException;
-import org.glite.authz.common.obligation.provider.dfpmap.DFPMObligationHandler;
-import org.glite.authz.common.pip.PIPProcessingException;
-import org.glite.authz.common.pip.PolicyInformationPoint;
+import org.glite.authz.pep.obligation.ObligationProcessingException;
+import org.glite.authz.pep.pip.PIPProcessingException;
+import org.glite.authz.pep.pip.PolicyInformationPoint;
 import org.glite.authz.pep.server.config.PEPDaemonConfiguration;
 import org.joda.time.DateTime;
 import org.opensaml.Configuration;
@@ -205,14 +204,14 @@ public class PEPDaemonRequestHandler {
             // run obligations handlers over the response
             if (daemonConfig.getObligationService() != null) {
                 log.debug("Processing obligations");
-                // TODO remove this once the XACML engine properly handles obligations
                 Result result = response.getResults().get(0);
-                if(result.getDecision() == Result.DECISION_PERMIT){
-                    Obligation uidMappingObligation = new Obligation();
-                    uidMappingObligation.setFulfillOn(Result.DECISION_PERMIT);
-                    uidMappingObligation.setId(DFPMObligationHandler.MAPPING_OB_ID);
-                    result.getObligations().add(uidMappingObligation);
-                }
+// TODO remove this once the XACML engine properly handles obligations
+//                if(result.getDecision() == Result.DECISION_PERMIT){
+//                    Obligation uidMappingObligation = new Obligation();
+//                    uidMappingObligation.setFulfillOn(Result.DECISION_PERMIT);
+//                    uidMappingObligation.setId(DFPMObligationHandler.MAPPING_OB_ID);
+//                    result.getObligations().add(uidMappingObligation);
+//                }
                 
                 daemonConfig.getObligationService().processObligations(request, result);
             }

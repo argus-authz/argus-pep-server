@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.security.Security;
-import java.util.ArrayList;
 import java.util.Timer;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -32,17 +31,17 @@ import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Status;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.glite.authz.common.AuthorizationServiceException;
 import org.glite.authz.common.config.ConfigurationException;
+import org.glite.authz.common.http.JettyAdminService;
 import org.glite.authz.common.http.JettyRunThread;
-import org.glite.authz.common.http.JettyShutdownCommand;
-import org.glite.authz.common.http.JettyShutdownService;
+import org.glite.authz.common.http.JettyShutdownTask;
 import org.glite.authz.common.http.JettySslSelectChannelConnector;
-import org.glite.authz.common.http.ServiceStatusServlet;
+import org.glite.authz.common.http.StatusCommand;
+import org.glite.authz.common.http.TimerShutdownTask;
 import org.glite.authz.common.logging.AccessLoggingFilter;
 import org.glite.authz.common.logging.LoggingReloadTask;
-import org.glite.authz.common.pip.PolicyInformationPoint;
 import org.glite.authz.common.util.Files;
+import org.glite.authz.pep.pip.PolicyInformationPoint;
 import org.glite.authz.pep.server.config.PEPDaemonConfiguration;
 import org.glite.authz.pep.server.config.PEPDaemonIniConfigurationParser;
 import org.mortbay.jetty.Connector;
@@ -69,7 +68,7 @@ public final class PEPDaemon {
 
     /** System property name PDP_HOME path is bound to. */
     public static final String PEP_HOME_PROP = "org.glite.authz.pep.home";
-    
+
     /** Class logger. */
     private static final Logger LOG = LoggerFactory.getLogger(PEPDaemon.class);
 
@@ -89,67 +88,28 @@ public final class PEPDaemon {
             errorAndExit("Invalid configuration file", null);
         }
 
+        final Timer backgroundTaskTimer = new Timer(true);
+
+        initializeLogging(System.getProperty(PEP_HOME_PROP) + "/conf/logging.xml", backgroundTaskTimer);
         Security.addProvider(new BouncyCastleProvider());
-        
-        ArrayList<Runnable> shutdownCommands = new ArrayList<Runnable>();
-
-        final Timer configFileReloadTasks = new Timer(true);
-        shutdownCommands.add(new Runnable() {
-            public void run() {
-                configFileReloadTasks.cancel();
-            }
-        });
-        initializeLogging(System.getProperty(PEP_HOME_PROP) + "/conf/logging.xml", configFileReloadTasks);
-
         DefaultBootstrap.bootstrap();
 
         final PEPDaemonConfiguration daemonConfig = parseConfiguration(args[0]);
-        for(PolicyInformationPoint pip : daemonConfig.getPolicyInformationPoints()){
-            if(pip != null){
+        for (PolicyInformationPoint pip : daemonConfig.getPolicyInformationPoints()) {
+            if (pip != null) {
                 LOG.debug("Starting PIP {}", pip.getId());
                 pip.start();
             }
         }
 
         Server pepDaemonService = createPEPDaemonService(daemonConfig);
-        pepDaemonService.setGracefulShutdown(5000);
-        
         JettyRunThread pepDaemonServiceThread = new JettyRunThread(pepDaemonService);
         pepDaemonServiceThread.setName("PEP Deamon Service");
-        shutdownCommands.add(new JettyShutdownCommand(pepDaemonService));
-        shutdownCommands.add(new Runnable(){
-            public void run() {
-                for(PolicyInformationPoint pip : daemonConfig.getPolicyInformationPoints()){
-                    if(pip != null){
-                        try{
-                            LOG.debug("Stopping PIP {}", pip.getId());
-                            pip.stop();
-                        }catch(AuthorizationServiceException e){
-                            LOG.error("Unable to stop PIP " + pip.getId());
-                        }
-                    }
-                }
-            }
-        });
-        
-        if(daemonConfig.getMaxCachedResponses() > 0){
-            shutdownCommands.add(new Runnable(){
-                public void run() {
-                    CacheManager cacheMgr = CacheManager.getInstance();
-                    if(cacheMgr != null  && cacheMgr.getStatus() == Status.STATUS_ALIVE){
-                        cacheMgr.shutdown();
-                    }
-                }
-            });
-        }
-
-        if (daemonConfig.getShutdownPort() == 0) {
-            JettyShutdownService.startJettyShutdownService(8155, shutdownCommands);
-        } else {
-            JettyShutdownService.startJettyShutdownService(daemonConfig.getShutdownPort(), shutdownCommands);
-        }
-
         pepDaemonServiceThread.start();
+
+        JettyAdminService adminService = createAdminService(daemonConfig, backgroundTaskTimer, pepDaemonService);
+        adminService.start();
+
         LOG.info(Version.getServiceIdentifier() + " started");
     }
 
@@ -164,6 +124,7 @@ public final class PEPDaemon {
         Server httpServer = new Server();
         httpServer.setSendServerVersion(false);
         httpServer.setSendDateHeader(false);
+        httpServer.setGracefulShutdown(5000);
 
         BlockingQueue<Runnable> requestQueue;
         if (daemonConfig.getMaxRequestQueueSize() < 1) {
@@ -175,12 +136,12 @@ public final class PEPDaemon {
         httpServer.setThreadPool(threadPool);
 
         Connector connector = createServiceConnector(daemonConfig);
-        httpServer.setConnectors(new Connector[] { connector });        
+        httpServer.setConnectors(new Connector[] { connector });
 
         Context servletContext = new Context(httpServer, "/", false, false);
         servletContext.setDisplayName("PEP Daemon");
         servletContext.setAttribute(PEPDaemonConfiguration.BINDING_NAME, daemonConfig);
-        
+
         FilterHolder accessLoggingFilter = new FilterHolder(new AccessLoggingFilter());
         servletContext.addFilter(accessLoggingFilter, "/*", Context.REQUEST);
 
@@ -188,13 +149,47 @@ public final class PEPDaemon {
         daemonRequestServlet.setName("PEP Daemon Servlet");
         servletContext.addServlet(daemonRequestServlet, "/authz");
 
-        ServletHolder daemonStatusServlet = new ServletHolder(new ServiceStatusServlet());
-        daemonStatusServlet.setName("PEP Status Servlet");
-        servletContext.addServlet(daemonStatusServlet, "/status");
-
         return httpServer;
     }
-    
+
+    /**
+     * Builds an admin service for the PEP daemon. This admin service has the following commands registered with it:
+     * 
+     * <ul>
+     * <li><em>shutdown</em> - shuts down the PDP daemon service and the admin service</li>
+     * <li><em>status</em> - prints out a status page w/ metrics</li>
+     * <li><em>expungeResponseCache</em> - expunges all the current entries in the PDP response cache</li>
+     * </ul>
+     * 
+     * In addition, a shutdown task that will shutdown all caches is also registered.
+     * 
+     * @param daemonConfig PEP daemon configuration
+     * @param backgroundTimer timer used for background tasks
+     * @param daemonService the PEP daemon service
+     * 
+     * @return the admin service
+     */
+    private static JettyAdminService createAdminService(PEPDaemonConfiguration daemonConfig, Timer backgroundTimer,
+            Server daemonService) {
+        JettyAdminService adminService = new JettyAdminService(daemonConfig.getShutdownPort());
+
+        adminService.registerAdminCommand(new StatusCommand(daemonConfig.getServiceMetrics()));
+        adminService.registerAdminCommand(new ExpungeResponseCacheCommand());
+
+        adminService.registerShutdownTask(new TimerShutdownTask(backgroundTimer));
+        adminService.registerShutdownTask(new JettyShutdownTask(daemonService));
+        adminService.registerShutdownTask(new Runnable() {
+            public void run() {
+                CacheManager cacheMgr = CacheManager.getInstance();
+                if (cacheMgr != null && cacheMgr.getStatus() == Status.STATUS_ALIVE) {
+                    cacheMgr.shutdown();
+                }
+            }
+        });
+
+        return adminService;
+    }
+
     /**
      * Creates the HTTP connector used to receive authorization requests.
      * 
@@ -202,20 +197,22 @@ public final class PEPDaemon {
      * 
      * @return the created connector
      */
-    private static Connector createServiceConnector(PEPDaemonConfiguration daemonConfig){
+    private static Connector createServiceConnector(PEPDaemonConfiguration daemonConfig) {
         Connector connector;
-        if(!daemonConfig.isSslEnabled()){
+        if (!daemonConfig.isSslEnabled()) {
             connector = new SelectChannelConnector();
-        }else{
-            if(daemonConfig.getKeyManager() == null){
-                LOG.error("Service port was meant to be SSL enabled but no service key/certificate was specified in the configuration file");
+        } else {
+            if (daemonConfig.getKeyManager() == null) {
+                LOG
+                        .error("Service port was meant to be SSL enabled but no service key/certificate was specified in the configuration file");
             }
-            if(daemonConfig.getTrustManager() == null){
-                LOG.error("Service port was meant to be SSL enabled but no trust information directory was specified in the configuration file");
+            if (daemonConfig.getTrustManager() == null) {
+                LOG
+                        .error("Service port was meant to be SSL enabled but no trust information directory was specified in the configuration file");
             }
             connector = new JettySslSelectChannelConnector(daemonConfig.getKeyManager(), daemonConfig.getTrustManager());
-            if(daemonConfig.isClientCertAuthRequired()){
-                ((JettySslSelectChannelConnector)connector).setWantClientAuth(true);
+            if (daemonConfig.isClientCertAuthRequired()) {
+                ((JettySslSelectChannelConnector) connector).setNeedClientAuth(true);
             }
         }
         connector.setHost(daemonConfig.getHostname());
@@ -227,7 +224,7 @@ public final class PEPDaemon {
         connector.setMaxIdleTime(daemonConfig.getConnectionTimeout());
         connector.setRequestBufferSize(daemonConfig.getReceiveBufferSize());
         connector.setResponseBufferSize(daemonConfig.getSendBufferSize());
-        
+
         return connector;
     }
 
