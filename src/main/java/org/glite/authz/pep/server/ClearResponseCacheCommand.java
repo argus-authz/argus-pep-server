@@ -23,27 +23,37 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Status;
 
 import org.glite.authz.common.http.AbstractAdminCommand;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** An admin command that expunges all the current entries in the PDP response cache. */
-public class ExpungeResponseCacheCommand extends AbstractAdminCommand {
+public class ClearResponseCacheCommand extends AbstractAdminCommand {
 
     /** Serial version UID. */
-    private static final long serialVersionUID = -3238027572099937679L;
+    private static final long serialVersionUID = -2575767336984093204L;
+    
+    /** Class logger. */
+    private final Logger log = LoggerFactory.getLogger(ClearResponseCacheCommand.class);
 
     /** Constructors. */
-    public ExpungeResponseCacheCommand() {
-        super("/expungeResponseCache");
+    public ClearResponseCacheCommand() {
+        super("/clearResponseCache");
     }
 
     /** {@inheritDoc} */
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         CacheManager cacheMgr = CacheManager.getInstance();
         if (cacheMgr != null && cacheMgr.getStatus() == Status.STATUS_ALIVE) {
-            cacheMgr.clearAll();
+            log.info("Clearing PDP response cache");
+            Cache responseCache = cacheMgr.getCache(PEPDaemonRequestHandler.RESPONSE_CACHE_NAME);
+            if(responseCache != null){
+                responseCache.removeAll();
+            }
         }
 
         resp.setContentType("text/plain");

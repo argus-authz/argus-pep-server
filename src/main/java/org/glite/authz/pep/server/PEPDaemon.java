@@ -95,10 +95,12 @@ public final class PEPDaemon {
         DefaultBootstrap.bootstrap();
 
         final PEPDaemonConfiguration daemonConfig = parseConfiguration(args[0]);
-        for (PolicyInformationPoint pip : daemonConfig.getPolicyInformationPoints()) {
-            if (pip != null) {
-                LOG.debug("Starting PIP {}", pip.getId());
-                pip.start();
+        if(!daemonConfig.getPolicyInformationPoints().isEmpty()){
+            for (PolicyInformationPoint pip : daemonConfig.getPolicyInformationPoints()) {
+                if (pip != null) {
+                    LOG.debug("Starting PIP {}", pip.getId());
+                    pip.start();
+                }
             }
         }
 
@@ -108,6 +110,7 @@ public final class PEPDaemon {
         pepDaemonServiceThread.start();
 
         JettyAdminService adminService = createAdminService(daemonConfig, backgroundTaskTimer, pepDaemonService);
+        LOG.debug("Starting admin service");
         adminService.start();
 
         LOG.info(Version.getServiceIdentifier() + " started");
@@ -171,10 +174,16 @@ public final class PEPDaemon {
      */
     private static JettyAdminService createAdminService(PEPDaemonConfiguration daemonConfig, Timer backgroundTimer,
             Server daemonService) {
-        JettyAdminService adminService = new JettyAdminService(daemonConfig.getShutdownPort());
+        
+        int adminPort = daemonConfig.getAdminPort();
+        if(adminPort < 1){
+            adminPort = 8155;
+        }
+        
+        JettyAdminService adminService = new JettyAdminService(adminPort);
 
         adminService.registerAdminCommand(new StatusCommand(daemonConfig.getServiceMetrics()));
-        adminService.registerAdminCommand(new ExpungeResponseCacheCommand());
+        adminService.registerAdminCommand(new ClearResponseCacheCommand());
 
         adminService.registerShutdownTask(new TimerShutdownTask(backgroundTimer));
         adminService.registerShutdownTask(new JettyShutdownTask(daemonService));
@@ -248,10 +257,13 @@ public final class PEPDaemon {
             PEPDaemonIniConfigurationParser configParser = new PEPDaemonIniConfigurationParser();
             return configParser.parse(new FileReader(configFile));
         } catch (IOException e) {
+            LOG.error("Unable to read configuration file", e);
             errorAndExit("Unable to read configuration file " + configFilePath, e);
         } catch (ConfigurationException e) {
+            LOG.error("Unable to load configuration file", e);
             errorAndExit("Error parsing configuration file " + configFilePath, e);
         }
+        
         return null;
     }
 

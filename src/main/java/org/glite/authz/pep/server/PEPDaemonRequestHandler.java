@@ -29,7 +29,6 @@ import net.sf.ehcache.store.MemoryStoreEvictionPolicy;
 
 import org.glite.authz.common.AuthzServiceConstants;
 import org.glite.authz.common.logging.LoggingConstants;
-import org.glite.authz.common.model.Obligation;
 import org.glite.authz.common.model.Request;
 import org.glite.authz.common.model.Response;
 import org.glite.authz.common.model.Result;
@@ -70,7 +69,10 @@ import org.w3c.dom.Element;
 /** Handles an incoming daemon {@link Request}. */
 @ThreadSafe
 public class PEPDaemonRequestHandler {
-
+    
+    /** Name of the cache used to cache PDP responses. */
+    public static final String RESPONSE_CACHE_NAME = "org.glite.authz.pep.server.responseCache";
+    
     /** Generator for message IDs. */
     private static IdentifierGenerator idGenerator;
 
@@ -116,7 +118,7 @@ public class PEPDaemonRequestHandler {
 
         if (daemonConfig.getMaxCachedResponses() > 0) {
             CacheManager cacheMgr = CacheManager.create();
-            responseCache = new Cache("org.glite.authz.pep.server.responseCache", daemonConfig.getMaxCachedResponses(),
+            responseCache = new Cache(RESPONSE_CACHE_NAME, daemonConfig.getMaxCachedResponses(),
                     MemoryStoreEvictionPolicy.LFU, false, null, false, daemonConfig.getCachedResponseTTL(),
                     daemonConfig.getCachedResponseTTL(), false, Long.MAX_VALUE, null, null);
             cacheMgr.addCache(responseCache);

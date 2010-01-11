@@ -17,6 +17,7 @@
 
 package org.glite.authz.pep.server.config;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -53,6 +54,7 @@ public class PEPDaemonConfiguration extends AbstractServiceConfiguration {
         pdpEndpoints = null;
         maxCachedResponses = 0;
         cachedResponseTTL = 0;
+        pips = new ArrayList<PolicyInformationPoint>();
     }
 
     /**
