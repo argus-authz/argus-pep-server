@@ -54,7 +54,6 @@ public class PEPDaemonConfiguration extends AbstractServiceConfiguration {
         pdpEndpoints = null;
         maxCachedResponses = 0;
         cachedResponseTTL = 0;
-        pips = new ArrayList<PolicyInformationPoint>();
     }
 
     /**

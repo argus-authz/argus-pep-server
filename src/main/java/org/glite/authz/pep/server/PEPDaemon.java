@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.security.Security;
+import java.util.List;
 import java.util.Timer;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -95,7 +96,9 @@ public final class PEPDaemon {
         DefaultBootstrap.bootstrap();
 
         final PEPDaemonConfiguration daemonConfig = parseConfiguration(args[0]);
-        if(!daemonConfig.getPolicyInformationPoints().isEmpty()){
+        
+        List<PolicyInformationPoint> pips = daemonConfig.getPolicyInformationPoints();
+        if(pips != null && !pips.isEmpty()){
             for (PolicyInformationPoint pip : daemonConfig.getPolicyInformationPoints()) {
                 if (pip != null) {
                     LOG.debug("Starting PIP {}", pip.getId());

@@ -129,18 +129,29 @@ public class PEPDaemonIniConfigurationParser extends AbstractIniServiceConfigura
     private PEPDaemonConfiguration parseIni(Reader iniReader) throws ConfigurationException {
         PEPDaemonConfigurationBuilder configBuilder = new PEPDaemonConfigurationBuilder();
 
-        Ini daemonIni = new Ini();
+        Ini iniFile = new Ini();
         try {
-            daemonIni.load(iniReader);
+            iniFile.load(iniReader);
         } catch (Exception e) {
             e.printStackTrace(System.err);
         }
 
         log.info("Processing PEP Daemon {} configuration section", SERVICE_SECTION_HEADER);
-        processServiceSection(daemonIni, configBuilder);
+        processServiceSection(iniFile, configBuilder);
+        
+        Section configSection = iniFile.get(SERVICE_SECTION_HEADER);
+        List<PolicyInformationPoint> pips = IniPIPConfigurationParserHelper.processPolicyInformationPoints(iniFile,
+                configSection, configBuilder);
+        log.info("total policy information points: {}", pips.size());
+        configBuilder.getPolicyInformationPoints().addAll(pips);
+
+        ObligationService service = IniOHConfigurationParserHelper.processObligationHandlers(iniFile, configSection,
+                configBuilder);
+        log.info("total obligation handlers: {}", service.getObligationHandlers().size());
+        configBuilder.setObligationService(service);
 
         log.info("Processing PEP Daemon {} configuration section", PDP_SECTION_HEADER);
-        processPDPConfiguration(daemonIni, configBuilder);
+        processPDPConfiguration(iniFile, configBuilder);
 
         return configBuilder.build();
     }
@@ -176,16 +187,6 @@ public class PEPDaemonIniConfigurationParser extends AbstractIniServiceConfigura
         int cachedResponseTTL = getCacheResponseTTL(configSection) * 1000;
         log.info("cached response TTL: {}ms", cachedResponseTTL);
         configBuilder.setCachedResponseTTL(cachedResponseTTL);
-
-        List<PolicyInformationPoint> pips = IniPIPConfigurationParserHelper.processPolicyInformationPoints(iniFile,
-                configSection, configBuilder);
-        log.info("total policy information points: {}", pips.size());
-        configBuilder.getPolicyInformationPoints().addAll(pips);
-
-        ObligationService service = IniOHConfigurationParserHelper.processObligationHandlers(iniFile, configSection,
-                configBuilder);
-        log.info("total obligation handlers: {}", service.getObligationHandlers().size());
-        configBuilder.setObligationService(service);
         
         try {
             X509TrustManager trustManager = new VOMSTrustManager(configBuilder.getTrustMaterialStore());
