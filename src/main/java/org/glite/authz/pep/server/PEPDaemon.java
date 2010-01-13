@@ -96,9 +96,9 @@ public final class PEPDaemon {
         DefaultBootstrap.bootstrap();
 
         final PEPDaemonConfiguration daemonConfig = parseConfiguration(args[0]);
-        
+
         List<PolicyInformationPoint> pips = daemonConfig.getPolicyInformationPoints();
-        if(pips != null && !pips.isEmpty()){
+        if (pips != null && !pips.isEmpty()) {
             for (PolicyInformationPoint pip : daemonConfig.getPolicyInformationPoints()) {
                 if (pip != null) {
                     LOG.debug("Starting PIP {}", pip.getId());
@@ -177,13 +177,18 @@ public final class PEPDaemon {
      */
     private static JettyAdminService createAdminService(PEPDaemonConfiguration daemonConfig, Timer backgroundTimer,
             Server daemonService) {
-        
-        int adminPort = daemonConfig.getAdminPort();
-        if(adminPort < 1){
-            adminPort = 8155;
+
+        String adminHost = daemonConfig.getAdminHost();
+        if(adminHost == null){
+            adminHost = "127.0.0.1";
         }
         
-        JettyAdminService adminService = new JettyAdminService(adminPort);
+        int adminPort = daemonConfig.getAdminPort();
+        if (adminPort < 1) {
+            adminPort = 8155;
+        }
+
+        JettyAdminService adminService = new JettyAdminService(adminHost, adminPort, daemonConfig.getAdminPassword());
 
         adminService.registerAdminCommand(new StatusCommand(daemonConfig.getServiceMetrics()));
         adminService.registerAdminCommand(new ClearResponseCacheCommand());
@@ -266,7 +271,7 @@ public final class PEPDaemon {
             LOG.error("Unable to load configuration file", e);
             errorAndExit("Error parsing configuration file " + configFilePath, e);
         }
-        
+
         return null;
     }
 

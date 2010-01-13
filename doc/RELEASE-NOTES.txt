@@ -8,3 +8,5 @@ Changes in Release 1.0.4
 - Support X.509 certificate client authentication
 - Move Status page to admin service
 - Add response cache clearing admin service
+- Add ability for admin service to be on a separate host
+- Add ability for admin service to be password protected

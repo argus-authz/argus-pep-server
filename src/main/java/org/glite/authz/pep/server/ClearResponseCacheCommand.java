@@ -56,7 +56,6 @@ public class ClearResponseCacheCommand extends AbstractAdminCommand {
             }
         }
 
-        resp.setContentType("text/plain");
-        resp.getWriter().write("ok");
+        resp.setStatus(HttpServletResponse.SC_OK);
     }
 }

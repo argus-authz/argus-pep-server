@@ -8,46 +8,40 @@ CONF="$HOME/conf/pepd.ini"
 # Source our environment setup script
 . $HOME/bin/env.sh
 
-function status {
-    SHOST=`sed 's/ //g' $CONF | grep "^hostname" | awk 'BEGIN {FS="="}{print $2}'`
-    SPORT=`sed 's/ //g' $CONF | grep "^port" | awk 'BEGIN {FS="="}{print $2}'`
-    SPORTSSL=`sed 's/ //g' $CONF | grep "^enableSSL" | awk 'BEGIN {FS="="}{print $2}'`
-    if [ -z "$SPORT" ]; then
-      SPORT=8154
+# Add the PDP home directory property
+JVMOPTS="-Dorg.glite.authz.pep.home=$HOME $JVMOPTS"
+
+function executeAdminCommand {
+    HOST=`sed 's/ //g' $CONF | grep "^adminHost" | awk 'BEGIN {FS="="}{print $2}'`
+    if [ -z $HOST ] ; then
+       HOST="127.0.0.1"
+    fi
+
+    PORT=`sed 's/ //g' $CONF | grep "^adminPort" | awk 'BEGIN {FS="="}{print $2}'`
+    if [ -z $PORT ] ; then
+       PORT="8155"
     fi
     
-    if [ -z "$SPORTSSL" ]; then
-      SPORTSSL="false"
-    fi
+    PASS=`sed 's/ //g' $CONF | grep "^adminPassword" | awk 'BEGIN {FS="="}{print $2}'`
     
-    $JAVACMD $JVMOPTS 'org.glite.authz.pep.server.PEPDaemonAdminCLI' "status" $SHOST $SPORT $SPORTSSL
+    
+    $JAVACMD $JVMOPTS 'org.glite.authz.common.http.JettyAdminServiceCLI' $HOST $PORT $1 $PASS
 }
 
-function start {        
-    # Add the PDP home directory property
-    JVMOPTS="-Dorg.glite.authz.pep.home=$HOME $JVMOPTS"
-    
+function start {
     # Run the PDP
     $JAVACMD $JVMOPTS 'org.glite.authz.pep.server.PEPDaemon' $CONF &
 }
 
-function stop {
-    SHOST="127.0.0.1"
-    SPORT=`sed 's/ //g' $CONF | grep "^shutdownPort" | awk 'BEGIN {FS="="}{print $2}'`
-    if [ -z "$SPORT" ]; then
-      SPORT=8155
-    fi
-    
-    $JAVACMD $JVMOPTS 'org.glite.authz.pep.server.PEPDaemonAdminCLI' "shutdown" $SHOST $SPORT
-}
 
 function print_help {
    echo "PEP Daemon control script"
    echo ""
    echo "Usage:"
-   echo "  $0 status  - print PEP daemon status"
    echo "  $0 start   - to start the service"
    echo "  $0 stop    - to stop the service" 
+   echo "  $0 status  - print PEP daemon status"
+   echo "  $0 clearResponseCache - clears the PEP daemon PDP response cache"
    echo ""
 }
 
@@ -57,8 +51,9 @@ if [ $# -lt 1 ] ; then
 fi
 
 case "$1" in
-  'status') status;;
   'start') start;;
-  'stop') stop;;
+  'stop') executeAdminCommand 'shutdown' ;;
+  'status') executeAdminCommand 'status' ;;
+  'clearResponseCache') executeAdminCommand 'clearResponseCache' ;;
   *) print_help ;;
 esac
