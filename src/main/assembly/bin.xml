@@ -40,19 +40,12 @@
         <!-- Copy up our scripts to the bin directory -->
         <fileSet>
             <directory>src/script/bash</directory>
-            <outputDirectory>/bin</outputDirectory>
+            <outputDirectory>/sbin</outputDirectory>
             <includes>
                 <include>*.sh</include>
             </includes>
             <fileMode>0755</fileMode>
             <directoryMode>0755</directoryMode>
-        </fileSet>
-        <fileSet>
-            <directory>src/script/bat</directory>
-            <outputDirectory>/bin</outputDirectory>
-            <includes>
-                <include>*.bat</include>
-            </includes>
         </fileSet>
         
         <!-- Documentation -->
