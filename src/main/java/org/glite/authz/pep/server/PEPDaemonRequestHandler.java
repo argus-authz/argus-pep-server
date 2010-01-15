@@ -69,10 +69,10 @@ import org.w3c.dom.Element;
 /** Handles an incoming daemon {@link Request}. */
 @ThreadSafe
 public class PEPDaemonRequestHandler {
-    
+
     /** Name of the cache used to cache PDP responses. */
     public static final String RESPONSE_CACHE_NAME = "org.glite.authz.pep.server.responseCache";
-    
+
     /** Generator for message IDs. */
     private static IdentifierGenerator idGenerator;
 
@@ -87,7 +87,7 @@ public class PEPDaemonRequestHandler {
 
     /** Builder of Issuer XMLObjects. */
     private static SAMLObjectBuilder<Issuer> issuerBuilder;
-    
+
     /** Class logger. */
     private final Logger log = LoggerFactory.getLogger(PEPDaemonRequestHandler.class);
 
@@ -115,7 +115,6 @@ public class PEPDaemonRequestHandler {
         }
         daemonConfig = config;
 
-
         if (daemonConfig.getMaxCachedResponses() > 0) {
             CacheManager cacheMgr = CacheManager.create();
             responseCache = new Cache(RESPONSE_CACHE_NAME, daemonConfig.getMaxCachedResponses(),
@@ -125,7 +124,7 @@ public class PEPDaemonRequestHandler {
         } else {
             responseCache = null;
         }
-        
+
         try {
             idGenerator = new SecureRandomIdentifierGenerator();
         } catch (NoSuchAlgorithmException e) {
@@ -190,40 +189,33 @@ public class PEPDaemonRequestHandler {
 
             // no cached response so make request to PDP and cache the result
             response = sendRequestToPDP(messageContext, request);
-            if (responseCache != null && response != null) {
-                log.debug("Caching response {} for request {}", messageContext.getInboundMessageId(), messageContext
-                        .getOutboundMessageId());
-                responseCache.put(new net.sf.ehcache.Element(request, response));
-            }
-            
-            // if the response is still null, something went wrong
             if (response == null) {
                 log.debug("No response received from registered PDPs");
                 daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
                 response = buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, null);
+                return response;
+            }
+
+            Result result = response.getResults().get(0);
+
+            // cache Deny/Permit decisions
+            if (responseCache != null
+                    && (result.getDecision() == Result.DECISION_DENY || result.getDecision() == Result.DECISION_PERMIT)) {
+                log.debug("Caching response {} for request {}", messageContext.getInboundMessageId(), messageContext
+                        .getOutboundMessageId());
+                responseCache.put(new net.sf.ehcache.Element(request, response));
             }
 
             // run obligations handlers over the response
             if (daemonConfig.getObligationService() != null) {
                 log.debug("Processing obligations");
-                Result result = response.getResults().get(0);
-// TODO remove this once the XACML engine properly handles obligations
-//                if(result.getDecision() == Result.DECISION_PERMIT){
-//                    Obligation uidMappingObligation = new Obligation();
-//                    uidMappingObligation.setFulfillOn(Result.DECISION_PERMIT);
-//                    uidMappingObligation.setId(DFPMObligationHandler.MAPPING_OB_ID);
-//                    result.getObligations().add(uidMappingObligation);
-//                }
-                
                 daemonConfig.getObligationService().processObligations(request, result);
-            }
-
-            protocolLog.info("Complete hessian response\n{}", response.toString());
-        } catch (PIPProcessingException e){
+            }            
+        } catch (PIPProcessingException e) {
             daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
             log.error("Error preocessing policy information points", e);
             response = buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, e.getMessage());
-        } catch (ObligationProcessingException e){
+        } catch (ObligationProcessingException e) {
             daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
             log.error("Error preocessing obligation handlers", e);
             response = buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, e.getMessage());
@@ -231,6 +223,8 @@ public class PEPDaemonRequestHandler {
             daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
             log.error("Error preocessing authorization request", e);
             response = buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, null);
+        }finally{
+            protocolLog.info("Complete hessian response\n{}", response.toString());
         }
 
         writeAuditLogEntry(messageContext);
@@ -283,7 +277,7 @@ public class PEPDaemonRequestHandler {
                     messageContext.setAuthorizationDecision(authzResponse.getResults().get(0).getDecisionString());
                     break;
                 }
-            } catch (SOAPFaultException e){
+            } catch (SOAPFaultException e) {
                 log.warn("Recieved SOAP Fault " + e.getFault().getCode() + " from PDP endpoint: " + pdpEndpoint, e);
             } catch (SOAPException e) {
                 log.error("Error sending request to PDP endpoint " + pdpEndpoint, e);
