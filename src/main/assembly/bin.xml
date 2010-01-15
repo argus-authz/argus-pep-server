@@ -31,10 +31,18 @@
         <fileSet>
             <directory>src/home-tmpl/conf</directory>
             <outputDirectory>/conf</outputDirectory>
+            <fileMode>0640</fileMode>
+            <directoryMode>0750</directoryMode>
+        </fileSet>
+        <fileSet>
+            <directory>src/home-tmpl/logs</directory>
+            <outputDirectory>/logs</outputDirectory>
+            <directoryMode>0750</directoryMode>
         </fileSet>
         <fileSet>
             <directory>src/home-tmpl/credentials</directory>
             <outputDirectory>/credentials</outputDirectory>
+            <directoryMode>0750</directoryMode>
         </fileSet>
     
         <!-- Copy up our scripts to the bin directory -->
