@@ -6,7 +6,7 @@ HOME="$(cd "${0%/*}/.." && pwd)"
 CONF="$HOME/conf/pepd.ini"
 
 # Source our environment setup script
-. $HOME/bin/env.sh
+. $HOME/sbin/env.sh
 
 # Add the PDP home directory property
 JVMOPTS="-Dorg.glite.authz.pep.home=$HOME $JVMOPTS"
