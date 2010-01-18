@@ -52,8 +52,8 @@
             <includes>
                 <include>*.sh</include>
             </includes>
-            <fileMode>0755</fileMode>
-            <directoryMode>0755</directoryMode>
+            <fileMode>0750</fileMode>
+            <directoryMode>0750</directoryMode>
         </fileSet>
         
         <!-- Documentation -->
