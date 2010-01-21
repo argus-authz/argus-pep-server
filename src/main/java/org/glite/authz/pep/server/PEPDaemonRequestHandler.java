@@ -213,17 +213,17 @@ public class PEPDaemonRequestHandler {
             }            
         } catch (PIPProcessingException e) {
             daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
-            log.error("Error processing policy information points");
+            log.error("Error processing policy information points: " + e.getMessage());
             log.debug("", e);
             response = buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, e.getMessage());
         } catch (ObligationProcessingException e) {
             daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
-            log.error("Error processing obligation handlers");
+            log.error("Error processing obligation handlers: " + e.getMessage());
             log.debug("",e);
             response = buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, e.getMessage());
         } catch (Exception e) {
             daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
-            log.error("Error processing authorization request");
+            log.error("Error processing authorization request: " + e.getMessage());
             log.debug("", e);
             response = buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, null);
         }finally{
