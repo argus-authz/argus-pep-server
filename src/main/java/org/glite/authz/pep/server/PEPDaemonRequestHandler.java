@@ -213,15 +213,18 @@ public class PEPDaemonRequestHandler {
             }            
         } catch (PIPProcessingException e) {
             daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
-            log.error("Error preocessing policy information points", e);
+            log.error("Error processing policy information points");
+            log.debug("", e);
             response = buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, e.getMessage());
         } catch (ObligationProcessingException e) {
             daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
-            log.error("Error preocessing obligation handlers", e);
+            log.error("Error processing obligation handlers");
+            log.debug("",e);
             response = buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, e.getMessage());
         } catch (Exception e) {
             daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
-            log.error("Error preocessing authorization request", e);
+            log.error("Error processing authorization request");
+            log.debug("", e);
             response = buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, null);
         }finally{
             protocolLog.info("Complete hessian response\n{}", response.toString());
