@@ -1,6 +1,6 @@
 #! /bin/bash
-##
-# Copyright (c) Members of the EGEE Collaboration. 2006-2009.
+#
+# Copyright (c) Members of the EGEE Collaboration. 2006-2010.
 # See http://www.eu-egee.org/partners/ for details on the copyright holders.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,19 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-##
-# This script sets up the environment used to execute the service.
 #
-# Optional, the environment variable JVMOPTS may be used to pass
-# arguments to the JVM used to execute the service.
-#
-# Classpath used to execute the service.  This is independent of the 
-# system classpath so that it neither influences, nor is influenced
-# by, system-wide settings.
-##
-# $Id$
-##
-declare LOCALCLASSPATH
 
 JAVACMD=`which java`
 if [ ! -x "$JAVACMD" ] ; then

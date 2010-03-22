@@ -150,6 +150,40 @@
 
     <build>
         <plugins>
+            <!-- license formatter -->
+            <plugin>
+                <groupId>com.mycila.maven-license-plugin</groupId>
+                <artifactId>maven-license-plugin</artifactId>
+                <configuration>
+                    <header>project/LICENSE.template</header>
+                    <mapping>
+                        <!-- Java source files -->
+                        <java>SLASHSTAR_STYLE</java>
+                        <!-- C source files -->
+                        <c>SLASHSTAR_STYLE</c>
+                        <h>SLASHSTAR_STYLE</h>
+                        <!-- automake and autoconf files -->
+                        <ac>SCRIPT_STYLE</ac>
+                        <am>SCRIPT_STYLE</am>
+                        <!-- ini config files -->
+                        <ini>SCRIPT_STYLE</ini>
+                    </mapping>
+                    <includes>
+                        <include>src/**</include>
+                    </includes>
+                    <excludes>
+                        <exclude>**/resources/**</exclude>
+                        <exclude>**/credentials/**</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
