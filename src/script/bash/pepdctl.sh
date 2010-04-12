@@ -38,7 +38,6 @@ function executeAdminCommand {
     
     PASS=`sed 's/ //g' $CONF | grep "^adminPassword" | awk 'BEGIN {FS="="}{print $2}'`
     
-    
     $JAVACMD $JVMOPTS 'org.glite.authz.common.http.JettyAdminServiceCLI' $HOST $PORT $1 $PASS
 }
 
@@ -50,24 +49,30 @@ function start {
 
 function print_help {
    echo "PEP Daemon control script"
-   echo ""
    echo "Usage:"
    echo "  $0 start   - to start the service"
    echo "  $0 stop    - to stop the service" 
    echo "  $0 status  - print PEP daemon status"
    echo "  $0 clearResponseCache - clears the PEP daemon PDP response cache"
-   echo ""
 }
 
-if [ $# -lt 1 ] ; then
-   print_help
-   exit 0
-fi
-
 case "$1" in
-  'start') start;;
-  'stop') executeAdminCommand 'shutdown' ;;
-  'status') executeAdminCommand 'status' ;;
-  'clearResponseCache') executeAdminCommand 'clearResponseCache' ;;
-  *) print_help ;;
+    start)
+        start
+        ;;
+    stop)
+        executeAdminCommand 'shutdown' 
+        ;;
+    status) 
+        executeAdminCommand 'status'
+        ;;
+    clearResponseCache) 
+        executeAdminCommand 'clearResponseCache'
+        ;;
+    *) 
+        print_help 
+        exit 1
+        ;;
 esac
+exit $? 
+
