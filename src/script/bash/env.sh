@@ -23,7 +23,7 @@ if [ ! -x "$JAVACMD" ] ; then
 fi
 
 # add in the dependency .jar files from the lib directory
-LIBDIR="$HOME/lib"
+LIBDIR="$PEPD_HOME/lib"
 LIBS="$LIBDIR/*.jar"
 for i in $LIBS
 do
@@ -34,4 +34,4 @@ do
     fi
 done
 #JVMOPTS="-Djava.net.preferIPv4Stack=true $JVMOPTS"
-JVMOPTS="-Djava.endorsed.dirs=$HOME/lib/endorsed -classpath $LOCALCLASSPATH $JVMOPTS"
+JVMOPTS="-Djava.endorsed.dirs=$PEPD_HOME/lib/endorsed -classpath $LOCALCLASSPATH $JVMOPTS"

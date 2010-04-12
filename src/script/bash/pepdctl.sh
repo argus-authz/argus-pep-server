@@ -16,14 +16,14 @@
 # limitations under the License.
 #
 
-HOME="$(cd "${0%/*}/.." && pwd)"
-CONF="$HOME/conf/pepd.ini"
+PEPD_HOME="$(cd "${0%/*}/.." && pwd)"
+CONF="$PEPD_HOME/conf/pepd.ini"
 
 # Source our environment setup script
-. $HOME/sbin/env.sh
+. $PEPD_HOME/sbin/env.sh
 
 # Add the PDP home directory property
-JVMOPTS="-Dorg.glite.authz.pep.home=$HOME $JVMOPTS"
+JVMOPTS="-Dorg.glite.authz.pep.home=$PEPD_HOME $JVMOPTS"
 
 function executeAdminCommand {
     HOST=`sed 's/ //g' $CONF | grep "^adminHost" | awk 'BEGIN {FS="="}{print $2}'`
