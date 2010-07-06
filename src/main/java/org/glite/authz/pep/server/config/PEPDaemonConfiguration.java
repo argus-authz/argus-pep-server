@@ -155,6 +155,7 @@ public class PEPDaemonConfiguration extends AbstractServiceConfiguration {
      * @param policyInformationPoints policy information point
      */
     protected final synchronized void setPolicyInformationPoints(List<PolicyInformationPoint> policyInformationPoints) {
+        // list can be empty!
         if (policyInformationPoints == null) {
             return;
         }
