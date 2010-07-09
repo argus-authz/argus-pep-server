@@ -34,7 +34,7 @@ import org.glite.authz.common.model.Response;
 import org.glite.authz.common.model.Result;
 import org.glite.authz.common.model.Status;
 import org.glite.authz.common.model.StatusCode;
-import org.glite.authz.common.model.XACMLConverter;
+import org.glite.authz.common.model.util.XACMLConverter;
 import org.glite.authz.pep.obligation.ObligationProcessingException;
 import org.glite.authz.pep.pip.PIPProcessingException;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
