@@ -24,9 +24,10 @@ import javax.security.auth.x500.X500Principal;
 import org.glite.authz.common.config.AbstractConfigurationBuilder;
 import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.common.config.IniConfigUtil;
-import org.glite.authz.pep.obligation.AbstractObligationHandler;
 import org.glite.authz.pep.obligation.IniOHConfigurationParser;
+import org.glite.authz.pep.obligation.ObligationHandler;
 import org.glite.authz.pep.obligation.dfpmap.UpdatingDFPM.DFPMFactory;
+
 import org.ini4j.Ini.Section;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,7 +81,7 @@ public class DFPMObligationHandlerConfigurationParser implements IniOHConfigurat
     private final Logger log = LoggerFactory.getLogger(DFPMObligationHandlerConfigurationParser.class);
 
     /** {@inheritDoc} */
-    public AbstractObligationHandler parse(Section iniConfig, AbstractConfigurationBuilder<?> configBuilder)
+    public ObligationHandler parse(Section iniConfig, AbstractConfigurationBuilder<?> configBuilder)
             throws ConfigurationException {
 
         int precendence = IniConfigUtil.getInt(iniConfig, PRECEDENCE_PROP, DEFAULT_PRECENDENCE, 0, Integer.MAX_VALUE);

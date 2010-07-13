@@ -94,8 +94,8 @@ public abstract class AbstractObligationHandler implements ObligationHandler {
             return true;
         }
 
-        if (obj instanceof AbstractObligationHandler) {
-            return Strings.safeEquals(getObligationId(), ((AbstractObligationHandler) obj).getObligationId());
+        if (obj instanceof ObligationHandler) {
+            return Strings.safeEquals(getObligationId(), ((ObligationHandler) obj).getObligationId());
         }
 
         return false;
