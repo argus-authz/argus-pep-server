@@ -22,7 +22,9 @@
     <id>bin</id>
     <formats>
         <format>tar.gz</format>
+<!--
         <format>zip</format>
+-->
     </formats>
     
     <dependencySets>
@@ -58,12 +60,13 @@
             <outputDirectory>/logs</outputDirectory>
             <directoryMode>0750</directoryMode>
         </fileSet>
+<!--
         <fileSet>
             <directory>src/home-tmpl/credentials</directory>
             <outputDirectory>/credentials</outputDirectory>
             <directoryMode>0750</directoryMode>
         </fileSet>
-    
+-->   
         <!-- Copy up our scripts to the bin directory -->
         <fileSet>
             <directory>src/script/bash</directory>
