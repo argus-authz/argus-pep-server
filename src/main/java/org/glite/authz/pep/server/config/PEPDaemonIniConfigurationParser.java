@@ -127,14 +127,18 @@ public class PEPDaemonIniConfigurationParser extends AbstractIniServiceConfigura
      * @throws ConfigurationException thrown if there is a problem configuring the system
      */
     private PEPDaemonConfiguration parseIni(Reader iniReader) throws ConfigurationException {
-        PEPDaemonConfigurationBuilder configBuilder = new PEPDaemonConfigurationBuilder();
 
         Ini iniFile = new Ini();
         try {
+            log.info("Loading INI configuration file");
             iniFile.load(iniReader);
         } catch (Exception e) {
-            e.printStackTrace(System.err);
+            log.error("Unable to load and parse the INI configuration file", e);
+            throw new ConfigurationException("Unable to parse INI configuration file", e);
         }
+        
+        PEPDaemonConfigurationBuilder configBuilder = new PEPDaemonConfigurationBuilder();
+
         log.info("Processing PEP Daemon {} configuration section", SECURITY_SECTION_HEADER);
         processSecuritySection(iniFile, configBuilder);
         
