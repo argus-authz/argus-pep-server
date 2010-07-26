@@ -135,7 +135,9 @@ public class PEPDaemonIniConfigurationParser extends AbstractIniServiceConfigura
         } catch (Exception e) {
             e.printStackTrace(System.err);
         }
-
+        log.info("Processing PEP Daemon {} configuration section", SECURITY_SECTION_HEADER);
+        processSecuritySection(iniFile, configBuilder);
+        
         log.info("Processing PEP Daemon {} configuration section", SERVICE_SECTION_HEADER);
         processServiceSection(iniFile, configBuilder);
         
@@ -168,7 +170,7 @@ public class PEPDaemonIniConfigurationParser extends AbstractIniServiceConfigura
             throws ConfigurationException {
         Section configSection = iniFile.get(PDP_SECTION_HEADER);
         if (configSection == null) {
-            String errorMsg = "INI configuration does not contain the rquired '" + PDP_SECTION_HEADER + "' INI section";
+            String errorMsg = "INI configuration does not contain the required '" + PDP_SECTION_HEADER + "' INI section";
             log.error(errorMsg);
             throw new ConfigurationException(errorMsg);
         }
