@@ -18,7 +18,10 @@
 package org.glite.authz.pep.pip.provider;
 
 import org.glite.authz.common.config.ConfigurationException;
+import org.glite.authz.pep.pip.PolicyInformationPoint;
 import org.glite.voms.PKIStore;
+
+import org.ini4j.Ini.Section;
 
 /**
  * A policy information point that extracts information from a X.509, version 3, certificate. The certificate may
@@ -36,12 +39,13 @@ import org.glite.voms.PKIStore;
 public class WorkerNodeProfileV1IniConfigurationParser extends AbstractX509PIPIniConfigurationParser {
 
     /** {@inheritDoc} */
-    protected AbstractX509PIP buildInformationPoint(String id, boolean requireProxy, PKIStore trustMaterial,
-            PKIStore acTrustMaterial, boolean performPKIXValidation) throws ConfigurationException {
-        WorkerNodeProfileV1 pip= new WorkerNodeProfileV1(id, requireProxy, trustMaterial, acTrustMaterial);
-        // bug fix: perform PKIX validation not passed to PIP
-        pip.performPKIXValidation(performPKIXValidation);
+    protected PolicyInformationPoint buildInformationPoint(Section iniConfig, boolean requireProxy,
+            PKIStore trustMaterial, PKIStore acTrustMaterial, boolean performPKIXValidation)
+            throws ConfigurationException {
+        String pipId = iniConfig.getName();
+        WorkerNodeProfileV1 pip = new WorkerNodeProfileV1(pipId, requireProxy, trustMaterial, acTrustMaterial,
+                performPKIXValidation);
         return pip;
-        
+
     }
 }
