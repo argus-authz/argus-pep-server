@@ -21,8 +21,14 @@ import java.util.ArrayList;
 
 import javax.security.auth.x500.X500Principal;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /** A matching strategy for {@link X500Principal}. */
 public class X509MatchStrategy implements DFPMMatchStrategy<X500Principal> {
+
+    /** Class logger. */
+    private final Logger log = LoggerFactory.getLogger(X509MatchStrategy.class);
 
     /** {@inheritDoc} */
     public boolean isMatch(String dfpmKey, X500Principal candidate) {
@@ -30,7 +36,11 @@ public class X509MatchStrategy implements DFPMMatchStrategy<X500Principal> {
         if (target == null) {
             return false;
         }
-        return target.equals(candidate);
+        boolean matches = target.equals(candidate);
+        if (log.isTraceEnabled()) {
+            log.trace("'{}' matches '{}' ? {}", new Object[] { candidate, target, matches });
+        }
+        return matches;
     }
 
     /**
@@ -79,6 +89,7 @@ public class X509MatchStrategy implements DFPMMatchStrategy<X500Principal> {
         try {
             return new X500Principal(rfc2253DN);
         } catch (Exception e) {
+            log.debug("Failed to convert '" + key + "' to X500Principal(" + rfc2253DN + ")", e);
             return null;
         }
     }
