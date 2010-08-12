@@ -17,76 +17,33 @@
 
 package org.glite.authz.pep.obligation.dfpmap;
 
-import java.util.ArrayList;
+import java.text.ParseException;
+
+import org.glite.authz.common.fqan.FQAN;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** A matching strategy used to match {@link FQAN}s against other FQANs, possibly containing the wildcard '*'. */
 public class FQANMatchStrategy implements DFPMMatchStrategy<FQAN> {
 
+    /** Class logger. */
+    private final Logger log = LoggerFactory.getLogger(FQANMatchStrategy.class);
+
     /** {@inheritDoc} */
     public boolean isMatch(String dfpmKey, FQAN candidate) {
-        FQAN target= null;
+        // dfmpKey can be a FQAN regexp pattern
+        boolean regexpMatches = false;
         try {
-            target = FQAN.parseFQAN(dfpmKey);
-        } catch (IllegalArgumentException e) {
-            return false;
+            regexpMatches = candidate.matches(dfpmKey);
+        } catch (ParseException e) {
+            log.debug(e.getMessage(), e);
         }
-
-        if (target.getAttributeGroupId().endsWith("*")) {
-            String targetGroupIDRegex = target.getAttributeGroupId().replace("*", ".+");
-            if (!candidate.getAttributeGroupId().matches(targetGroupIDRegex)) {
-                return false;
-            }
-        } else {
-            if (!candidate.getAttributeGroupId().equals(target.getAttributeGroupId())) {
-                return false;
-            }
+        if (log.isTraceEnabled()) {
+            log.trace("'{}' matches '{}' ? {}", new Object[] { candidate, dfpmKey, regexpMatches });
         }
+        return regexpMatches;
 
-        ArrayList<String> attributeIds = new ArrayList<String>();
-        attributeIds.addAll(target.getAttributeIds());
-        attributeIds.addAll(candidate.getAttributeIds());
-
-        for (String id : attributeIds) {
-            if (!attributeMatches(target.getAttributeById(id), candidate.getAttributeById(id))) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
-    /**
-     * Checks whether an attribute matches another attribute.
-     * 
-     * @param target the attribute the candidate is checked against
-     * @param candidate the attribute checked against the target
-     * 
-     * @return true if the candidate matches the target, false if not
-     */
-    private boolean attributeMatches(FQAN.Attribute target, FQAN.Attribute candidate) {
-        if (target == null && candidate == null) {
-            return true;
-        }
-
-        if (candidate == null) {
-            if (target.getValue().equals(FQAN.Attribute.NULL_VALUE)) {
-                return true;
-            }
-            return false;
-        }
-
-        if (target == null) {
-            if (candidate.getValue().equals(FQAN.Attribute.NULL_VALUE)) {
-                return true;
-            }
-            return false;
-        }
-
-        if (!target.getId().equals(candidate.getId())) {
-            return false;
-        }
-
-        String valueMatch = target.getValue().replace("*", ".+");
-        return candidate.getValue().matches(valueMatch);
-    }
 }
