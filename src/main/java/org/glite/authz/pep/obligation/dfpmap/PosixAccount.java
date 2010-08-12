@@ -46,8 +46,8 @@ public class PosixAccount implements Serializable {
      * Constructor.
      * 
      * @param login user name of the account
-     * @param newPrimaryGroup name of the user's primary group
-     * @param newSecondaryGroups names of the user's secondary groups
+     * @param newPrimaryGroup name of the user's primary group, may be null
+     * @param newSecondaryGroups names of the user's secondary groups, may be null
      */
     public PosixAccount(String login, String newPrimaryGroup, List<String> newSecondaryGroups) {
         this.loginName = Strings.safeTrimOrNullString(login);
@@ -78,7 +78,7 @@ public class PosixAccount implements Serializable {
     /**
      * Gets the primary group for this account.
      * 
-     * @return primary group for this account
+     * @return primary group for this account or <code>null</code> if no primary group is available.
      */
     public String getPrimaryGroup() {
         return primaryGroup;
@@ -87,7 +87,7 @@ public class PosixAccount implements Serializable {
     /**
      * Gets the secondary groups for this account.
      * 
-     * @return secondary groups for this account, never null
+     * @return list of secondary groups for this account, empty if no secondary group exist
      */
     public List<String> getSecondaryGroups() {
         return secondaryGroups;
