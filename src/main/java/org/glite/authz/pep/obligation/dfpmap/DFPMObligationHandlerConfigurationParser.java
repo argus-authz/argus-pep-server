@@ -24,6 +24,7 @@ import javax.security.auth.x500.X500Principal;
 import org.glite.authz.common.config.AbstractConfigurationBuilder;
 import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.common.config.IniConfigUtil;
+import org.glite.authz.common.fqan.FQAN;
 import org.glite.authz.pep.obligation.IniOHConfigurationParser;
 import org.glite.authz.pep.obligation.ObligationHandler;
 import org.glite.authz.pep.obligation.dfpmap.UpdatingDFPM.DFPMFactory;
@@ -33,7 +34,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.MessageFormatter;
 
-/** INI configuration parser that constructs {@link DFPMObligationHandler}s. */
+/** 
+ * INI configuration parser that constructs {@link DFPMObligationHandler}s. 
+ */
 public class DFPMObligationHandlerConfigurationParser implements IniOHConfigurationParser {
 
     /**
@@ -47,6 +50,18 @@ public class DFPMObligationHandlerConfigurationParser implements IniOHConfigurat
      * preferred over the one from the primary FQAN.
      */
     public static final String PREFER_DN_FOR_LOGIN_NAME_PROP = "preferDNForLoginName";
+
+    /**
+     * The name of the {@value} property that indicates the primary group name associated with the subject's DN should
+     * be preferred over the one from the primary FQAN.
+     */
+    public static final String PREFER_DN_FOR_PRIMARY_GROUP_NAME_PROP = "preferDNForPrimaryGroupName";
+
+    /**
+     * The name of the {@value} property that indicates that the failure to find a primary group mapping in the group
+     * map file cause the obligation handler to fail.
+     */
+    public static final String NO_PRIMARY_GROUP_NAME_IS_ERROR_PROP = "noPrimaryGroupNameIsError";
 
     /**
      * The name of the {@value} property which gives the absolute path to the mapping file that maps subjects to groups.
@@ -66,7 +81,13 @@ public class DFPMObligationHandlerConfigurationParser implements IniOHConfigurat
     public static final String ACCOUNT_MAP_LIFETIME = "mappingLifetime";
 
     /** The default value of the {@value #PREFER_DN_FOR_LOGIN_NAME_PROP} property: {@value} . */
-    public static final boolean PREFER_DN_FOR_LOGIN_NAME_DEFAULT = false;
+    public static final boolean PREFER_DN_FOR_LOGIN_NAME_DEFAULT = true;
+
+    /** The default value of the {@value #PREFER_DN_FOR_PRIMARY_GROUP_NAME_PROP} property: {@value} . */
+    public static final boolean PREFER_DN_FOR_PRIMARY_GOURP_NAME_DEFAULT = true;
+
+    /** The default value of the {@value #NO_PRIMARY_GROUP_NAME_IS_ERROR_PROP} property: {@value} . */
+    public static final boolean NO_PRIMARY_GROUP_NAME_IS_ERROR_DEFAULT = false;
 
     /** The default value of the {@value IniOHConfigurationParser#PRECEDENCE_PROP} property: {@value} . */
     public static final int DEFAULT_PRECENDENCE = 0;
@@ -97,6 +118,10 @@ public class DFPMObligationHandlerConfigurationParser implements IniOHConfigurat
         String groupMapFile = IniConfigUtil.getString(iniConfig, GROUP_MAP_FILE_PROP);
         log.debug("group name mapping file: {}", groupMapFile);
 
+        boolean preferDNForPrimaryGroupName = IniConfigUtil.getBoolean(iniConfig,
+                PREFER_DN_FOR_PRIMARY_GROUP_NAME_PROP, PREFER_DN_FOR_PRIMARY_GOURP_NAME_DEFAULT);
+        log.debug("prefer DN primary group mappings: {}", preferDNForPrimaryGroupName);
+
         int mapRefreshPeriod = IniConfigUtil.getInt(iniConfig, MAP_REFRESH_PERIOD_PROP, DEFAULT_MAP_REFRESH_PERIOD, 1,
                 Integer.MAX_VALUE);
         log.debug("mapping file refresh period: {} mins", mapRefreshPeriod);
@@ -104,8 +129,12 @@ public class DFPMObligationHandlerConfigurationParser implements IniOHConfigurat
         String gridMapDir = IniConfigUtil.getString(iniConfig, GRID_MAP_DIR_PROP);
         log.debug("grid mapping directory: {}", gridMapDir);
 
+        boolean noPrimaryGroupNameIsError = IniConfigUtil.getBoolean(iniConfig, NO_PRIMARY_GROUP_NAME_IS_ERROR_PROP,
+                NO_PRIMARY_GROUP_NAME_IS_ERROR_DEFAULT);
+        log.debug("no primary group name mapping is error: {}", noPrimaryGroupNameIsError);
+
         AccountMapper accountMapper = buildAccountMapper(accountMapFile, preferDNForLoginName, groupMapFile,
-                mapRefreshPeriod * 60 * 1000, gridMapDir);
+                preferDNForPrimaryGroupName, mapRefreshPeriod * 60 * 1000, gridMapDir, noPrimaryGroupNameIsError);
         return new DFPMObligationHandler(accountMapper);
     }
 
@@ -116,27 +145,34 @@ public class DFPMObligationHandlerConfigurationParser implements IniOHConfigurat
      * @param preferDNMappingForAccountIndicator whether account indicators derived from DN mappings should be preferred
      *            over those derived from FQAN mappings
      * @param groupMapFile file containing mappings to groups
+     * @param preferDNMappingForPrimaryGroupName whether primary group derived from DN mappings should be preferred over
+     *            those derived from FQAN mappings
      * @param mapRefreshPeriod mapping file re-read and refresh period in milliseconds
      * @param gridMapDir directory used as backing store for mappings
-     * 
+     * @param noPrimaryGroupNameIsError whether the failure to map a primary group name cause an error or not
      * @return the constructed account mapper
      * 
      * @throws ConfigurationException thrown if the mapping files can not be read or parsed or if the grid map directory
      *             is not read and writable
      */
     private AccountMapper buildAccountMapper(String accountMapFile, boolean preferDNMappingForAccountIndicator,
-            String groupMapFile, int mapRefreshPeriod, String gridMapDir) throws ConfigurationException {
+            String groupMapFile, boolean preferDNMappingForPrimaryGroupName, int mapRefreshPeriod, String gridMapDir,
+            boolean noPrimaryGroupNameIsError) throws ConfigurationException {
         DFPMMatchStrategy<X500Principal> dnMatchStrategy = new X509MatchStrategy();
         DFPMMatchStrategy<FQAN> fqanMatchStrategy = new FQANMatchStrategy();
 
         DFPM accountIndicatorMap = buildMapping(accountMapFile, mapRefreshPeriod);
         DFPM groupMap = buildMapping(groupMapFile, mapRefreshPeriod);
-        PoolAccountManager pam = buildPoolAccountManager(gridMapDir);
+        PoolAccountManager poolAccountManager = buildPoolAccountManager(gridMapDir);
 
-        DNPrimaryFQANAccountIndicatorMappingStrategy aimStrategy = new DNPrimaryFQANAccountIndicatorMappingStrategy(
+        // account indicator mapping
+        AccountIndicatorMappingStrategy aimStrategy = new DNPrimaryFQANAccountIndicatorMappingStrategy(
                 accountIndicatorMap, dnMatchStrategy, fqanMatchStrategy, preferDNMappingForAccountIndicator);
-        FQANGroupNameMappingStrategy gnmStrategy = new FQANGroupNameMappingStrategy(groupMap, fqanMatchStrategy);
-        return new AccountMapper(aimStrategy, gnmStrategy, pam);
+        // group names mapping
+        GroupNameMappingStrategy gnmStrategy = new DNFQANGroupNameMappingStrategy(groupMap, dnMatchStrategy,
+                fqanMatchStrategy, preferDNMappingForPrimaryGroupName);
+
+        return new AccountMapper(aimStrategy, gnmStrategy, poolAccountManager, noPrimaryGroupNameIsError);
     }
 
     /**
@@ -173,22 +209,22 @@ public class DFPMObligationHandlerConfigurationParser implements IniOHConfigurat
     private PoolAccountManager buildPoolAccountManager(String gridMapDirPath) throws ConfigurationException {
         File gridMapDir = new File(gridMapDirPath);
         if (!gridMapDir.exists()) {
-            String errMsg = MessageFormatter.format("Grid map directory {} does not exist", gridMapDir
-                    .getAbsolutePath());
+            String errMsg = MessageFormatter.format("Grid map directory {} does not exist",
+                    gridMapDir.getAbsolutePath());
             log.error(errMsg);
             throw new ConfigurationException(errMsg);
         }
 
         if (!gridMapDir.canRead()) {
-            String errMsg = MessageFormatter.format("Grid map directory {} is not readable by this process", gridMapDir
-                    .getAbsolutePath());
+            String errMsg = MessageFormatter.format("Grid map directory {} is not readable by this process",
+                    gridMapDir.getAbsolutePath());
             log.error(errMsg);
             throw new ConfigurationException(errMsg);
         }
 
         if (!gridMapDir.canWrite()) {
-            String errMsg = MessageFormatter.format("Grid map directory {} is not writable by this process", gridMapDir
-                    .getAbsolutePath());
+            String errMsg = MessageFormatter.format("Grid map directory {} is not writable by this process",
+                    gridMapDir.getAbsolutePath());
             log.error(errMsg);
             throw new ConfigurationException(errMsg);
         }
