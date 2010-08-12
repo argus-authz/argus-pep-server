@@ -28,7 +28,11 @@ import org.glite.authz.common.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** A parser for map files. */
+/** 
+ * A parser for map files. 
+ * 
+ * http://dev.globus.org/wiki/Gridmap
+ */
 public class DFPMFileParser {
 
     /** Class logger. */
@@ -77,21 +81,21 @@ public class DFPMFileParser {
 
         String unescapedKey = Strings.safeTrimOrNullString(trimmedLine.substring(1, lastDQuote));
         if (unescapedKey == null) {
-            String msg = "Error on map file line " + lineNumber + ".  Map file entry key may not be null or empty";
+            String msg = "Error on map file line " + lineNumber + ": Map file entry key may not be null or empty";
             log.error(msg);
             throw new ConfigurationException(msg);
         }
-        String name = unescapeString(unescapedKey);
+        String key = unescapeString(unescapedKey);
 
         List<String> values = Strings.toList(trimmedLine.substring(++lastDQuote), ",");
         if (values == null || values.isEmpty()) {
-            String msg = "Error on map file line " + lineNumber + ".  Map file entry value may not be null or empty";
+            String msg = "Error on map file line " + lineNumber + ": Map file entry value may not be null or empty";
             log.error(msg);
             throw new ConfigurationException(msg);
         }
 
-        log.debug("Line number {} maps {} to {}", new Object[] { lineNumber, name, values });
-        map.put(name, values);
+        log.debug("Line {}: maps {} to {}", new Object[] { lineNumber, key, values });
+        map.put(key, values);
     }
 
     /**
