@@ -24,25 +24,32 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.security.auth.x500.X500Principal;
 
-import org.glite.authz.common.config.ConfigurationException;
-import org.glite.authz.common.fqan.FQAN;
-
 import junit.framework.TestCase;
 
+import org.glite.authz.common.config.ConfigurationException;
+import org.glite.authz.common.fqan.FQAN;
+import org.glite.authz.pep.obligation.ObligationProcessingException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
- *
+ * JUnit test case for DN/FQAN account mapping
  */
 public class AccountMapperTest extends TestCase {
 
+    private Logger log = LoggerFactory.getLogger(AccountMapperTest.class);
+
     private int N_POOL = 5;
 
-    private String[] poolAccountNamePrefixes = { "atlas", "smscg", "switch", "test" };
+    private String[] poolAccountNamePrefixes = { "atlas", "smscg", "switch" };
 
-    private String[] prodAccountNames = { "dteam","atlasprod", "smscgprod", "switchprod", "testprod" };
+    private String[] prodAccountNames = { "dteam", "robin", "batman" };
 
     PoolAccountManager poolAccountManager = null;
 
@@ -60,9 +67,9 @@ public class AccountMapperTest extends TestCase {
         // populate with pool accounts
         for (String prefix : poolAccountNamePrefixes) {
             for (int i = 1; i <= N_POOL; i++) {
-                String pool= prefix + "00" + i; 
+                String pool = prefix + "00" + i;
                 File f = new File(temp, pool);
-                System.out.println("create " + pool + " account");
+                log.trace("create " + pool + " pool account");
                 f.createNewFile();
                 f.deleteOnExit();
             }
@@ -70,7 +77,7 @@ public class AccountMapperTest extends TestCase {
         // populate with fix accounts
         for (String name : prodAccountNames) {
             File f = new File(temp, name);
-            System.out.println("create " + name + " account");
+            log.trace("create " + name + " account");
             f.createNewFile();
             f.deleteOnExit();
         }
@@ -100,10 +107,10 @@ public class AccountMapperTest extends TestCase {
      */
     protected InputStream getFileInputStream(String filePath) throws FileNotFoundException {
         // first search file in classpath, then as absolute filename
-        System.out.println("Load file from classpath: " + filePath);
+        log.debug("Load file from classpath: {}", filePath);
         InputStream is = getClass().getResourceAsStream(filePath);
         if (is == null) {
-            System.out.println("Not in classpath, load file from file:" + filePath);
+            log.debug("Not in classpath, load file from file: {}", filePath);
             is = new FileInputStream(filePath);
         }
         return is;
@@ -122,29 +129,6 @@ public class AccountMapperTest extends TestCase {
         deleteTempDir(gridMapDir);
     }
 
-    public void testMapping() throws Exception {
-        DFPM accountIndicatorDFPM = createDFPM("/grid-mapfile");
-        DFPM groupDFPM = createDFPM("/group-mapfile");
-
-        DFPMMatchStrategy<X500Principal> dnMatchStrategy = new X509MatchStrategy();
-        DFPMMatchStrategy<FQAN> fqanMatchStrategy = new FQANMatchStrategy();
-
-        AccountIndicatorMappingStrategy aimStrategy = new DNPrimaryFQANAccountIndicatorMappingStrategy(
-                accountIndicatorDFPM, dnMatchStrategy, fqanMatchStrategy, true);
-        GroupNameMappingStrategy gnmStrategy = new FQANGroupNameMappingStrategy(groupDFPM, fqanMatchStrategy);
-
-        AccountMapper accountMapper = new AccountMapper(aimStrategy, gnmStrategy, poolAccountManager);
-        
-        X500Principal subjectDN= new X500Principal("OU=Grid User,CN=John Doe");
-        FQAN primaryFQAN= FQAN.parseFQAN("/dteam");
-        List<FQAN> secondaryFQANs= null;
-        
-        System.out.println("mapping DN: " + subjectDN + " FQAN: " + primaryFQAN + " sec FQANs: " + secondaryFQANs);
-        
-        PosixAccount account= accountMapper.mapToAccount(subjectDN, primaryFQAN, secondaryFQANs);
-        System.out.println("account: " + account);
-    }
-
     protected DFPM createDFPM(String filePath) throws ConfigurationException, FileNotFoundException {
         DFPM dfpm = new OrderedDFPM();
         InputStream is = getFileInputStream(filePath);
@@ -152,6 +136,179 @@ public class AccountMapperTest extends TestCase {
         DFPMFileParser mappingFileParser = new DFPMFileParser();
         mappingFileParser.parse(dfpm, reader);
         return dfpm;
+    }
+
+    protected PosixAccount mapToPosixAccount(X500Principal subjectDN, FQAN primaryFQAN, List<FQAN> secondaryFQANs,
+            boolean preferDNForLoginName, boolean preferDNForPrimaryGroupName, boolean noPrimaryGroupNameIsError)
+            throws FileNotFoundException, ConfigurationException, ObligationProcessingException {
+        DFPM accountIndicatorDFPM = createDFPM("/grid-mapfile");
+        DFPM groupDFPM = createDFPM("/group-mapfile");
+
+        DFPMMatchStrategy<X500Principal> dnMatchStrategy = new X509MatchStrategy();
+        DFPMMatchStrategy<FQAN> fqanMatchStrategy = new FQANMatchStrategy();
+
+        AccountIndicatorMappingStrategy aimStrategy = new DNPrimaryFQANAccountIndicatorMappingStrategy(
+                accountIndicatorDFPM, dnMatchStrategy, fqanMatchStrategy, preferDNForLoginName);
+
+        GroupNameMappingStrategy gnmStrategy = new DNFQANGroupNameMappingStrategy(groupDFPM, dnMatchStrategy,
+                fqanMatchStrategy, preferDNForPrimaryGroupName);
+
+        AccountMapper accountMapper = new AccountMapper(aimStrategy, gnmStrategy, poolAccountManager,
+                noPrimaryGroupNameIsError);
+
+        PosixAccount account = accountMapper.mapToAccount(subjectDN, primaryFQAN, secondaryFQANs);
+        return account;
+    }
+
+    public void testAccountMappingDN_WithFAQNs() throws Exception {
+        X500Principal subjectDN = new X500Principal("OU=Grid User,CN=Batman");
+        FQAN primaryFQAN = new FQAN("/dteam", "prod");
+        List<FQAN> secondaryFQANs = Arrays.asList(new FQAN("/atlas"), new FQAN("/switch"));
+        System.out.println("----------------------------------");
+
+        System.out.println("mapping (DN/FQANs) subject: " + subjectDN + " FQAN: " + primaryFQAN + " FQANs: "
+                + secondaryFQANs);
+        PosixAccount account = mapToPosixAccount(subjectDN, primaryFQAN, secondaryFQANs, true, true, false);
+        System.out.println("mapped to POSIX account: " + account);
+        assertTrue("batman".equals(account.getLoginName()));
+        assertTrue("batman".equals(account.getPrimaryGroup()));
+        assertTrue(account.getSecondaryGroups().contains("dteam"));
+        assertTrue(account.getSecondaryGroups().contains("atlas"));
+        assertTrue(account.getSecondaryGroups().contains("switch"));
+    }
+
+    public void testAccountMappingDN_NoFQAN() throws Exception {
+        X500Principal subjectDN = new X500Principal("OU=Grid User,CN=Batman");
+        FQAN primaryFQAN = null;
+        List<FQAN> secondaryFQANs = null;
+        System.out.println("----------------------------------");
+
+        System.out.println("mapping (DN only) subject: " + subjectDN + " FQAN: " + primaryFQAN + " FQANs: "
+                + secondaryFQANs);
+        PosixAccount account = mapToPosixAccount(subjectDN, primaryFQAN, secondaryFQANs, true, true, false);
+        System.out.println("mapped to POSIX account: " + account);
+        assertTrue("batman".equals(account.getLoginName()));
+        assertTrue("batman".equals(account.getPrimaryGroup()));
+        assertTrue(account.getSecondaryGroups().isEmpty());
+    }
+
+    public void testAccountMappingDN_NoFQAN_NoError() throws Exception {
+        X500Principal subjectDN = new X500Principal("OU=Grid User,CN=Robin");
+        FQAN primaryFQAN = null;
+        List<FQAN> secondaryFQANs = null;
+        System.out.println("----------------------------------");
+
+        System.out.println("mapping (DN only/No error) subject: " + subjectDN + " FQAN: " + primaryFQAN + " FQANs: "
+                + secondaryFQANs);
+        PosixAccount account = mapToPosixAccount(subjectDN, primaryFQAN, secondaryFQANs, true, true, false);
+        System.out.println("mapped to POSIX account: " + account);
+        assertTrue("robin".equals(account.getLoginName()));
+        assertNull(account.getPrimaryGroup());
+        assertTrue(account.getSecondaryGroups().isEmpty());
+    }
+
+    public void testAccountMappingDN_NoFQAN_NoPrmaryGroupError() throws Exception {
+        X500Principal subjectDN = new X500Principal("OU=Grid User,CN=Robin");
+        FQAN primaryFQAN = null;
+        List<FQAN> secondaryFQANs = null;
+        System.out.println("----------------------------------");
+
+        System.out.println("mapping (DN only/No primary group error) subject: " + subjectDN + " FQAN: " + primaryFQAN
+                + " FQANs: " + secondaryFQANs);
+        try {
+            PosixAccount account = mapToPosixAccount(subjectDN, primaryFQAN, secondaryFQANs, true, true, true);
+            fail("No primary group should failed: account=" + account);
+        } catch (ObligationProcessingException e) {
+            // expected
+            System.out.println("EXPECTED ERROR: " + e.getMessage());
+        }
+    }
+
+    public void testAccountMappingFQAN_dteam() throws Exception {
+        X500Principal subjectDN = new X500Principal("OU=Grid User,CN=Batman");
+        FQAN primaryFQAN = new FQAN("/dteam", "prod");
+        List<FQAN> secondaryFQANs = Arrays.asList(new FQAN("/atlas"), new FQAN("/switch"));
+        System.out.println("----------------------------------");
+
+        System.out.println("mapping (FQAN/DN) subject: " + subjectDN + " FQAN: " + primaryFQAN + " FQANs: "
+                + secondaryFQANs);
+        PosixAccount account = mapToPosixAccount(subjectDN, primaryFQAN, secondaryFQANs, false, false, false);
+        System.out.println("mapped to POSIX account: " + account);
+        assertTrue("dteam".equals(account.getLoginName()));
+        assertTrue("dteam".equals(account.getPrimaryGroup()));
+        assertTrue(account.getSecondaryGroups().contains("batman"));
+        assertTrue(account.getSecondaryGroups().contains("atlas"));
+        assertTrue(account.getSecondaryGroups().contains("switch"));
+
+    }
+
+    public void testAccountMappingFQAN_atlasPool() throws Exception {
+        X500Principal subjectDN = new X500Principal("OU=Grid User,CN=Batman");
+        FQAN primaryFQAN = new FQAN("/atlas");
+        List<FQAN> secondaryFQANs = Arrays.asList(new FQAN("/dteam"), new FQAN("/switch"));
+
+        System.out.println("----------------------------------");
+        System.out.println("mapping (FQAN/DN) subject: " + subjectDN + " FQAN: " + primaryFQAN + " FQANs: "
+                + secondaryFQANs);
+        PosixAccount account = mapToPosixAccount(subjectDN, primaryFQAN, secondaryFQANs, false, false, false);
+        System.out.println("mapped to POSIX account: " + account);
+        assertTrue(account.getLoginName().startsWith("atlas"));
+        assertTrue("atlas".equals(account.getPrimaryGroup()));
+        assertTrue(account.getSecondaryGroups().contains("batman"));
+        assertTrue(account.getSecondaryGroups().contains("dteam"));
+        assertTrue(account.getSecondaryGroups().contains("switch"));
+
+    }
+
+    public void testAccountMappingFQAN_NoPrmaryGroupError() throws Exception {
+        X500Principal subjectDN = new X500Principal("OU=Grid User,CN=Robin");
+        FQAN primaryFQAN = new FQAN("/tata", "prod");
+        List<FQAN> secondaryFQANs = Arrays.asList(new FQAN("/titi"), new FQAN("/toto"));
+        System.out.println("----------------------------------");
+
+        System.out.println("mapping (FQAN/DN/No primary group error) subject: " + subjectDN + " FQAN: " + primaryFQAN
+                + " FQANs: " + secondaryFQANs);
+        try {
+            PosixAccount account = mapToPosixAccount(subjectDN, primaryFQAN, secondaryFQANs, false, false, true);
+            fail("No primary group should failed: account=" + account);
+        } catch (ObligationProcessingException e) {
+            // expected
+            System.out.println("EXPECTED ERROR: " + e.getMessage());
+        }
+    }
+
+    public void testAccountMappingNoDN_NoFQAN() throws Exception {
+        X500Principal subjectDN = null;
+        FQAN primaryFQAN = null;
+        List<FQAN> secondaryFQANs = null;
+        System.out.println("----------------------------------");
+
+        System.out.println("mapping (Nothing) subject: " + subjectDN + " FQAN: " + primaryFQAN + " FQANs: "
+                + secondaryFQANs);
+        try {
+            PosixAccount account = mapToPosixAccount(subjectDN, primaryFQAN, secondaryFQANs, false, false, false);
+            fail("No subject should failed: account=" + account);
+        } catch (ObligationProcessingException e) {
+            // expected
+            System.out.println("EXPECTED ERROR: " + e.getMessage());
+        }
+    }
+
+    public void testAccountMappingUnknown() throws Exception {
+        X500Principal subjectDN = new X500Principal("OU=Grid User,CN=Unknown");
+        FQAN primaryFQAN = new FQAN("/tata");
+        List<FQAN> secondaryFQANs = Arrays.asList(new FQAN("/titi"), new FQAN("/toto"));
+        System.out.println("----------------------------------");
+
+        System.out.println("mapping (Unknown user) subject: " + subjectDN + " FQAN: " + primaryFQAN + " FQANs: "
+                + secondaryFQANs);
+        try {
+            PosixAccount account = mapToPosixAccount(subjectDN, primaryFQAN, secondaryFQANs, false, false, false);
+            fail("Unknown subject/FQANs should failed: account=" + account);
+        } catch (ObligationProcessingException e) {
+            // expected
+            System.out.println("EXPECTED ERROR: " + e.getMessage());
+        }
     }
 
 }
