@@ -21,6 +21,7 @@ import java.util.List;
 
 import javax.security.auth.x500.X500Principal;
 
+import org.glite.authz.common.fqan.FQAN;
 import org.glite.authz.pep.obligation.ObligationProcessingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,18 +47,18 @@ public class DNPrimaryFQANAccountIndicatorMappingStrategy implements AccountIndi
     /**
      * Constructor.
      * 
-     * @param mappings DN/FQAN to POSIX account name indicator mappings, may not be null
+     * @param accountMappings DN/FQAN to POSIX account name indicator mappings, may not be null
      * @param dnMatching strategy to see if a {@link DFPM} key matches a given {@link X500Principal}, may not be null
      * @param fqanMatching strategy to see if a {@link DFPM} key matches a given {@link FQAN}, may not be null
      * @param preferDNmappings whether to prefer a DN based mapping, over an FQAN based mapping, for the account
      *            indicator
      */
-    public DNPrimaryFQANAccountIndicatorMappingStrategy(DFPM mappings, DFPMMatchStrategy<X500Principal> dnMatching,
-            DFPMMatchStrategy<FQAN> fqanMatching, boolean preferDNmappings) {
-        if (mappings == null) {
-            throw new IllegalArgumentException("DN/FQAN to POSIX mapping may not be null");
+    public DNPrimaryFQANAccountIndicatorMappingStrategy(DFPM accountMappings,
+            DFPMMatchStrategy<X500Principal> dnMatching, DFPMMatchStrategy<FQAN> fqanMatching, boolean preferDNmappings) {
+        if (accountMappings == null) {
+            throw new IllegalArgumentException("DN/FQAN to POSIX account mapping may not be null");
         }
-        loginNameMapping = mappings;
+        loginNameMapping = accountMappings;
 
         if (dnMatching == null) {
             throw new IllegalArgumentException("DN matching strategy may not be null");
@@ -75,8 +76,7 @@ public class DNPrimaryFQANAccountIndicatorMappingStrategy implements AccountIndi
     /** {@inheritDoc} */
     public String mapToAccountIndicator(X500Principal subjectDN, FQAN primaryFQAN, List<FQAN> secondaryFQANs)
             throws ObligationProcessingException {
-        log.debug("Starting to map subject {} with primary FQAN {} to account indicator", subjectDN
-                .getName(X500Principal.RFC2253), primaryFQAN);
+        log.debug("Mapping account indicator for subject {} with primary FQAN {}", subjectDN, primaryFQAN);
         String indicatorFromDN = null;
         String indicatorFromFQAN = null;
 
@@ -113,8 +113,8 @@ public class DNPrimaryFQANAccountIndicatorMappingStrategy implements AccountIndi
             accountIndicator = (indicatorFromFQAN != null) ? indicatorFromFQAN : indicatorFromDN;
         }
 
-        log.debug("Subject {} with primary FQAN {} mapped to account indicator {}", new Object[] {
-                subjectDN.getName(X500Principal.RFC2253), primaryFQAN, accountIndicator });
+        log.debug("Subject {} with primary FQAN {} mapped to account indicator {}",
+                new Object[] { subjectDN, primaryFQAN, accountIndicator });
         return accountIndicator;
     }
 }
