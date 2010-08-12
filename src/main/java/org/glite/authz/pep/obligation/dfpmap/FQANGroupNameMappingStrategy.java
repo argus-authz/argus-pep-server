@@ -24,6 +24,7 @@ import java.util.List;
 
 import javax.security.auth.x500.X500Principal;
 
+import org.glite.authz.common.fqan.FQAN;
 import org.glite.authz.pep.obligation.ObligationProcessingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
