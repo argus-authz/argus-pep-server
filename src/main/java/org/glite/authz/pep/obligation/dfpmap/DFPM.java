@@ -24,9 +24,12 @@ import java.util.Map;
  * Represents a DN/FQAN to POSIX UID/GID information mapping.
  * 
  * A DFP map does not allow the same key to be inserted more than once nor does it allow null keys or values.
+ * <p>
+ * Old style gridmap allows to specify multiple mapping values in a comma separated list, see
+ * http://dev.globus.org/wiki/Gridmap
  */
-public interface DFPM extends Map<String, List<String>> { 
-    
+public interface DFPM extends Map<String, List<String>> {
+
     /**
      * Determines if the given key is a mapping from a DN.
      * 
