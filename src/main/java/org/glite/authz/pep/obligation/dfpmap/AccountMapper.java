@@ -22,6 +22,7 @@ import java.util.List;
 
 import javax.security.auth.x500.X500Principal;
 
+import org.glite.authz.common.fqan.FQAN;
 import org.glite.authz.pep.obligation.ObligationProcessingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +41,12 @@ public class AccountMapper {
 
     /** Manager used to track and access pool accounts. */
     private final PoolAccountManager poolAccountManager;
+
+    /**
+     * Whether the failure to map a primary group name cause the {@link #mapToAccount(X500Principal, FQAN, List)} method
+     * to fail or not. Default: {@value}
+     */
+    private boolean noPrimaryGroupNameIsError = false;
 
     /**
      * Constructor.
@@ -67,6 +74,20 @@ public class AccountMapper {
     }
 
     /**
+     * Constructor.
+     * 
+     * @param aimStrategy strategy used to map a subject to a pool account indicator
+     * @param gnmStrategy strategy used to map a subject to a set of group names
+     * @param pam manager used to track and access pool accounts
+     * @param noPrimaryGroupNameIsError whether the failure to map a primary group name cause an error or not
+     */
+    public AccountMapper(AccountIndicatorMappingStrategy aimStrategy, GroupNameMappingStrategy gnmStrategy,
+            PoolAccountManager pam, boolean noPrimaryGroupNameIsError) {
+        this(aimStrategy, gnmStrategy, pam);
+        this.noPrimaryGroupNameIsError = noPrimaryGroupNameIsError;
+    }
+
+    /**
      * Maps a subject to a POSIX account.
      * 
      * @param subjectDN subject's DN
@@ -79,51 +100,12 @@ public class AccountMapper {
      */
     public PosixAccount mapToAccount(X500Principal subjectDN, FQAN primaryFQAN, List<FQAN> secondaryFQANs)
             throws ObligationProcessingException {
-        if (primaryFQAN == null) {
-            return mapToAccountByDN(subjectDN);
-        } else {
-            return mapToAccountByDNFQAN(subjectDN, primaryFQAN, secondaryFQANs);
+        if (subjectDN==null) {
+            String error= "Can not map without Subject DN";
+            log.error(error);
+            throw new ObligationProcessingException(error);
         }
-    }
-
-    /**
-     * Maps a subject, identified solely by a DN, to an account.
-     * 
-     * @param subjectDN DN of the subject
-     * 
-     * @return account to which the subject is mapped
-     * 
-     * @throws ObligationProcessingException thrown if there is a problem mapping the user to an account
-     */
-    private PosixAccount mapToAccountByDN(X500Principal subjectDN) throws ObligationProcessingException {
-        log.debug("Attempting to map subject {} to a POSIX account", subjectDN.getName());
-
-        String accountIndicator = accountIndicatorMappingStrategy.mapToAccountIndicator(subjectDN, null, null);
-        if (accountIndicator == null) {
-            log.error("Unable to map subject" + subjectDN.getName() + " to a POSIX account indicator.");
-            throw new ObligationProcessingException("Unable to map subject to a POSIX account");
-        }
-
-        boolean indicatorIsPoolAccountPrefix = false;
-        if (poolAccountManager.isPoolAccountPrefix(accountIndicator)) {
-            indicatorIsPoolAccountPrefix = true;
-            accountIndicator = poolAccountManager.getPoolAccountPrefix(accountIndicator);
-        }
-        log.debug("Subject {} mapped to account indiciator {}", subjectDN.getName(), accountIndicator);
-
-        String loginName;
-        if (indicatorIsPoolAccountPrefix) {
-            loginName = poolAccountManager.mapToAccount(accountIndicator, subjectDN, null, null);
-        } else {
-            loginName = accountIndicator;
-        }
-        if (loginName == null) {
-            log.error("Subject " + subjectDN.getName() + " could not be mapped to a POSIX login name");
-            throw new ObligationProcessingException("Unable to map subject to a POSIX account");
-        }
-        log.debug("Subject {} mapped to login name {}", subjectDN.getName(), loginName);
-
-        return new PosixAccount(loginName, null, null);
+        return mapToAccountByDNFQAN(subjectDN, primaryFQAN, secondaryFQANs);
     }
 
     /**
@@ -139,15 +121,16 @@ public class AccountMapper {
      */
     private PosixAccount mapToAccountByDNFQAN(X500Principal subjectDN, FQAN primaryFQAN, List<FQAN> secondaryFQANs)
             throws ObligationProcessingException {
-        log.debug("Attempting to map subject {} with primary FQAN {} and secondary FQANs {} to a POSIX account",
-                new Object[] { subjectDN.getName(), primaryFQAN, secondaryFQANs });
+        log.debug("Mapping subject {} with primary FQAN {} and secondary FQANs {} to a POSIX account", new Object[] {
+                subjectDN, primaryFQAN, secondaryFQANs });
 
         String accountIndicator = accountIndicatorMappingStrategy.mapToAccountIndicator(subjectDN, primaryFQAN,
                 secondaryFQANs);
         if (accountIndicator == null) {
-            log.error("Unable to map subject" + subjectDN.getName() + " with primary FQAN " + primaryFQAN
-                    + " and secondary FQANs " + secondaryFQANs + " to a POSIX account indicator.");
-            throw new ObligationProcessingException("Unable to map subject to a POSIX account");
+            String error = "Failed to map subject DN " + subjectDN + ", primary FQAN " + primaryFQAN
+                    + ", secondary FQANs " + secondaryFQANs + " to an account indicator";
+            log.error(error);
+            throw new ObligationProcessingException(error);
         }
 
         boolean indicatorIsPoolAccountPrefix = false;
@@ -168,12 +151,16 @@ public class AccountMapper {
                 secondaryGroupNames = Collections.emptyList();
             }
         }
-        if (primaryGroupName == null) {
-            log.error("Subject " + subjectDN.getName() + " could not be mapped to a primary group");
-            throw new ObligationProcessingException("Subject " + subjectDN.getName()
-                    + " could not be mapped to a primary group");
+
+        // if noPrimaryGroupNameIsError throw an error
+        if (primaryGroupName == null && noPrimaryGroupNameIsError) {
+            String error = "Failed to map subject DN " + subjectDN.getName() + ", primary FQAN " + primaryFQAN
+                    + ", secondary FQANs " + secondaryFQANs + " to a POSIX primary group";
+            log.error(error);
+            throw new ObligationProcessingException(error);
         }
-        log.debug("Subject {} mapped to primary group {} and second groups {}", new Object[] { subjectDN.getName(),
+
+        log.debug("Subject {} mapped to POSIX group {} and secondary groups {}", new Object[] { subjectDN.getName(),
                 primaryGroupName, secondaryGroupNames, });
 
         String loginName;
@@ -184,10 +171,12 @@ public class AccountMapper {
             loginName = accountIndicator;
         }
         if (loginName == null) {
-            log.error("Subject " + subjectDN.getName() + " could not be mapped to a POSIX login name");
-            throw new ObligationProcessingException("Unable to map subject to a POSIX account");
+            String error = "Failed to map subject DN " + subjectDN.getName() + ", primary FQAN " + primaryFQAN
+                    + ", secondary FQANs " + secondaryFQANs + " to a POSIX login name";
+            log.error(error);
+            throw new ObligationProcessingException(error);
         }
-        log.debug("Subject {} mapped to login name {}", subjectDN.getName(), loginName);
+        log.debug("Subject {} mapped to POSIX login name {}", subjectDN.getName(), loginName);
 
         return new PosixAccount(loginName, primaryGroupName, secondaryGroupNames);
     }
