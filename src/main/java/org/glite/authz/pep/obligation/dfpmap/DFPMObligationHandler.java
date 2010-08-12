@@ -17,6 +17,7 @@
 
 package org.glite.authz.pep.obligation.dfpmap;
 
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -24,23 +25,25 @@ import java.util.Set;
 
 import javax.security.auth.x500.X500Principal;
 
+import org.glite.authz.common.fqan.FQAN;
 import org.glite.authz.common.model.Attribute;
 import org.glite.authz.common.model.AttributeAssignment;
 import org.glite.authz.common.model.Obligation;
 import org.glite.authz.common.model.Request;
 import org.glite.authz.common.model.Result;
 import org.glite.authz.common.model.Subject;
-import org.glite.authz.common.profile.WorkerNodeProfileV1Constants;
+import org.glite.authz.common.profile.AuthorizationProfileConstants;
 import org.glite.authz.pep.obligation.AbstractObligationHandler;
 import org.glite.authz.pep.obligation.ObligationProcessingException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An obligation handler that transforms an {@value WorkerNodeProfileV1Constants#OBL_LOCAL_ENV_MAP} obligation in to a
- * {@value WorkerNodeProfileV1Constants#OBL_POSIX_ENV_MAP} obligation. The POSIX login name and primary and secondary
- * group values are determined by mapping the {@value Attribute#ID_SUB_ID},
- * {@value WorkerNodeProfileV1Constants#ATT_FQAN} and {@value WorkerNodeProfileV1Constants#ATT_PRIMARY_FQAN} attributes
+ * An obligation handler that transforms an {@value AuthorizationProfileConstants#ID_OBLIGATION_LOCAL_ENV_MAP}
+ * obligation in to a {@value AuthorizationProfileConstants#ID_OBLIGATION_POSIX_ENV_MAP} obligation. The POSIX login
+ * name and primary and secondary group values are determined by mapping the {@value Attribute#ID_SUB_ID},
+ * {@value AuthorizationProfileConstants#ID_ATTRIBUTE_PRIMARY_FQAN} and {@value AuthorizationProfileConstants#ID_ATTRIBUTE_FQAN} attributes
  * found within the {@link Subject} of the authorization request.
  */
 public class DFPMObligationHandler extends AbstractObligationHandler {
@@ -57,7 +60,7 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
      * @param mapper mapper used to map a subject to a POSIX account
      */
     public DFPMObligationHandler(AccountMapper mapper) {
-        super(WorkerNodeProfileV1Constants.OBL_LOCAL_ENV_MAP);
+        super(AuthorizationProfileConstants.ID_OBLIGATION_LOCAL_ENV_MAP);
 
         if (mapper == null) {
             throw new IllegalArgumentException("Account mapper may not be null");
@@ -72,7 +75,7 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
      * @param mapper mapper used to map a subject to a POSIX account
      */
     public DFPMObligationHandler(int precedence, AccountMapper mapper) {
-        super(WorkerNodeProfileV1Constants.OBL_LOCAL_ENV_MAP, precedence);
+        super(AuthorizationProfileConstants.ID_OBLIGATION_LOCAL_ENV_MAP, precedence);
 
         if (mapper == null) {
             throw new IllegalArgumentException("Account mapper may not be null");
@@ -82,7 +85,7 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
 
     /** {@inheritDoc} */
     public boolean evaluateObligation(Request request, Result result) throws ObligationProcessingException {
-        boolean applied= false;
+        boolean applied = false;
         Subject subject = getSubject(request);
 
         X500Principal subjectDN = getDN(subject);
@@ -93,7 +96,7 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
 
         if (mappedAccount != null) {
             addPosixMappingObligation(result, mappedAccount);
-            applied= true;
+            applied = true;
 
             // Remove the local environment mapping obligation (even if it appears multiple times)
             // since we've handled it and replaced it with the POSIX mapping obligations
@@ -102,14 +105,13 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
             List<Obligation> removedObligations = new ArrayList<Obligation>();
             while (obligationItr.hasNext()) {
                 obligation = obligationItr.next();
-                if (obligation.getId().equals(WorkerNodeProfileV1Constants.OBL_LOCAL_ENV_MAP)) {
+                if (AuthorizationProfileConstants.ID_OBLIGATION_LOCAL_ENV_MAP.equals(obligation.getId())) {
                     removedObligations.add(obligation);
                 }
             }
             result.getObligations().removeAll(removedObligations);
         }
-        log.debug("Finished processing DN/FQAN to POSIX account mapping obligation for subject {}", subjectDN
-                        .getName());
+        log.debug("Finished processing DN/FQAN to POSIX account mapping obligation for subject {}", subjectDN.getName());
         return applied;
     }
 
@@ -198,7 +200,7 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
         Attribute primaryFQANAttribute = null;
 
         for (Attribute attribute : subject.getAttributes()) {
-            if (attribute.getId().equals(WorkerNodeProfileV1Constants.ATT_PRIMARY_FQAN)) {
+            if (AuthorizationProfileConstants.ID_ATTRIBUTE_PRIMARY_FQAN.equals(attribute.getId())) {
                 log.debug("Extracted primary FQAN attribute from request: {}", attribute);
                 primaryFQANAttribute = attribute;
                 break;
@@ -210,7 +212,7 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
             return null;
         }
 
-        if (!primaryFQANAttribute.getDataType().equals(WorkerNodeProfileV1Constants.DAT_FQAN)) {
+        if (!AuthorizationProfileConstants.DATATYPE_FQAN.equals(primaryFQANAttribute.getDataType())) {
             log.error("Subject primary FQAN attribute of the authorization request was of the incorrect data type: {}",
                     primaryFQANAttribute.getDataType());
             throw new ObligationProcessingException("Invalid request, subject attribute of invalid data type");
@@ -228,10 +230,11 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
 
         try {
             return FQAN.parseFQAN(values.iterator().next().toString());
-        } catch (IllegalArgumentException e) {
-            log.error("Value of the Subject primary FQAN attribute of the authorization request was not a valid FQAN");
+        } catch (ParseException e) {
+            log.error("Value of the Subject primary FQAN attribute of the authorization request was not a valid FQAN",
+                    e);
             throw new ObligationProcessingException(
-                    "Invalid request, subject's primary FQAN attribute value was invalid");
+                    "Invalid request, subject's primary FQAN attribute value was invalid", e);
         }
     }
 
@@ -249,7 +252,7 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
         Attribute secondaryFQANsAttribute = null;
 
         for (Attribute attribute : subject.getAttributes()) {
-            if (attribute.getId().equals(WorkerNodeProfileV1Constants.ATT_FQAN)) {
+            if (AuthorizationProfileConstants.ID_ATTRIBUTE_FQAN.equals(attribute.getId())) {
                 log.debug("Extracted secondary FQAN attribute from request: {}", attribute);
                 secondaryFQANsAttribute = attribute;
                 break;
@@ -261,7 +264,7 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
             return null;
         }
 
-        if (!secondaryFQANsAttribute.getDataType().equals(WorkerNodeProfileV1Constants.DAT_FQAN)) {
+        if (!AuthorizationProfileConstants.DATATYPE_FQAN.equals(secondaryFQANsAttribute.getDataType())) {
             log.error(
                     "Subject secondary FQAN attribute of the authorization request was of the incorrect data type: {}",
                     secondaryFQANsAttribute.getDataType());
@@ -284,8 +287,9 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
         while (valueItr.hasNext()) {
             try {
                 value = valueItr.next().toString();
-                secondaryFQANs.add(FQAN.parseFQAN(value));
-            } catch (IllegalArgumentException e) {
+                FQAN parsedFQAN= FQAN.parseFQAN(value);
+                secondaryFQANs.add(parsedFQAN);
+            } catch (ParseException e) {
                 log.error("Subject's secondary FQAN attribute value " + value + " is not a valid FQAN");
                 throw new ObligationProcessingException(
                         "Invalid request, subject's secondary FQAN attribute value was invalid");
@@ -299,34 +303,41 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
      * 
      * @param result current result
      * @param account account whose information will be used to populate the
-     *            {@link WorkerNodeProfileV1Constants#ATT_USER_ID},
-     *            {@link WorkerNodeProfileV1Constants#ATT_PRIMARY_GROUP_ID}, and
-     *            {@link WorkerNodeProfileV1Constants#ATT_GROUP_ID} attribute assignments of the obligation
+     *            {@link AuthorizationProfileConstants#ID_ATTRIBUTE_USER_ID},
+     *            {@link AuthorizationProfileConstants#ID_ATTRIBUTE_PRIMARY_GROUP_ID}, and
+     *            {@link AuthorizationProfileConstants#ID_ATTRIBUTE_GROUP_ID} attribute assignments of the obligation
      */
     protected void addPosixMappingObligation(Result result, PosixAccount account) {
         Obligation posixMapping = new Obligation();
-        posixMapping.setId(WorkerNodeProfileV1Constants.OBL_POSIX_ENV_MAP);
+        posixMapping.setId(AuthorizationProfileConstants.ID_OBLIGATION_POSIX_ENV_MAP);
         posixMapping.setFulfillOn(Result.DECISION_PERMIT);
 
         AttributeAssignment userid = new AttributeAssignment();
-        userid.setAttributeId(WorkerNodeProfileV1Constants.ATT_USER_ID);
+        userid.setAttributeId(AuthorizationProfileConstants.ID_ATTRIBUTE_USER_ID);
         userid.setDataType(Attribute.DT_STRING);
         userid.setValue(account.getLoginName());
         posixMapping.getAttributeAssignments().add(userid);
 
         if (account.getPrimaryGroup() != null) {
+            String groupId = account.getPrimaryGroup();
             AttributeAssignment primaryGroupId = new AttributeAssignment();
-            primaryGroupId.setAttributeId(WorkerNodeProfileV1Constants.ATT_PRIMARY_GROUP_ID);
+            primaryGroupId.setAttributeId(AuthorizationProfileConstants.ID_ATTRIBUTE_PRIMARY_GROUP_ID);
             primaryGroupId.setDataType(Attribute.DT_STRING);
-            primaryGroupId.setValue(account.getPrimaryGroup());
+            primaryGroupId.setValue(groupId);
             posixMapping.getAttributeAssignments().add(primaryGroupId);
+            // BUG FIX: profile attribute/group-id doesn't contain primary group
+            // see https://savannah.cern.ch/bugs/index.php?64340
+            AttributeAssignment secondaryGroupId = new AttributeAssignment();
+            secondaryGroupId.setAttributeId(AuthorizationProfileConstants.ID_ATTRIBUTE_GROUP_ID);
+            secondaryGroupId.setDataType(Attribute.DT_STRING);
+            secondaryGroupId.setValue(groupId);
+            posixMapping.getAttributeAssignments().add(secondaryGroupId);
         }
 
         if (account.getSecondaryGroups() != null && !account.getSecondaryGroups().isEmpty()) {
-            AttributeAssignment secondaryGroupId;
-            for(String secondaryGroup : account.getSecondaryGroups()){
-                secondaryGroupId = new AttributeAssignment();
-                secondaryGroupId.setAttributeId(WorkerNodeProfileV1Constants.ATT_GROUP_ID);
+            for (String secondaryGroup : account.getSecondaryGroups()) {
+                AttributeAssignment secondaryGroupId = new AttributeAssignment();
+                secondaryGroupId.setAttributeId(AuthorizationProfileConstants.ID_ATTRIBUTE_GROUP_ID);
                 secondaryGroupId.setDataType(Attribute.DT_STRING);
                 secondaryGroupId.setValue(secondaryGroup);
                 posixMapping.getAttributeAssignments().add(secondaryGroupId);
