@@ -68,7 +68,7 @@ public class UpdatingDFPM implements DFPM {
         dfpmFactory = factory;
         
         mappingFilePath = Strings.safeTrimOrNullString(mappingFile);
-        if(mappingFile == null){
+        if(mappingFilePath == null){
             throw new IllegalArgumentException("mapping file may not be null");
         }
         try {
