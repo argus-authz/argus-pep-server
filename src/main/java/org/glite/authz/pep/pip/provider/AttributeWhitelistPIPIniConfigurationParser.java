@@ -89,9 +89,9 @@ public class AttributeWhitelistPIPIniConfigurationParser implements IniPIPConfig
         } else {
             log.info("white listed subject attributes: all");
         }
-
-        return new AttributeWhitelistPIP(iniConfig.getName(), actionAttributeIds, environmentAttributeIds,
-                resourceAttributeIds, subjectAttributeIds);
+        String pipId = iniConfig.getName();
+        return new AttributeWhitelistPIP(pipId, actionAttributeIds, environmentAttributeIds, resourceAttributeIds,
+                subjectAttributeIds);
     }
 
     /**
