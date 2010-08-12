@@ -67,13 +67,13 @@ public abstract class AbstractX509PIPIniConfigurationParser implements IniPIPCon
         PKIStore acTrustMaterial = null;
         String vomsInfoDir = IniConfigUtil.getString(iniConfig, VOMS_INFO_DIR_PROP, null);
         if (vomsInfoDir != null) {
-            log.info("voms info directory: {}", vomsInfoDir);
+            log.info("VOMS info directory: {}", vomsInfoDir);
             // get refresh interval: default 1h
             int vomsInfoRefresh = IniConfigUtil.getInt(iniConfig, VOMS_INFO_REFRESH_PROP, DEFAULT_VOMS_INFO_REFRESH, 1,
                     Integer.MAX_VALUE);
             // minute -> millis
             vomsInfoRefresh = vomsInfoRefresh * 60 * 1000;
-            log.info("voms info refresh interval: {}ms", vomsInfoRefresh);
+            log.info("VOMS info refresh interval: {}ms", vomsInfoRefresh);
             try {
                 Files.getFile(vomsInfoDir, false, true, true, false);
                 acTrustMaterial = new PKIStore(vomsInfoDir, PKIStore.TYPE_VOMSDIR);
@@ -87,14 +87,14 @@ public abstract class AbstractX509PIPIniConfigurationParser implements IniPIPCon
                 DEFAULT_PERFORM_PKIX_VALIDATION);
         log.info("perform PKIX validation on cert chains: {}", performPKIXValidation);
 
-        return buildInformationPoint(iniConfig.getName(), requireProxy, configurationBuilder.getTrustMaterialStore(),
+        return buildInformationPoint(iniConfig, requireProxy, configurationBuilder.getTrustMaterialStore(),
                 acTrustMaterial, performPKIXValidation);
     }
 
     /**
      * Builds the instance of the policy information point given the parsed configuration.
      * 
-     * @param id ID of the PIP
+     * @param iniConfig the INI configuration for the PIP
      * @param requireProxy whether proxy certificates are required
      * @param trustMaterial the trust anchors used for validating user certificates
      * @param acTrustMaterial the trust anchors used for validating attribute certificates
@@ -105,6 +105,7 @@ public abstract class AbstractX509PIPIniConfigurationParser implements IniPIPCon
      * @throws ConfigurationException thrown if there is a problem building the PIP with the given configuration
      *             parameters
      */
-    protected abstract AbstractX509PIP buildInformationPoint(String id, boolean requireProxy, PKIStore trustMaterial,
-            PKIStore acTrustMaterial, boolean performPKIXValidation) throws ConfigurationException;
+    protected abstract PolicyInformationPoint buildInformationPoint(Section iniConfig, boolean requireProxy,
+            PKIStore trustMaterial, PKIStore acTrustMaterial, boolean performPKIXValidation)
+            throws ConfigurationException;
 }
