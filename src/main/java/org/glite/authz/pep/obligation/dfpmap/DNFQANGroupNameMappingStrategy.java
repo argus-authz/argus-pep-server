@@ -102,6 +102,10 @@ public class DNFQANGroupNameMappingStrategy implements GroupNameMappingStrategy 
                         fqanGroupNames.addAll(grNames);
                     }
                 }
+            }
+        }
+        for (String mapKey : groupNameMapping.keySet()) {
+            if (groupNameMapping.isFQANMapEntry(mapKey)) {
                 if (secondaryFQANs != null) {
                     for (FQAN secondaryFQAN : secondaryFQANs) {
                         if (fqanMatchStrategy.isMatch(mapKey, secondaryFQAN)) {
@@ -112,17 +116,18 @@ public class DNFQANGroupNameMappingStrategy implements GroupNameMappingStrategy 
                 }
             }
         }
-
-        List<String> groupNames= new ArrayList<String>();
+        List<String> groupNames = new ArrayList<String>();
+        if (log.isTraceEnabled()) {
+            log.trace("DN groups: {} FQAN groups: {}", dnGroupNames, fqanGroupNames);
+        }
         if (preferDNForPrimaryGroupName) {
             groupNames.addAll(dnGroupNames);
             groupNames.addAll(fqanGroupNames);
-        }
-        else {
-            groupNames.addAll(fqanGroupNames);            
+        } else {
+            groupNames.addAll(fqanGroupNames);
             groupNames.addAll(dnGroupNames);
         }
-        
+
         removeDuplicates(groupNames);
 
         log.debug("Subject {} with primary FQAN {} and secondary FQANs {} mapped to group names: {}", new Object[] {
