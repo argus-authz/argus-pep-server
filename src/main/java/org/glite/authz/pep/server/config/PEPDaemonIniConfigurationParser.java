@@ -130,7 +130,7 @@ public class PEPDaemonIniConfigurationParser extends AbstractIniServiceConfigura
 
         Ini iniFile = new Ini();
         try {
-            log.info("Loading INI configuration file");
+            log.info("Loading and parsing INI configuration file");
             iniFile.load(iniReader);
         } catch (Exception e) {
             log.error("Unable to load and parse the INI configuration file", e);

@@ -70,6 +70,9 @@ public final class PEPDaemon {
     /** System property name PDP_HOME path is bound to. */
     public static final String PEP_HOME_PROP = "org.glite.authz.pep.home";
 
+    /** Default logging configuration refresh period: {@value} ms */
+    public static final int DEFAULT_LOGGING_CONFIG_REFRESH_PERIOD = 5 * 60 * 1000;
+    
     /** Class logger. */
     private static final Logger LOG = LoggerFactory.getLogger(PEPDaemon.class);
 
@@ -256,7 +259,7 @@ public final class PEPDaemon {
         File configFile = null;
 
         try {
-            LOG.info("Configuration file: {}", configFilePath);
+            LOG.info("PEP Daemon configuration file: {}", configFilePath);
             configFile = Files.getReadableFile(configFilePath);
         } catch (IOException e) {
             errorAndExit(e.getMessage(), null);
@@ -294,7 +297,7 @@ public final class PEPDaemon {
     }
 
     /**
-     * Initializes the logging system and starts the process to watch for config file changes.
+     * Initializes the logging system and starts the process to watch for config file changes (5 min).
      * 
      * @param loggingConfigFilePath path to the logging configuration file
      * @param reloadTasks timer controlling the reloading of tasks
@@ -302,8 +305,7 @@ public final class PEPDaemon {
     private static void initializeLogging(String loggingConfigFilePath, Timer reloadTasks) {
         LoggingReloadTask reloadTask = new LoggingReloadTask(loggingConfigFilePath);
         // check/reload every 5 minutes
-        int refreshPeriod = 5 * 60 * 1000;
         reloadTask.run();
-        reloadTasks.scheduleAtFixedRate(reloadTask, refreshPeriod, refreshPeriod);
+        reloadTasks.scheduleAtFixedRate(reloadTask, DEFAULT_LOGGING_CONFIG_REFRESH_PERIOD, DEFAULT_LOGGING_CONFIG_REFRESH_PERIOD);
     }
 }
