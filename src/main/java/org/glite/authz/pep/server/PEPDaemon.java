@@ -256,6 +256,7 @@ public final class PEPDaemon {
         File configFile = null;
 
         try {
+            LOG.info("Configuration file: {}", configFilePath);
             configFile = Files.getReadableFile(configFilePath);
         } catch (IOException e) {
             errorAndExit(e.getMessage(), null);

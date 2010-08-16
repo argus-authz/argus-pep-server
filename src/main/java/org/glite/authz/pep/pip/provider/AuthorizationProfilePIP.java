@@ -101,14 +101,14 @@ public class AuthorizationProfilePIP extends AbstractX509PIP {
         this(pipID, requireProxy, eeTrustMaterial, acTrustMaterial, performPKIXValidation);
         if (acceptedProfileIds == null) {
             // accept all
-            log.debug("PIP {} accept all profile ID values", pipID);
+            log.debug("{}: accept all profile ID values", pipID);
             acceptedProfileIds_ = null;
         } else if (acceptedProfileIds.length == 0) {
             // accept none
-            log.debug("PIP {} accept NO profile ID value", pipID);
+            log.debug("{}: accept NO profile ID value", pipID);
             acceptedProfileIds_ = Collections.emptyList();
         } else {
-            log.debug("PIP {} accept profile ID values: ", pipID, Arrays.toString(acceptedProfileIds));
+            log.debug("{}: accept profile ID values: ", pipID, Arrays.toString(acceptedProfileIds));
             acceptedProfileIds_ = new ArrayList<String>(Arrays.asList(acceptedProfileIds));
         }
     }

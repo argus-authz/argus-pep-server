@@ -148,12 +148,12 @@ public class PEPDaemonIniConfigurationParser extends AbstractIniServiceConfigura
         Section configSection = iniFile.get(SERVICE_SECTION_HEADER);
         List<PolicyInformationPoint> pips = IniPIPConfigurationParserHelper.processPolicyInformationPoints(iniFile,
                 configSection, configBuilder);
-        log.info("total policy information points: {}", pips.size());
+        log.info("Total policy information points: {}", pips.size());
         configBuilder.getPolicyInformationPoints().addAll(pips);
 
         ObligationService service = IniOHConfigurationParserHelper.processObligationHandlers(iniFile, configSection,
                 configBuilder);
-        log.info("total obligation handlers: {}", service.getObligationHandlers().size());
+        log.info("Total obligation handlers: {}", service.getObligationHandlers().size());
         configBuilder.setObligationService(service);
 
         log.info("Processing PEP Daemon {} configuration section", PDP_SECTION_HEADER);
@@ -178,20 +178,20 @@ public class PEPDaemonIniConfigurationParser extends AbstractIniServiceConfigura
             log.error(errorMsg);
             throw new ConfigurationException(errorMsg);
         }
-
+        String name= configSection.getName();
         String pdpEndpointStr = IniConfigUtil.getString(configSection, PDP_PROP);
-        log.info("PDP endpoints: {}", pdpEndpointStr);
+        log.info("{}: endpoints: {}", name,pdpEndpointStr);
         StringTokenizer pdpEndpoints = new StringTokenizer(pdpEndpointStr, " ");
         while (pdpEndpoints.hasMoreTokens()) {
             configBuilder.getPDPEndpoints().add(pdpEndpoints.nextToken());
         }
 
         int maxCachedResponses = getMaxCachedResponses(configSection);
-        log.info("max cached resposnes: {}", maxCachedResponses);
+        log.info("{}: max cached responses: {}", name,maxCachedResponses);
         configBuilder.setMaxCachedResponses(maxCachedResponses);
 
         int cachedResponseTTL = getCacheResponseTTL(configSection) * 1000;
-        log.info("cached response TTL: {}ms", cachedResponseTTL);
+        log.info("{}: cached response TTL: {}ms", name,cachedResponseTTL);
         configBuilder.setCachedResponseTTL(cachedResponseTTL);
         
         try {
@@ -202,7 +202,8 @@ public class PEPDaemonIniConfigurationParser extends AbstractIniServiceConfigura
             parserPool.setMaxPoolSize(soapClientBuilder.getMaxTotalConnections());
             configBuilder.setSoapClient(new HttpSOAPClient(soapClientBuilder.buildClient(), parserPool));
         } catch (Exception e) {
-            throw new ConfigurationException("Unable to read X.509 trust material information.", e);
+            log.error("Unable to create PDP SOAP client",e);
+            throw new ConfigurationException("Unable to create PDP SOAP client", e);
         }
     }
 }

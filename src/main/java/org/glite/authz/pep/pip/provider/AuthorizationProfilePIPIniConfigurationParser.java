@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 /**
  * The PIP applies to request which have a profile identifier
  * {@value AuthorizationProfileConstants#ID_ATTRIBUTE_PROFILE_ID} defined in the request environment. By default accept
- * all profile identifier values, but a list of accepted profile identifier values can be specified in the ini config
+ * all profile identifier values, but a list (space separated) of accepted profile identifier values can be specified in the ini config
  * file with the {@value #ACCEPTED_PROFILE_IDS_PROP} property.
  * <p>
  * A policy information point that extracts information from a X.509, version 3, certificate. The certificate may
@@ -54,6 +54,9 @@ public class AuthorizationProfilePIPIniConfigurationParser extends AbstractX509P
     /** Class logger. */
     private Logger log = LoggerFactory.getLogger(AuthorizationProfilePIPIniConfigurationParser.class);
 
+    /**
+     * The name of the {@value} property to define the accepted Grid Authorization Profile ID to process.
+     */
     protected static String ACCEPTED_PROFILE_IDS_PROP = "acceptedProfileIDs";
 
     /** {@inheritDoc} */
@@ -65,9 +68,9 @@ public class AuthorizationProfilePIPIniConfigurationParser extends AbstractX509P
         // read accepted profile IDs from config
         String[] acceptedProfileIds = parseValuesList(iniConfig.get(ACCEPTED_PROFILE_IDS_PROP));
         if (acceptedProfileIds != null && acceptedProfileIds.length > 0) {
-            log.info("accepted profile IDs: {}", Arrays.toString(acceptedProfileIds));
+            log.info("{}: accepted profile IDs: {}", pipId, Arrays.toString(acceptedProfileIds));
         } else {
-            log.info("accepted profile IDs: all");
+            log.info("{}: accepted profile IDs: all", pipId);
         }
 
         AuthorizationProfilePIP pip = new AuthorizationProfilePIP(pipId, requireProxy, trustMaterial, acTrustMaterial,

@@ -105,33 +105,34 @@ public class DFPMObligationHandlerConfigurationParser implements IniOHConfigurat
     public ObligationHandler parse(Section iniConfig, AbstractConfigurationBuilder<?> configBuilder)
             throws ConfigurationException {
 
+        String name= iniConfig.getName();
         int precendence = IniConfigUtil.getInt(iniConfig, PRECEDENCE_PROP, DEFAULT_PRECENDENCE, 0, Integer.MAX_VALUE);
         log.debug("handler precendence: {}", precendence);
 
         String accountMapFile = IniConfigUtil.getString(iniConfig, ACCOUNT_MAP_FILE_PROP);
-        log.info("login name mapping file: {}", accountMapFile);
+        log.info("{}: login name mapping file: {}", name, accountMapFile);
 
         boolean preferDNForLoginName = IniConfigUtil.getBoolean(iniConfig, PREFER_DN_FOR_LOGIN_NAME_PROP,
                 PREFER_DN_FOR_LOGIN_NAME_DEFAULT);
-        log.info("prefer DN login name mappings: {}", preferDNForLoginName);
+        log.info("{}: prefer DN login name mappings: {}", name,preferDNForLoginName);
 
         String groupMapFile = IniConfigUtil.getString(iniConfig, GROUP_MAP_FILE_PROP);
-        log.info("group name mapping file: {}", groupMapFile);
+        log.info("{}: group name mapping file: {}", name,groupMapFile);
 
         boolean preferDNForPrimaryGroupName = IniConfigUtil.getBoolean(iniConfig,
                 PREFER_DN_FOR_PRIMARY_GROUP_NAME_PROP, PREFER_DN_FOR_PRIMARY_GOURP_NAME_DEFAULT);
-        log.info("prefer DN primary group mappings: {}", preferDNForPrimaryGroupName);
+        log.info("{}: prefer DN primary group mappings: {}", name,preferDNForPrimaryGroupName);
 
         int mapRefreshPeriod = IniConfigUtil.getInt(iniConfig, MAP_REFRESH_PERIOD_PROP, DEFAULT_MAP_REFRESH_PERIOD, 1,
                 Integer.MAX_VALUE);
-        log.info("mapping file refresh period: {} mins", mapRefreshPeriod);
+        log.info("{}: mapping file(s) refresh period: {} mins", name,mapRefreshPeriod);
 
         String gridMapDir = IniConfigUtil.getString(iniConfig, GRID_MAP_DIR_PROP);
-        log.info("grid mapping directory: {}", gridMapDir);
+        log.info("{}: grid mapping directory: {}", name,gridMapDir);
 
         boolean noPrimaryGroupNameIsError = IniConfigUtil.getBoolean(iniConfig, NO_PRIMARY_GROUP_NAME_IS_ERROR_PROP,
                 NO_PRIMARY_GROUP_NAME_IS_ERROR_DEFAULT);
-        log.info("no primary group name mapping is error: {}", noPrimaryGroupNameIsError);
+        log.info("{}: no primary group name mapping is error: {}", name,noPrimaryGroupNameIsError);
 
         AccountMapper accountMapper = buildAccountMapper(accountMapFile, preferDNForLoginName, groupMapFile,
                 preferDNForPrimaryGroupName, mapRefreshPeriod * 60 * 1000, gridMapDir, noPrimaryGroupNameIsError);
