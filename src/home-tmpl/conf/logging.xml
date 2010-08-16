@@ -82,7 +82,7 @@
 
         <layout class="ch.qos.logback.classic.PatternLayout">
             <!-- General logging pattern, date time in UTC (Zulu) -->
-            <Pattern>%date{yyyy-MM-dd HH:mm:ss.SSS'Z',UTC} - %level [%logger:%line] - %msg%n</Pattern>
+            <Pattern>%date{yyyy-MM-dd HH:mm:ss.SSS'Z',UTC} - %level [%logger{0}] - %msg%n</Pattern>
 
         </layout>
     </appender>
