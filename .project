@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>pep-daemon</name>
+	<name>org.glite.authz.pep-daemon</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -26,5 +26,4 @@
 		<nature>org.eclipse.iam.jdt.core.mavenNature</nature>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
-
 </projectDescription>
