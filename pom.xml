@@ -1,108 +1,89 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
-<project>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.glite.authz</groupId>
+        <artifactId>argus-parent</artifactId>
+        <version>1.2.0</version>
+        <relativePath>../argus-parent</relativePath>
+    </parent>
+
+    <name>Argus Authorization Service: PEP Daemon</name>
     <groupId>org.glite.authz</groupId>
     <artifactId>pepd</artifactId>
-    <name>gLite Authorization Service: PEP Daemon</name>
     <version>1.2.0</version>
+    <packaging>jar</packaging>
 
     <description>XACML based authorization service developed within the gLite project.
     </description>
     <url>http://glite.web.cern.ch/glite/</url>
     <inceptionYear>2008</inceptionYear>
     
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <slf4j.groupId>org.slf4j</slf4j.groupId>
-        <slf4j.version>1.5.8</slf4j.version>
-        <logback.groupId>ch.qos.logback</logback.groupId>
-        <logback.version>0.9.18</logback.version>
-    </properties>
-
-    <repositories>
-        <repository>
-            <id>internet2</id>
-            <name>Internet2 Releases</name>
-            <url>http://shibboleth.internet2.edu/downloads/maven2</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>switch</id>
-            <name>SWITCH Releases</name>
-            <url>http://www.switch.ch/grid/authz/docs/maven2/release</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-
     <dependencies>
         <!-- Compile Dependencies-->
         <dependency>
             <groupId>org.glite.authz</groupId>
-            <artifactId>pdp-pep-common</artifactId>
-            <version>1.1.0</version>
+            <artifactId>pep-common</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.glite.authz</groupId>
-            <artifactId>pep-common</artifactId>
-            <version>2.0.0</version>
+        	<groupId>org.glite.authz</groupId>
+        	<artifactId>pdp-pep-common</artifactId>
         </dependency>
         <dependency>
             <groupId>net.sf.ehcache</groupId>
             <artifactId>ehcache-core</artifactId>
-            <version>1.7.2</version>
         </dependency>
         <dependency>
             <groupId>org.mortbay.jetty</groupId>
             <artifactId>jetty</artifactId>
-            <version>6.1.18</version>
         </dependency>
         <dependency>
             <groupId>org.mortbay.jetty</groupId>
             <artifactId>jetty-sslengine</artifactId>
-            <version>6.1.18</version>
         </dependency>
         <dependency>
             <groupId>org.mortbay.jetty</groupId>
             <artifactId>jetty-java5-threadpool</artifactId>
-            <version>6.1.18</version>
         </dependency>
         <dependency>
-            <groupId>${logback.groupId}</groupId>
+            <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>${logback.version}</version>
         </dependency>
         <dependency>
-            <groupId>${logback.groupId}</groupId>
+            <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
-            <version>${logback.version}</version>
         </dependency>
         <dependency>
-            <groupId>${slf4j.groupId}</groupId>
+            <groupId>com.caucho</groupId>
+            <artifactId>hessian</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jruby.ext.posix</groupId>
+            <artifactId>jna-posix</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
             <artifactId>jcl-over-slf4j</artifactId>
-            <version>${slf4j.version}</version>
         </dependency>
         <dependency>
-            <groupId>${slf4j.groupId}</groupId>
+            <groupId>org.slf4j</groupId>
             <artifactId>jul-to-slf4j</artifactId>
-            <version>${slf4j.version}</version>
         </dependency>
         <dependency>
-            <groupId>${slf4j.groupId}</groupId>
+            <groupId>org.slf4j</groupId>
             <artifactId>log4j-over-slf4j</artifactId>
-            <version>${slf4j.version}</version>
         </dependency>
         
         <!-- Provided Dependencies -->
         <dependency>
             <groupId>net.jcip</groupId>
             <artifactId>jcip-annotations</artifactId>
-            <version>1.0</version>
             <scope>provided</scope>
         </dependency>
 
@@ -110,31 +91,26 @@
         <dependency>
             <groupId>org.apache.xerces</groupId>
             <artifactId>xml-apis</artifactId>
-            <version>2.9.1</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.xerces</groupId>
             <artifactId>xercesImpl</artifactId>
-            <version>2.9.1</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.xerces</groupId>
             <artifactId>resolver</artifactId>
-            <version>2.9.1</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.xerces</groupId>
             <artifactId>serializer</artifactId>
-            <version>2.9.1</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.xalan</groupId>
             <artifactId>xalan</artifactId>
-            <version>2.7.1</version>
             <scope>runtime</scope>
         </dependency>
 
@@ -142,13 +118,6 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>3.8.1</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>xmlunit</groupId>
-            <artifactId>xmlunit</artifactId>
-            <version>1.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -162,15 +131,11 @@
                 <configuration>
                     <header>project/LICENSE.template</header>
                     <mapping>
-                        <!-- Java source files -->
                         <java>SLASHSTAR_STYLE</java>
-                        <!-- C source files -->
                         <c>SLASHSTAR_STYLE</c>
                         <h>SLASHSTAR_STYLE</h>
-                        <!-- automake and autoconf files -->
                         <ac>SCRIPT_STYLE</ac>
                         <am>SCRIPT_STYLE</am>
-                        <!-- ini config files -->
                         <ini>SCRIPT_STYLE</ini>
                     </mapping>
                     <includes>
@@ -188,14 +153,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.5</source>
-                    <target>1.5</target>
-                    <debug>true</debug>
-                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
@@ -295,18 +252,18 @@
         </profile>
     </profiles>
     
-    <distributionManagement>
-        <repository>
-            <id>release-repo</id>
-            <url>${dist.release.url}</url>
-        </repository>
-        <snapshotRepository>
-            <id>snapshot-repo</id>
-            <url>${dist.snapshot.url}</url>
-        </snapshotRepository>
-    </distributionManagement>
-
     <developers>
+        <developer>
+            <id>vtschopp</id>
+            <name>Valery Tschopp</name>
+            <organization>SWITCH</organization>
+            <organizationUrl>http://www.switch.ch/</organizationUrl>
+            <roles>
+                <role>developer</role>
+                <role>documentation</role>
+            </roles>
+            <timezone>+1</timezone>
+        </developer>
         <developer>
             <id>lajoie</id>
             <name>Chad La Joie</name>
@@ -325,7 +282,6 @@
             <name>Apache 2</name>
             <url>http://www.apache.org/licenses/LICENSE-2.0.txt
             </url>
-            <distribution>repo</distribution>
         </license>
     </licenses>
 
