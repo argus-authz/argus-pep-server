@@ -85,6 +85,11 @@
             <artifactId>jcip-annotations</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk15</artifactId>
+            <scope>provided</scope>
+        </dependency>
 
         <!-- Runtime Dependencies -->
         <dependency>
