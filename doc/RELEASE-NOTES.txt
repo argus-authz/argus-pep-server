@@ -1,3 +1,30 @@
+Changes in Release 1.2.0
+========================
+
+New features:
+
+- The group mapfile now allows DN based group names mapping.
+- The gridmap POSIX account mapping obligation handler now handles DN and FQAN based 
+  account mapping. DN based mapping is preferred upon FQAN based mapping (configurable).
+- The gridmap files now support FQAN pattern matching as described in EGEE document
+  https://edms.cern.ch/file/975443/1/EGEE-III-JRA1_FQAN_wildcard_v1.1.pdf
+- A new generic grid authorization profile PIP handles both the Grid CE v1.0 and Grid WN v1.0
+  authorization profiles.
+
+Bug fixed:
+
+- POSIX mapping obligation attribute/group-id doesn't contain primary group 
+  https://savannah.cern.ch/bugs/?64340
+- Pool account mapping problem with name prefixing other name: .dteam -> dteamprod001
+  https://savannah.cern.ch/bugs/?66574
+- Timestamps in Argus log files do not show the date
+  https://savannah.cern.ch/bugs/?64197 
+- pepd.ini without SECURITY section cause a NullPointerException at start
+  https://savannah.cern.ch/bugs/?68858 
+- pepd.ini without pips defined cause a NullPointerException
+  https://savannah.cern.ch/bugs/?69263
+
+
 Changes in Release 1.1.1
 ========================
 - The X509 PIP extract all the subject-issuer values from the subject certificate
