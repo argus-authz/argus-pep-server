@@ -139,7 +139,7 @@ public class AuthorizationProfilePIP extends AbstractX509PIP {
                         // accept only listed one
                         for (String acceptedProfileId : acceptedProfileIds_) {
                             if (attrib.getValues().contains(acceptedProfileId)) {
-                                log.trace("PIP '{}' accept ", getId(), acceptedProfileId);
+                                log.trace("PIP '{}' accept {}", getId(), acceptedProfileId);
                                 return true;
                             }
                         }
