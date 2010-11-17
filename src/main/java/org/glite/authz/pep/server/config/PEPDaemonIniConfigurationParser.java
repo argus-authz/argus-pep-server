@@ -63,7 +63,10 @@ public class PEPDaemonIniConfigurationParser extends AbstractIniServiceConfigura
 
     /** Default value of the {@value AbstractIniServiceConfigurationParser#PORT_PROP} property, {@value} . */
     public static final int DEFAULT_PORT = 8154;
-    
+
+    /** Default value of the {@value AbstractIniServiceConfigurationParser#ADMIN_PORT_PROP} property, {@value} . */
+    public static final int DEFAULT_ADMIN_PORT = 8155;
+
     /** Default value of the {@value #MAX_CACHED_RESP_PROP} property, {@value} . */
     public static final int DEFAULT_MAX_CACHED_RESP = 500;
 
@@ -88,9 +91,22 @@ public class PEPDaemonIniConfigurationParser extends AbstractIniServiceConfigura
         return parseIni(new StringReader(iniString));
     }
     
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * 
+     * @return the port value, or the default port {@value #DEFAULT_PORT} if it is not set
+     */
     protected int getPort(Section configSection) {
         return IniConfigUtil.getInt(configSection, PORT_PROP, DEFAULT_PORT, 1, 65535);
+    }
+
+    /** 
+     * {@inheritDoc}
+     * 
+     * @return the admin port value, or the default admin port {@value #DEFAULT_ADMIN_PORT} if it is not set
+     */
+    protected int getAdminPort(Section configSection) {
+        return IniConfigUtil.getInt(configSection, ADMIN_PORT_PROP, DEFAULT_ADMIN_PORT, 1, 65535);
     }
 
     /**
