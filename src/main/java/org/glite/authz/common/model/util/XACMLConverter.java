@@ -214,7 +214,11 @@ public class XACMLConverter {
 
         if (xacmlAttribute.getAttributeValues() != null) {
             for (AttributeValueType xacmlAttributeValue : xacmlAttribute.getAttributeValues()) {
-                attribute.getValues().add(Strings.safeTrimOrNullString(xacmlAttributeValue.getValue()));
+                // null value are not valid in Hessian
+                String value= xacmlAttributeValue.getValue();
+                if (value != null) {
+                    attribute.getValues().add(Strings.safeTrimOrNullString(xacmlAttributeValue.getValue()));
+                }
             }
         }
 
