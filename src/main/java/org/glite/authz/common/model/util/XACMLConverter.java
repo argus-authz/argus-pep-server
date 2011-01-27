@@ -254,9 +254,12 @@ public class XACMLConverter {
         if (attribute.getValues() != null) {
             AttributeValueType xacmlAttributeValue;
             for (Object attributeValue : attribute.getValues()) {
-                xacmlAttributeValue = attributeValueBuilder.buildObject();
-                xacmlAttributeValue.setValue(attributeValue.toString());
-                xacmlAttribute.getAttributeValues().add(xacmlAttributeValue);
+                String value= Strings.safeTrimOrNullString(attributeValue.toString());
+                if (value != null) {
+                    xacmlAttributeValue = attributeValueBuilder.buildObject();
+                    xacmlAttributeValue.setValue(value);
+                    xacmlAttribute.getAttributeValues().add(xacmlAttributeValue);
+                }
             }
         }
 
