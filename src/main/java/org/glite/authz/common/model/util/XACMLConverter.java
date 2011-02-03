@@ -65,8 +65,8 @@ import org.slf4j.LoggerFactory;
 public class XACMLConverter {
 
     /** Logger */
-    private static Logger log= LoggerFactory.getLogger(XACMLConverter.class);
-    
+    private static Logger log = LoggerFactory.getLogger(XACMLConverter.class);
+
     /** XACML status code builder. */
     private static XACMLObjectBuilder<StatusCodeType> statusCodeBuilder;
 
@@ -220,12 +220,12 @@ public class XACMLConverter {
         if (xacmlAttribute.getAttributeValues() != null) {
             for (AttributeValueType xacmlAttributeValue : xacmlAttribute.getAttributeValues()) {
                 // null value are not valid in Hessian
-                String value= Strings.safeTrimOrNullString(xacmlAttributeValue.getValue());
+                String value = Strings.safeTrimOrNullString(xacmlAttributeValue.getValue());
                 if (value != null) {
                     attribute.getValues().add(value);
-                }
-                else {
-                    log.warn("AttributeId {} contains a null or empty value (discarded)", xacmlAttribute.getAttributeID());
+                } else {
+                    log.warn("AttributeId {} contains a null or empty value (discarded)",
+                            xacmlAttribute.getAttributeID());
                 }
             }
         }
@@ -253,7 +253,8 @@ public class XACMLConverter {
         String datatype = Strings.safeTrimOrNullString(attribute.getDataType());
         if (datatype != null) {
             xacmlAttribute.setDataType(datatype);
-        } else {
+        } 
+        else {
             xacmlAttribute.setDataType(Attribute.DT_STRING);
         }
 
@@ -262,16 +263,20 @@ public class XACMLConverter {
         if (attribute.getValues() != null) {
             AttributeValueType xacmlAttributeValue;
             for (Object attributeValue : attribute.getValues()) {
-                String value= Strings.safeTrimOrNullString(attributeValue.toString());
-                if (value != null) {
-                    xacmlAttributeValue = attributeValueBuilder.buildObject();
-                    xacmlAttributeValue.setValue(value);
-                    xacmlAttribute.getAttributeValues().add(xacmlAttributeValue);
+                if (attributeValue != null) {
+                    String value = Strings.safeTrimOrNullString(attributeValue.toString());
+                    if (value != null) {
+                        xacmlAttributeValue = attributeValueBuilder.buildObject();
+                        xacmlAttributeValue.setValue(value);
+                        xacmlAttribute.getAttributeValues().add(xacmlAttributeValue);
+                    } 
+                    else {
+                        log.warn("AttributeId {} contains an empty value (discarded)", attribute.getId());
+                    }
                 }
                 else {
-                    log.warn("AttributeId {} contains a null or empty value (discarded)",attribute.getId());
+                    log.warn("AttributeId {} contains a null value (discarded)", attribute.getId());
                 }
-
             }
         }
 
@@ -571,7 +576,7 @@ public class XACMLConverter {
         }
 
         Result result = new Result();
-        
+
         result.setResourceId(xacmlResult.getResourceId());
 
         switch (xacmlResult.getDecision().getDecision()) {
