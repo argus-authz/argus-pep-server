@@ -201,8 +201,8 @@ public class PEPDaemonRequestHandler {
             // cache Deny/Permit decisions
             if (responseCache != null
                     && (result.getDecision() == Result.DECISION_DENY || result.getDecision() == Result.DECISION_PERMIT)) {
-                log.debug("Caching response {} for request {}", messageContext.getInboundMessageId(), messageContext
-                        .getOutboundMessageId());
+                log.debug("Caching response {} for request {}", messageContext.getInboundMessageId(),
+                        messageContext.getOutboundMessageId());
                 responseCache.put(new net.sf.ehcache.Element(request, response));
             }
 
@@ -210,7 +210,7 @@ public class PEPDaemonRequestHandler {
             if (daemonConfig.getObligationService() != null) {
                 log.debug("Processing obligations");
                 daemonConfig.getObligationService().processObligations(request, result);
-            }            
+            }
         } catch (PIPProcessingException e) {
             daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
             log.error("Error processing policy information points: " + e.getMessage());
@@ -219,14 +219,14 @@ public class PEPDaemonRequestHandler {
         } catch (ObligationProcessingException e) {
             daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
             log.error("Error processing obligation handlers: " + e.getMessage());
-            log.debug("",e);
+            log.debug("", e);
             response = buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, e.getMessage());
         } catch (Exception e) {
             daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
             log.error("Error processing authorization request: " + e.getMessage());
             log.debug("", e);
             response = buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, null);
-        }finally{
+        } finally {
             protocolLog.info("Complete hessian response\n{}", response.toString());
         }
 
@@ -272,8 +272,8 @@ public class PEPDaemonRequestHandler {
                 pdpEndpoint = pdpItr.next();
                 log.debug("Sending request {} to {}", messageContext.getOutboundMessageId(), pdpEndpoint);
                 daemonConfig.getSOAPClient().send(pdpEndpoint, messageContext);
-                authzResponse = extractResponse(messageContext, pdpEndpoint, (Envelope) messageContext
-                        .getInboundMessage());
+                authzResponse = extractResponse(messageContext, pdpEndpoint,
+                        (Envelope) messageContext.getInboundMessage());
                 if (authzResponse != null) {
                     logSOAPProtocolMessage(messageContext.getInboundMessage(), false);
                     messageContext.setRespondingPDP(pdpEndpoint);
@@ -379,7 +379,7 @@ public class PEPDaemonRequestHandler {
     }
 
     /**
-     * Builds a Response containing an error.
+     * Builds a Response containing an error. The Response/Result is <b>Indeterminate</b> for error.
      * 
      * @param request the request that caused the error
      * @param statusCode status code of the error
@@ -398,6 +398,7 @@ public class PEPDaemonRequestHandler {
         }
 
         Result result = new Result();
+        result.setDecision(Result.DECISION_INDETERMINATE);
         result.setStatus(status);
 
         Response response = new Response();
@@ -437,8 +438,9 @@ public class PEPDaemonRequestHandler {
      * @param messageContext current message context
      */
     private void writeAuditLogEntry(AuthzRequestContext messageContext) {
-        AuditLogEntry entry = new AuditLogEntry(messageContext.getOutboundMessageId(), messageContext
-                .getRespondingPDP(), messageContext.getInboundMessageId(), messageContext.getAuthorizationDecision());
+        AuditLogEntry entry = new AuditLogEntry(messageContext.getOutboundMessageId(),
+                messageContext.getRespondingPDP(), messageContext.getInboundMessageId(),
+                messageContext.getAuthorizationDecision());
         auditLog.info(entry.toString());
     }
 
