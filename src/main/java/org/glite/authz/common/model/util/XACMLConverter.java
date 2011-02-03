@@ -52,6 +52,8 @@ import org.opensaml.xacml.policy.EffectType;
 import org.opensaml.xacml.policy.ObligationType;
 import org.opensaml.xacml.policy.ObligationsType;
 import org.opensaml.xml.XMLObjectBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A helper class for converting to/from XACML objects.
@@ -62,6 +64,9 @@ import org.opensaml.xml.XMLObjectBuilder;
 @SuppressWarnings("unchecked")
 public class XACMLConverter {
 
+    /** Logger */
+    private static Logger log= LoggerFactory.getLogger(XACMLConverter.class);
+    
     /** XACML status code builder. */
     private static XACMLObjectBuilder<StatusCodeType> statusCodeBuilder;
 
@@ -208,16 +213,19 @@ public class XACMLConverter {
 
         Attribute attribute = new Attribute();
 
-        attribute.setDataType(Strings.safeTrimOrNullString(xacmlAttribute.getDataType()));
         attribute.setId(Strings.safeTrimOrNullString(xacmlAttribute.getAttributeID()));
+        attribute.setDataType(Strings.safeTrimOrNullString(xacmlAttribute.getDataType()));
         attribute.setIssuer(Strings.safeTrimOrNullString(xacmlAttribute.getIssuer()));
 
         if (xacmlAttribute.getAttributeValues() != null) {
             for (AttributeValueType xacmlAttributeValue : xacmlAttribute.getAttributeValues()) {
                 // null value are not valid in Hessian
-                String value= xacmlAttributeValue.getValue();
+                String value= Strings.safeTrimOrNullString(xacmlAttributeValue.getValue());
                 if (value != null) {
-                    attribute.getValues().add(Strings.safeTrimOrNullString(xacmlAttributeValue.getValue()));
+                    attribute.getValues().add(value);
+                }
+                else {
+                    log.warn("AttributeId {} contains a null or empty value (discarded)", xacmlAttribute.getAttributeID());
                 }
             }
         }
@@ -260,6 +268,10 @@ public class XACMLConverter {
                     xacmlAttributeValue.setValue(value);
                     xacmlAttribute.getAttributeValues().add(xacmlAttributeValue);
                 }
+                else {
+                    log.warn("AttributeId {} contains a null or empty value (discarded)",attribute.getId());
+                }
+
             }
         }
 
