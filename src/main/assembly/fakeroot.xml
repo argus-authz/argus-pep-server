@@ -51,7 +51,7 @@ Installed in a fakeroot directory structure.
         <!-- /etc/argus/pepd config directory -->
         <fileSet>
             <outputDirectory>/etc/argus/pepd</outputDirectory>
-            <directory>src/conf</directory>
+            <directory>src/config</directory>
             <fileMode>0640</fileMode>
             <directoryMode>0750</directoryMode>
         </fileSet>
