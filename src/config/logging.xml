@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (c) Members of the EGEE Collaboration. 2006-2010.
+    See http://www.eu-egee.org/partners/ for details on the copyright holders.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+
+
+<configuration>
+    
+    <!--
+        Loggers define indicate which packages/categories are logged, at which level, and to which appender.
+        Levels: OFF, ERROR, WARN, INFO, DEBUG, TRACE, ALL
+    -->
+    <!-- Logs PEP messages -->
+    <logger name="org.glite.authz">
+        <level value="INFO" />
+    </logger>
+
+    <!-- Logs incoming and outgoing Hessian and SAML messages, set level to ALL to enable -->
+    <logger name="org.glite.authz.message.protocol">
+        <level value="OFF" />
+    </logger>
+    
+    <!-- 
+        Normally you should not edit below this point.  These default configurations are sufficient for 
+        almost every system.
+    -->
+
+    <!-- 
+        Logging appenders define where and how logging messages are logged.
+     -->
+    <appender name="ACCESS" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${org.glite.authz.pep.logdir}/pepd-access.log</File>
+        <ImmediateFlush>true</ImmediateFlush>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>${org.glite.authz.pep.logdir}/pepd-access-%d{yyyy-MM-dd}.log</FileNamePattern>
+        </rollingPolicy>
+
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>%msg%n</Pattern>
+        </layout>
+    </appender>
+
+    <appender name="AUDIT" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${org.glite.authz.pep.logdir}/pepd-audit.log</File>
+        <ImmediateFlush>true</ImmediateFlush>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>${org.glite.authz.pep.logdir}/pepd-audit-%d{yyyy-MM-dd}.log</FileNamePattern>
+        </rollingPolicy>
+
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>%msg%n</Pattern>
+        </layout>
+    </appender>
+
+    <appender name="PROCESS" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${org.glite.authz.pep.logdir}/pepd-process.log</File>
+        <!-- Uncomment this if application is terminating in such as way that the last few log messages are not written to disk -->
+        <!--
+        <ImmediateFlush>true</ImmediateFlush>
+        -->
+        
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>${org.glite.authz.pep.logdir}/pepd-process-%d{yyyy-MM-dd}.log</FileNamePattern>
+        </rollingPolicy>
+
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <!-- General logging pattern, date time in UTC (Zulu) -->
+            <Pattern>%date{yyyy-MM-dd HH:mm:ss.SSS'Z',UTC} - %level [%logger{0}] - %msg%n</Pattern>
+
+        </layout>
+    </appender>
+  
+    <logger name="org.glite.authz.access"  additivity="false">
+        <level value="ALL" />
+        <appender-ref ref="ACCESS" />
+    </logger>
+    
+    <logger name="org.glite.authz.audit"  additivity="false">
+        <level value="ALL" />
+        <appender-ref ref="AUDIT" />
+    </logger> 
+
+    <root>
+        <level value="ERROR" />
+        <appender-ref ref="PROCESS" />
+    </root>
+
+</configuration>
