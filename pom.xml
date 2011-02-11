@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.glite.authz</groupId>
         <artifactId>argus-parent</artifactId>
-        <version>1.2.1</version>
+        <version>1.3.0</version>
         <relativePath>../org.glite.authz</relativePath>
     </parent>
 
@@ -256,6 +256,23 @@
             <id>etics</id>
             <build>
                 <finalName>pepd</finalName>
+            </build>
+        </profile>
+        <profile>
+            <id>EMI</id>
+            <build>
+                <finalName>pepd</finalName>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <!-- overwrite default descriptor to use -->
+                        <configuration>
+                            <descriptors>
+                                <descriptor>src/main/assembly/fakeroot.xml</descriptor>
+                            </descriptors>
+                        </configuration>
+                    </plugin>
+                </plugins>
             </build>
         </profile>
     </profiles>
