@@ -15,19 +15,57 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+#set -x
 
-PEPD_CONFDIR="/etc/argus/pepd"
-PEPD_LOGDIR="/var/log/argus/pepd"
+# config, log and lib directories
+PEPD_CONFDIR=${PEPD_CONFDIR-"/etc/argus/pepd"}
+PEPD_LOGDIR=${PEPD_LOGDIR-"/var/log/argus/pepd"}
+PEPD_LIBDIR=${PEPD_LIBDIR-"/var/lib/argus/pepd"}
 
-PEPD_CONF="$PEPD_CONFDIR/pepd.ini"
+# configuration file
+PEPD_CONF=${PEPD_CONF-"$PEPD_CONFDIR/pepd.ini"}
 
-# Source our environment setup script
+# source optional configuration
 if [ -r /etc/sysconfig/argus-pepd ]; then
    . /etc/sysconfig/argus-pepd
 fi
-#. $PEPD_HOME/sbin/env.sh
 
-# Add the PDP home directory property
+JAVACMD=${JAVACMD-`which java`}
+if [ ! -x "$JAVACMD" ] ; then
+    echo "$0: ERROR: 'java' not available in PATH"
+    exit 1
+fi
+
+# check config file
+if [ ! -r "$PEPD_CONF" ]; then
+    echo "$0: ERROR: config file $PEPD_CONF not readable"
+    exit 1
+fi
+
+# add in the dependency .jar files from the lib directory
+jarfiles="$PEPD_LIBDIR/lib/*.jar"
+for jar in $jarfiles
+do
+    # if the directory is empty, then it will return the input string
+    # this is stupid, so case for it
+    if [ -f "$jar" ] ; then
+        LOCALCLASSPATH="$LOCALCLASSPATH":"$jar"
+    fi
+done
+# check classpath
+if [ -z "$LOCALCLASSPATH" ]; then
+    echo "$0: ERROR: LOCALCLASSPATH empty, check $PEPD_LIBDIR/lib directory"
+    exit 1
+fi
+# check endorsed directory
+if [ -d "$PEPD_LIBDIR/endorsed" ]; then
+    echo "$0: ERROR: $PEPD_LIBDIR/endorsed does not exist"
+    exit 1
+fi
+# set the mandatory endorsed dir and the classpath
+JVMOPTS="-Djava.endorsed.dirs=$PEPD_LIBDIR/endorsed -classpath $LOCALCLASSPATH $JVMOPTS"
+
+# set the mandatory PEP server directory properties
 JVMOPTS="-Dorg.glite.authz.pep.confdir=$PEPD_CONFDIR -Dorg.glite.authz.pep.logdir=$PEPD_LOGDIR $JVMOPTS"
 
 function executeAdminCommand {
