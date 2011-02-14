@@ -20,30 +20,25 @@
 # config, log and lib directories
 PEPD_CONFDIR=${PEPD_CONFDIR-"/etc/argus/pepd"}
 PEPD_LOGDIR=${PEPD_LOGDIR-"/var/log/argus/pepd"}
-PEPD_LIBDIR=${PEPD_LIBDIR-"/var/lib/argus/pepd"}
+PEPD_LIBDIR=${PEPD_LIBDIR-"/var/lib/argus/pepd/lib"}
 
-# configuration file
+# configuration file and check
 PEPD_CONF=${PEPD_CONF-"$PEPD_CONFDIR/pepd.ini"}
-
-# source optional configuration
-if [ -r /etc/sysconfig/argus-pepd ]; then
-   . /etc/sysconfig/argus-pepd
+if [ ! -r "$PEPD_CONF" ]; then
+    echo "$0: ERROR: config file $PEPD_CONF not readable"
+    exit 1
 fi
 
+# java command and check
 JAVACMD=${JAVACMD-`which java`}
 if [ ! -x "$JAVACMD" ] ; then
     echo "$0: ERROR: 'java' not available in PATH"
     exit 1
 fi
 
-# check config file
-if [ ! -r "$PEPD_CONF" ]; then
-    echo "$0: ERROR: config file $PEPD_CONF not readable"
-    exit 1
-fi
 
 # add in the dependency .jar files from the lib directory
-jarfiles="$PEPD_LIBDIR/lib/*.jar"
+jarfiles="$PEPD_LIBDIR/*.jar"
 for jar in $jarfiles
 do
     # if the directory is empty, then it will return the input string
@@ -54,7 +49,7 @@ do
 done
 # check classpath
 if [ -z "$LOCALCLASSPATH" ]; then
-    echo "$0: ERROR: LOCALCLASSPATH empty, check $PEPD_LIBDIR/lib directory"
+    echo "$0: ERROR: LOCALCLASSPATH empty, check the $PEPD_LIBDIR directory"
     exit 1
 fi
 # check endorsed directory
@@ -70,12 +65,12 @@ JVMOPTS="-Dorg.glite.authz.pep.confdir=$PEPD_CONFDIR -Dorg.glite.authz.pep.logdi
 
 function executeAdminCommand {
     HOST=`sed 's/ //g' $PEPD_CONF | grep "^adminHost" | awk 'BEGIN {FS="="}{print $2}'`
-    if [ -z $HOST ] ; then
+    if [ -z "$HOST" ] ; then
        HOST="127.0.0.1"
     fi
 
     PORT=`sed 's/ //g' $PEPD_CONF | grep "^adminPort" | awk 'BEGIN {FS="="}{print $2}'`
-    if [ -z $PORT ] ; then
+    if [ -z "$PORT" ] ; then
        PORT="8155"
     fi
     
