@@ -44,11 +44,11 @@
         Logging appenders define where and how logging messages are logged.
      -->
     <appender name="ACCESS" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <File>${org.glite.authz.pep.logdir}/pepd-access.log</File>
+        <File>${org.glite.authz.pep.logdir}/access.log</File>
         <ImmediateFlush>true</ImmediateFlush>
 
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <FileNamePattern>${org.glite.authz.pep.logdir}/pepd-access-%d{yyyy-MM-dd}.log</FileNamePattern>
+            <FileNamePattern>${org.glite.authz.pep.logdir}/access-%d{yyyy-MM-dd}.log</FileNamePattern>
         </rollingPolicy>
 
         <layout class="ch.qos.logback.classic.PatternLayout">
@@ -57,11 +57,11 @@
     </appender>
 
     <appender name="AUDIT" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <File>${org.glite.authz.pep.logdir}/pepd-audit.log</File>
+        <File>${org.glite.authz.pep.logdir}/audit.log</File>
         <ImmediateFlush>true</ImmediateFlush>
 
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <FileNamePattern>${org.glite.authz.pep.logdir}/pepd-audit-%d{yyyy-MM-dd}.log</FileNamePattern>
+            <FileNamePattern>${org.glite.authz.pep.logdir}/audit-%d{yyyy-MM-dd}.log</FileNamePattern>
         </rollingPolicy>
 
         <layout class="ch.qos.logback.classic.PatternLayout">
@@ -70,14 +70,14 @@
     </appender>
 
     <appender name="PROCESS" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <File>${org.glite.authz.pep.logdir}/pepd-process.log</File>
+        <File>${org.glite.authz.pep.logdir}/process.log</File>
         <!-- Uncomment this if application is terminating in such as way that the last few log messages are not written to disk -->
         <!--
         <ImmediateFlush>true</ImmediateFlush>
         -->
         
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <FileNamePattern>${org.glite.authz.pep.logdir}/pepd-process-%d{yyyy-MM-dd}.log</FileNamePattern>
+            <FileNamePattern>${org.glite.authz.pep.logdir}/process-%d{yyyy-MM-dd}.log</FileNamePattern>
         </rollingPolicy>
 
         <layout class="ch.qos.logback.classic.PatternLayout">
