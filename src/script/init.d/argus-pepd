@@ -37,6 +37,11 @@ if [ `id -u` -ne 0 ]; then
     exit 1
 fi 
 
+# source optional system configuration
+if [ -r /etc/sysconfig/argus-pepd ]; then
+   . /etc/sysconfig/argus-pepd
+fi
+
 case "$1" in
     start)
         $PEPDCTL start
