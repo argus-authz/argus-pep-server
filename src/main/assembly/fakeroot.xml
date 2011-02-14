@@ -39,7 +39,7 @@ Installed in a fakeroot directory structure.
         </dependencySet>
         <dependencySet>
             <scope>runtime</scope>
-            <outputDirectory>/var/lib/argus/pepd/endorsed</outputDirectory>
+            <outputDirectory>/var/lib/argus/pepd/lib/endorsed</outputDirectory>
             <includes>
                 <include>org.apache.xerces:*</include>
                 <include>org.apache.xalan:*</include>
