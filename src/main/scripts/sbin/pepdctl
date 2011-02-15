@@ -17,10 +17,14 @@
 #
 #set -x
 
+# PEP server home
+PEPD_HOME=${PEPD_HOME-"/usr/share/argus/pepd"}
+
 # config, log and lib directories
-PEPD_CONFDIR=${PEPD_CONFDIR-"/etc/argus/pepd"}
-PEPD_LOGDIR=${PEPD_LOGDIR-"/var/log/argus/pepd"}
-PEPD_LIBDIR=${PEPD_LIBDIR-"/var/lib/argus/pepd/lib"}
+PEPD_CONFDIR=${PEPD_CONFDIR-"$PEPD_HOME/conf"}
+PEPD_LOGDIR=${PEPD_LOGDIR-"$PEPD_HOME/logs"}
+PEPD_LIBDIR=${PEPD_LIBDIR-"$PEPD_HOME/lib"}
+PEPD_ENDORSEDDIR=${PEPD_ENDORSEDDIR-"$PEPD_LIBDIR/endorsed"}
 
 # configuration file and check
 PEPD_CONF=${PEPD_CONF-"$PEPD_CONFDIR/pepd.ini"}
@@ -53,15 +57,15 @@ if [ -z "$LOCALCLASSPATH" ]; then
     exit 1
 fi
 # check endorsed directory
-if [ -d "$PEPD_LIBDIR/endorsed" ]; then
-    echo "$0: ERROR: $PEPD_LIBDIR/endorsed does not exist"
+if [ -d "$PEPD_ENDORSEDDIR" ]; then
+    echo "$0: ERROR: $PEPD_ENDORSEDDIR does not exist"
     exit 1
 fi
 # set the mandatory endorsed dir and the classpath
-JVMOPTS="-Djava.endorsed.dirs=$PEPD_LIBDIR/endorsed -classpath $LOCALCLASSPATH $JVMOPTS"
+PEPD_JOPTS="-Djava.endorsed.dirs=$PEPD_ENDORSEDDIR -classpath $LOCALCLASSPATH $PEPD_JOPTS"
 
 # set the mandatory PEP server directory properties
-JVMOPTS="-Dorg.glite.authz.pep.confdir=$PEPD_CONFDIR -Dorg.glite.authz.pep.logdir=$PEPD_LOGDIR $JVMOPTS"
+PEPD_JOPTS="-Dorg.glite.authz.pep.confdir=$PEPD_CONFDIR -Dorg.glite.authz.pep.logdir=$PEPD_LOGDIR $PEPD_JOPTS"
 
 function executeAdminCommand {
     HOST=`sed 's/ //g' $PEPD_CONF | grep "^adminHost" | awk 'BEGIN {FS="="}{print $2}'`
@@ -76,12 +80,12 @@ function executeAdminCommand {
     
     PASS=`sed 's/ //g' $PEPD_CONF | grep "^adminPassword" | awk 'BEGIN {FS="="}{print $2}'`
     
-    $JAVACMD $JVMOPTS 'org.glite.authz.common.http.JettyAdminServiceCLI' $HOST $PORT $1 $PASS
+    $JAVACMD $PEPD_JOPTS 'org.glite.authz.common.http.JettyAdminServiceCLI' $HOST $PORT $1 $PASS
 }
 
 function start {
     # Run the PDP
-    $JAVACMD $JVMOPTS 'org.glite.authz.pep.server.PEPDaemon' $PEPD_CONF &
+    $JAVACMD $PEPD_JOPTS 'org.glite.authz.pep.server.PEPDaemon' $PEPD_CONF &
 }
 
 
