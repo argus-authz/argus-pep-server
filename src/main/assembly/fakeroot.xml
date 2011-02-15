@@ -22,7 +22,8 @@ Installed in a fakeroot directory structure.
 <assembly>
     <id>fakeroot</id>
     <formats>
-        <format>tar.gz</format>
+        <!-- <format>tar.gz</format> -->
+        <format>dir</format>
     </formats>
     <includeBaseDirectory>false</includeBaseDirectory>
     <!-- /var/lib/argus/pepd library and endorsed directories -->
@@ -48,41 +49,46 @@ Installed in a fakeroot directory structure.
     </dependencySets>
     
     <fileSets>
+        <!-- /usr/share/argus/pepd home directory -->
+        <fileSet>
+            <outputDirectory>/usr/share/argus/pepd</outputDirectory>
+            <directory>src/home-tmpl/empty-dir</directory>
+        </fileSet>
         <!-- /etc/argus/pepd config directory -->
         <fileSet>
             <outputDirectory>/etc/argus/pepd</outputDirectory>
-            <directory>src/config</directory>
+            <directory>src/main/config</directory>
             <fileMode>0640</fileMode>
             <directoryMode>0750</directoryMode>
         </fileSet>
         <!-- /usr/sbin/pepdctl control script -->
         <fileSet>
             <outputDirectory>/usr/sbin</outputDirectory>
-            <directory>src/script/sbin</directory>
+            <directory>src/main/scripts/sbin</directory>
             <fileMode>0750</fileMode>
         </fileSet>
         <!-- /etc/sysconfig/argus-pepd optional config -->
         <fileSet>
             <outputDirectory>/etc/sysconfig</outputDirectory>
-            <directory>src/script/sysconfig</directory>
+            <directory>src/main/scripts/sysconfig</directory>
             <fileMode>0640</fileMode>
         </fileSet>
         <!-- /etc/rc.d/init.d startup script -->
         <fileSet>
             <outputDirectory>/etc/rc.d/init.d</outputDirectory>
-            <directory>src/script/init.d</directory>
+            <directory>src/main/scripts/init.d</directory>
             <fileMode>0755</fileMode>
         </fileSet>
         <!-- /var/log/argus/pepd logging directory -->
         <fileSet>
-            <directory>src/home-tmpl/logs</directory>
             <outputDirectory>/var/log/argus/pepd</outputDirectory>
+            <directory>src/home-tmpl/empty-dir</directory>
             <directoryMode>0750</directoryMode>
         </fileSet>        
         <!-- Documentation -->
         <fileSet>
             <outputDirectory>/usr/share/doc/argus/pepd</outputDirectory>
-            <directory>doc/</directory>
+            <directory>doc</directory>
         </fileSet>
         <!-- Javadoc -->
         <!--

@@ -41,5 +41,5 @@ create_symlink /var/lib/argus/$PEPD_NAME/lib $PEPD_HOME/lib
 create_symlink /var/log/argus/$PEPD_NAME $PEPD_HOME/logs
 
 # doc: /usr/share/argus/pepd/doc -> /usr/share/doc/argus/pepd
-create_symlink /usr/share/doc/argus/$PEPD_NAME $PAP_HOME/doc
+create_symlink /usr/share/doc/argus/$PEPD_NAME $PEPD_HOME/doc
 

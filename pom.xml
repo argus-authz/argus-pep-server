@@ -150,7 +150,7 @@
                     </includes>
                     <excludes>
                         <exclude>**/resources/**</exclude>
-                        <exclude>**/credentials/**</exclude>
+                        <exclude>**/package/**</exclude>
                     </excludes>
                 </configuration>
                 <executions>
@@ -169,7 +169,7 @@
                         <id>make-assembly</id>
                         <phase>package</phase>
                         <goals>
-                            <goal>attached</goal>
+                            <goal>single</goal>
                         </goals>
                     </execution>
                 </executions>
@@ -271,6 +271,45 @@
                                 <descriptor>src/main/assembly/fakeroot.xml</descriptor>
                             </descriptors>
                         </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>1.2</version>
+                        <executions>
+                            <execution>
+                                <id>create-emi-symlinks</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <workingDirectory>${project.build.directory}/pepd-fakeroot.dir</workingDirectory>
+                                    <executable>/bin/sh</executable>
+                                    <arguments>
+                                        <argument>${basedir}/src/script/package/emi-symlinks.sh</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>delete-emi-symlinks</id>
+                                <phase>pre-clean</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <workingDirectory>${project.build.directory}/pepd-fakeroot.dir</workingDirectory>
+                                    <executable>/bin/rm</executable>
+                                    <arguments>
+                                        <argument>-vf</argument>
+                                        <argument>usr/share/argus/pepd/conf</argument>
+                                        <argument>usr/share/argus/pepd/doc</argument>
+                                        <argument>usr/share/argus/pepd/lib</argument>
+                                        <argument>usr/share/argus/pepd/logs</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                         </executions>
                     </plugin>
                 </plugins>
             </build>
