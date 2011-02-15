@@ -1,0 +1,6 @@
+#
+# Options for the PEP server
+#
+#JAVACMD="/usr/bin/java"
+#JVMOPTS="-Djava.net.preferIPv4Stack=true $JVMOPTS"
+
