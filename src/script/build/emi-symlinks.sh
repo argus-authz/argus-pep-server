@@ -19,9 +19,9 @@
 set -e
 
 PEPD_NAME=pepd
-PEPD_HOME="/usr/share/argus/${PEPD_NAME}"
+PEPD_HOME="usr/share/argus/${PEPD_NAME}"
 
-prefix='../../../..'
+prefix=
 bin_prefix="$prefix/.."
 
 function create_symlink(){
@@ -31,15 +31,15 @@ function create_symlink(){
 	ln -vs $1 $2
 }
 
-# conf
+# conf: /usr/share/argus/pepd/conf -> /etc/argus/pepd
 create_symlink /etc/argus/$PEPD_NAME $PEPD_HOME/conf
 
-# lib
+# lib: /usr/share/argus/pepd/lib -> /var/lib/argus/pepd/lib
 create_symlink /var/lib/argus/$PEPD_NAME/lib $PEPD_HOME/lib
 
-# logs
+# logs: /usr/share/argus/pepd/logs -> /var/log/argus/pepd
 create_symlink /var/log/argus/$PEPD_NAME $PEPD_HOME/logs
 
-# doc
+# doc: /usr/share/argus/pepd/doc -> /usr/share/doc/argus/pepd
 create_symlink /usr/share/doc/argus/$PEPD_NAME $PAP_HOME/doc
 
