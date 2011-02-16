@@ -2,5 +2,12 @@
 # Options for the PEP server
 #
 #JAVACMD="/usr/bin/java"
-#PEPD_JOPTS="-Djava.net.preferIPv4Stack=true $PEPD_JOPTS"
+#PEPD_JOPTS="-Djava.net.preferIPv4Stack=true"
+#PEPD_HOME="/usr/share/argus/pepd"
+#PEPD_CONF="/etc/argus/pepd/pepd.ini"
+#PEPD_CONFDIR="/etc/argus/pepd"
+#PEPD_LOGDIR="/var/log/argus/pepd"
+#PEPD_LIBDIR="/var/lib/argus/pepd/lib"
+#PEPD_ENDORSEDDIR="/var/lib/argus/pepd/lib/endorsed"
+
 

@@ -30,6 +30,9 @@
 #
 # Date: 11/02/2011
 ###############################################################################
+# set -x
+
+# PEP server control script
 PEPDCTL=/usr/sbin/pepdctl
 
 if [ `id -u` -ne 0 ]; then
@@ -40,6 +43,15 @@ fi
 # source optional system configuration
 if [ -r /etc/sysconfig/argus-pepd ]; then
    . /etc/sysconfig/argus-pepd
+   # export the variable for the $PEPDCTL script
+   [ -n "$JAVACMD" ] && export JAVACMD="$JAVACMD"
+   [ -n "$PEPD_JOPTS" ] && export PEPD_JOPTS="$PEPD_JOPTS"
+   [ -n "$PEPD_HOME" ] && export PEPD_HOME="$PEPD_HOME"
+   [ -n "$PEPD_CONF" ] && export PEPD_CONF="$PEPD_CONF"
+   [ -n "$PEPD_CONFDIR" ] && export PEPD_CONFDIR="$PEPD_CONFDIR"
+   [ -n "$PEPD_LOGDIR" ] && export PEPD_LOGDIR="$PEPD_LOGDIR"
+   [ -n "$PEPD_LIBDIR" ] && export PEPD_LIBDIR="$PEPD_LIBDIR"
+   [ -n "$PEPD_ENDORSEDDIR" ] && export PEPD_ENDORSEDDIR="$PEPD_ENDORSEDDIR"
 fi
 
 case "$1" in
