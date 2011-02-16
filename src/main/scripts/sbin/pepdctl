@@ -57,7 +57,7 @@ if [ -z "$LOCALCLASSPATH" ]; then
     exit 1
 fi
 # check endorsed directory
-if [ -d "$PEPD_ENDORSEDDIR" ]; then
+if [ ! -d "$PEPD_ENDORSEDDIR" ]; then
     echo "$0: ERROR: $PEPD_ENDORSEDDIR does not exist"
     exit 1
 fi
@@ -65,22 +65,22 @@ fi
 PEPD_JOPTS="-Djava.endorsed.dirs=$PEPD_ENDORSEDDIR -classpath $LOCALCLASSPATH $PEPD_JOPTS"
 
 # set the mandatory PEP server directory properties
-PEPD_JOPTS="-Dorg.glite.authz.pep.confdir=$PEPD_CONFDIR -Dorg.glite.authz.pep.logdir=$PEPD_LOGDIR $PEPD_JOPTS"
+PEPD_JOPTS="-Dorg.glite.authz.pep.home=$PEPD_HOME -Dorg.glite.authz.pep.confdir=$PEPD_CONFDIR -Dorg.glite.authz.pep.logdir=$PEPD_LOGDIR $PEPD_JOPTS"
 
 function executeAdminCommand {
-    HOST=`sed 's/ //g' $PEPD_CONF | grep "^adminHost" | awk 'BEGIN {FS="="}{print $2}'`
-    if [ -z "$HOST" ] ; then
-       HOST="127.0.0.1"
+    ADMIN_HOST=`sed 's/ //g' $PEPD_CONF | grep "^adminHost" | awk 'BEGIN {FS="="}{print $2}'`
+    if [ -z "$ADMIN_HOST" ] ; then
+       ADMIN_HOST="127.0.0.1"
     fi
 
-    PORT=`sed 's/ //g' $PEPD_CONF | grep "^adminPort" | awk 'BEGIN {FS="="}{print $2}'`
-    if [ -z "$PORT" ] ; then
-       PORT="8155"
+    ADMIN_PORT=`sed 's/ //g' $PEPD_CONF | grep "^adminPort" | awk 'BEGIN {FS="="}{print $2}'`
+    if [ -z "$ADMIN_PORT" ] ; then
+       ADMIN_PORT="8155"
     fi
     
-    PASS=`sed 's/ //g' $PEPD_CONF | grep "^adminPassword" | awk 'BEGIN {FS="="}{print $2}'`
+    ADMIN_PASS=`sed 's/ //g' $PEPD_CONF | grep "^adminPassword" | awk 'BEGIN {FS="="}{print $2}'`
     
-    $JAVACMD $PEPD_JOPTS 'org.glite.authz.common.http.JettyAdminServiceCLI' $HOST $PORT $1 $PASS
+    $JAVACMD $PEPD_JOPTS 'org.glite.authz.common.http.JettyAdminServiceCLI' $ADMIN_HOST $ADMIN_PORT $1 $ADMIN_PASS
 }
 
 function start {
