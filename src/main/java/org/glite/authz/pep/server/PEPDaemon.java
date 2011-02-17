@@ -108,17 +108,20 @@ public final class PEPDaemon {
      */
     public static void main(String[] args) throws Exception {
         if (args.length < 1 || args.length > 1) {
-            errorAndExit("Invalid configuration file", null);
+            errorAndExit("Missing configuration file argument", null);
         }
 
         String confDir= System.getProperty(PEP_CONFDIR_PROP);
-        if (confDir==null) {
-            errorAndExit("System property " + PEP_CONFDIR_PROP + " is not set",null);
+        if (confDir == null) {
+            errorAndExit("System property " + PEP_CONFDIR_PROP + " is not set",
+                         null);
         }
 
         final Timer backgroundTaskTimer= new Timer(true);
+        
+        String loggingConfigFilePath= confDir + "/logging.xml";
+        initializeLogging(loggingConfigFilePath, backgroundTaskTimer);
 
-        initializeLogging(confDir + "/logging.xml", backgroundTaskTimer);
         Security.addProvider(new BouncyCastleProvider());
         DefaultBootstrap.bootstrap();
 
@@ -353,6 +356,9 @@ public final class PEPDaemon {
     /**
      * Initializes the logging system and starts the process to watch for config
      * file changes (5 min).
+     * <p>
+     * The function uses {@link #errorAndExit(String, Exception)} if the
+     * loggingConfigFilePath is a directory, does not exist, or can not be read
      * 
      * @param loggingConfigFilePath
      *            path to the logging configuration file
@@ -361,7 +367,13 @@ public final class PEPDaemon {
      */
     private static void initializeLogging(String loggingConfigFilePath,
             Timer reloadTasks) {
-        LoggingReloadTask reloadTask= new LoggingReloadTask(loggingConfigFilePath);
+        LoggingReloadTask reloadTask= null;
+        try {
+            reloadTask= new LoggingReloadTask(loggingConfigFilePath);
+        } catch (IOException e) {
+            errorAndExit("Invalid logging configuration file: "
+                    + loggingConfigFilePath, e);
+        }
         // check/reload every 5 minutes
         reloadTask.run();
         reloadTasks.scheduleAtFixedRate(reloadTask,
