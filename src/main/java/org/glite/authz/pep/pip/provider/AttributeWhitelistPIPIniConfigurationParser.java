@@ -42,7 +42,7 @@ public class AttributeWhitelistPIPIniConfigurationParser implements IniPIPConfig
      * The name of the {@value} property which gives the IDs of the environment attributes allowed to appear in the
      * request.
      */
-    public static final String ENV_ATTRIBS_PROP = "acceptedEnvrionmentAttributes";
+    public static final String ENV_ATTRIBS_PROP = "acceptedEnvironmentAttributes";
 
     /**
      * The name of the {@value} property which gives the IDs of the resource attributes allowed to appear in the
