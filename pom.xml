@@ -139,10 +139,6 @@
                     <header>project/LICENSE.template</header>
                     <mapping>
                         <java>SLASHSTAR_STYLE</java>
-                        <c>SLASHSTAR_STYLE</c>
-                        <h>SLASHSTAR_STYLE</h>
-                        <ac>SCRIPT_STYLE</ac>
-                        <am>SCRIPT_STYLE</am>
                         <ini>SCRIPT_STYLE</ini>
                     </mapping>
                     <includes>
@@ -150,6 +146,7 @@
                     </includes>
                     <excludes>
                         <exclude>**/resources/**</exclude>
+                        <exclude>**/main/scripts/**</exclude>
                         <exclude>**/package/**</exclude>
                     </excludes>
                 </configuration>
