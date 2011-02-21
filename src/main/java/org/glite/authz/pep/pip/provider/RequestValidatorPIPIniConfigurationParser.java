@@ -35,20 +35,52 @@ public class RequestValidatorPIPIniConfigurationParser implements
     /** Class logger. */
     private Logger log= LoggerFactory.getLogger(RequestValidatorPIPIniConfigurationParser.class);
 
+    /**
+     * Name of the {@value} property in the INI configuration file to
+     * enable/disable validation of the request subjects
+     */
     public static final String VALIDATE_REQUEST_SUBJECTS_PROP= "validateRequestSubjects";
 
+    /**
+     * Name of the {@value} property in the INI configuration file to
+     * enable/disable validation of the request resources
+     */
     public static final String VALIDATE_REQUEST_RESOURCES_PROP= "validateRequestResources";
 
+    /**
+     * Name of the {@value} property in the INI configuration file to
+     * enable/disable validation of the request action
+     */
     public static final String VALIDATE_REQUEST_ACTION_PROP= "validateRequestAction";
 
+    /**
+     * Name of the {@value} property in the INI configuration file to
+     * enable/disable validation of the request environment
+     */
     public static final String VALIDATE_REQUEST_ENVIRONMENT_PROP= "validateRequestEnvironment";
 
+    /**
+     * Default value for the {@value #VALIDATE_REQUEST_SUBJECTS_PROP} property:
+     * {@value}
+     */
     public static boolean DEFAULT_VALIDATE_REQUEST_SUBJECTS= true;
 
+    /**
+     * Default value for the {@value #VALIDATE_REQUEST_RESOURCES_PROP} property:
+     * {@value}
+     */
     public static boolean DEFAULT_VALIDATE_REQUEST_RESOURCES= true;
 
+    /**
+     * Default value for the {@value #VALIDATE_REQUEST_ACTION_PROP} property:
+     * {@value}
+     */
     public static boolean DEFAULT_VALIDATE_REQUEST_ACTION= true;
 
+    /**
+     * Default value for the {@value #VALIDATE_REQUEST_ENVIRONMENT_PROP}
+     * property: {@value}
+     */
     public static boolean DEFAULT_VALIDATE_REQUEST_ENVIRONMENT= false;
 
     /** {@inheritDoc} */
@@ -83,8 +115,8 @@ public class RequestValidatorPIPIniConfigurationParser implements
         pip.setValidateRequestAction(validateRequestAction);
 
         boolean validateRequestEnvironment= IniConfigUtil.getBoolean(iniConfig,
-                                                                VALIDATE_REQUEST_ENVIRONMENT_PROP,
-                                                                DEFAULT_VALIDATE_REQUEST_ENVIRONMENT);
+                                                                     VALIDATE_REQUEST_ENVIRONMENT_PROP,
+                                                                     DEFAULT_VALIDATE_REQUEST_ENVIRONMENT);
         log.info("{}: validate request environment: {}",
                  pipid,
                  validateRequestEnvironment);

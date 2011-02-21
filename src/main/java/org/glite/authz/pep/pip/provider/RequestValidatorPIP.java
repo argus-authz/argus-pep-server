@@ -37,16 +37,16 @@ import org.glite.authz.pep.pip.PIPProcessingException;
  */
 public final class RequestValidatorPIP extends AbstractPolicyInformationPoint {
 
-    /** request subjects validation enabled ? */
+    /** Validation of request subjects enabled ? Default: {@value} */
     private boolean validateRequestSubjects_= true;
 
-    /** request resources validation enabled ? */
+    /** Validation of request resources enabled ? Default: {@value} */
     private boolean validateRequestResources_= true;
 
-    /** request action validation enabled ? */
+    /** Validation of request action enabled ? Default: {@value} */
     private boolean validateRequestAction_= true;
 
-    /** request environment validation enabled ? */
+    /** Validation of request environment enabled ? Default: {@value} */
     private boolean validateRequestEnvironment_= false;
 
     /**
@@ -138,12 +138,13 @@ public final class RequestValidatorPIP extends AbstractPolicyInformationPoint {
      * @param validateRequestEnvironment
      *            enable or disable validation
      */
-    protected void setValidateRequestEnvironment(boolean validateRequestEnvironment) {
+    protected void setValidateRequestEnvironment(
+            boolean validateRequestEnvironment) {
         this.validateRequestEnvironment_= validateRequestEnvironment;
     }
 
     /**
-     * Checks the attributes set for null or empty (stripped) values.
+     * Checks the attributes set for missing, null or empty (stripped) values.
      * 
      * @param attributes
      *            The attributes set to check
