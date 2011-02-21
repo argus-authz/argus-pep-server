@@ -56,7 +56,7 @@ public class OpenSSLSubjectPIPTest extends TestCase {
         super.setUp();
         pip_= new OpenSSLSubjectPIP("OPENSSL_PIP");
         System.out.println("OpenSSL subject attribute IDs to convert: " + OpenSSLSubjectPIP.DEFAULT_OPENSSL_SUBJECT_ATTRIBUTE_IDS);
-        System.out.println("OpenSSL subject attribute datatypes to convert: " + OpenSSLSubjectPIP.DEFAULT_OPENSSL_SUBJECT_ATTRIBUTE_IDS);
+        System.out.println("OpenSSL subject attribute datatypes to convert: " + OpenSSLSubjectPIP.DEFAULT_OPENSSL_SUBJECT_ATTRIBUTE_DATATYPES);
         pip_.start();
     }
 
