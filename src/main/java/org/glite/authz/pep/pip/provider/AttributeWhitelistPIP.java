@@ -104,20 +104,12 @@ public class AttributeWhitelistPIP extends AbstractPolicyInformationPoint {
 
     /** {@inheritDoc} */
     public boolean populateRequest(Request request) throws PIPProcessingException, IllegalStateException {
-        if (request.getAction() != null) {
-            log.debug("Filtering action attributes");
-            filterAttributes(request.getAction().getAttributes(), actionAttributes);
-        }
-
-        if (request.getEnvironment() != null) {
-            log.debug("Filtering environment attributes");
-            filterAttributes(request.getEnvironment().getAttributes(), environmentAttributes);
-        }
-
+        boolean applied= false;
         Set<Resource> resources = request.getResources();
         if (resources != null) {
             for (Resource resource : resources) {
                 if (resource != null) {
+                    applied= true;
                     log.debug("Filtering resource attributes");
                     filterAttributes(resource.getAttributes(), resourceAttributes);
                 }
@@ -128,13 +120,25 @@ public class AttributeWhitelistPIP extends AbstractPolicyInformationPoint {
         if (subjects != null) {
             for (Subject subject : subjects) {
                 if (subject != null) {
+                    applied= true;
                     log.debug("Filtering subject attributes");
                     filterAttributes(subject.getAttributes(), subjectAttributes);
                 }
             }
         }
 
-        return true;
+        if (request.getAction() != null) {
+            applied= true;
+            log.debug("Filtering action attributes");
+            filterAttributes(request.getAction().getAttributes(), actionAttributes);
+        }
+
+        if (request.getEnvironment() != null) {
+            applied= true;
+            log.debug("Filtering environment attributes");
+            filterAttributes(request.getEnvironment().getAttributes(), environmentAttributes);
+        }
+        return applied;
     }
 
     /**
