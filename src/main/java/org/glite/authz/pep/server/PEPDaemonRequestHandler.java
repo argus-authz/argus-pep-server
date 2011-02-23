@@ -379,7 +379,7 @@ public class PEPDaemonRequestHandler {
     }
 
     /**
-     * Builds a Response containing an error.
+     * Builds a Response containing an error. The Decision on error in <b>Indeterminate</b>
      * 
      * @param request the request that caused the error
      * @param statusCode status code of the error
@@ -398,6 +398,7 @@ public class PEPDaemonRequestHandler {
         }
 
         Result result = new Result();
+        result.setDecision(Result.DECISION_INDETERMINATE);
         result.setStatus(status);
 
         Response response = new Response();
