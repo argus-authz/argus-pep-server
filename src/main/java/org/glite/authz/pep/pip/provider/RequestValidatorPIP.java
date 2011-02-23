@@ -67,37 +67,37 @@ public final class RequestValidatorPIP extends AbstractPolicyInformationPoint {
             applied= true;
             Set<Subject> subjects= request.getSubjects();
             if (subjects.size() < 1) {
-                throw new PIPProcessingException("request does not contain any subject");
+                throw new PIPProcessingException("AuthZ request does not contain any Subject");
             }
             for (Subject subject : subjects) {
-                validateAttributes(subject.getAttributes(), "subject");
+                validateAttributes(subject.getAttributes(), "Subject");
             }
         }
         if (validateRequestResources_) {
             applied= true;
             Set<Resource> resources= request.getResources();
             if (resources.size() < 1) {
-                throw new PIPProcessingException("request does not contain any resource");
+                throw new PIPProcessingException("AuthZ request does not contain any Resource");
             }
             for (Resource resource : resources) {
-                validateAttributes(resource.getAttributes(), "resource");
+                validateAttributes(resource.getAttributes(), "Resource");
             }
         }
         if (validateRequestAction_) {
             applied= true;
             Action action= request.getAction();
             if (action == null) {
-                throw new PIPProcessingException("request does not contain an action");
+                throw new PIPProcessingException("AuthZ request does not contain an Action");
             }
-            validateAttributes(action.getAttributes(), "action");
+            validateAttributes(action.getAttributes(), "Action");
         }
         if (validateRequestEnvironment_) {
             applied= true;
             Environment environment= request.getEnvironment();
             if (environment == null) {
-                throw new PIPProcessingException("request does not contain an environment");
+                throw new PIPProcessingException("AuthZ request does not contain an Environment");
             }
-            validateAttributes(environment.getAttributes(), "environment");
+            validateAttributes(environment.getAttributes(), "Environment");
         }
         return applied;
     }
@@ -156,25 +156,25 @@ public final class RequestValidatorPIP extends AbstractPolicyInformationPoint {
     private void validateAttributes(Set<Attribute> attributes, String element)
             throws PIPProcessingException {
         if (attributes.size() < 1) {
-            throw new PIPProcessingException("request " + element
+            throw new PIPProcessingException("AuthZ request " + element
                     + " without any attribute");
         }
         for (Attribute attribute : attributes) {
             Set<Object> attributeValues= attribute.getValues();
             if (attributeValues.size() < 1) {
-                throw new PIPProcessingException("request " + element
+                throw new PIPProcessingException("AuthZ request " + element
                         + " contains the attribute " + attribute.getId()
                         + " without any value");
             }
             for (Object attributeValue : attributeValues) {
                 if (attributeValue == null) {
-                    throw new PIPProcessingException("request " + element
+                    throw new PIPProcessingException("AuthZ request " + element
                             + " contains the attribute " + attribute.getId()
                             + " with a null value");
                 }
                 String value= Strings.safeTrimOrNullString(attributeValue.toString());
                 if (value == null) {
-                    throw new PIPProcessingException("request " + element
+                    throw new PIPProcessingException("AuthZ request " + element
                             + " contains the attribute " + attribute.getId()
                             + " with an empty (stripped) value");
                 }
