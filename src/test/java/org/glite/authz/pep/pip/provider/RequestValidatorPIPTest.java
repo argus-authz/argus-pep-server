@@ -96,26 +96,26 @@ public class RequestValidatorPIPTest extends TestCase {
     public void testNoSubject() {
         Request request= createValidRequest();
         request.getSubjects().clear();
-        throwsPIPProcessingException(request, "any subject");
+        throwsPIPProcessingException(request, "any Subject");
     }
     
     public void testNoResource() {
         Request request= createValidRequest();
         request.getResources().clear();
-        throwsPIPProcessingException(request, "any resource");
+        throwsPIPProcessingException(request, "any Resource");
     }
     
     public void testNoAction() {
         Request request= createValidRequest();
         request.setAction(null);
-        throwsPIPProcessingException(request, "an action");
+        throwsPIPProcessingException(request, "an Action");
 
     }
     
     public void testNoActionAttribute() {
         Request request= createValidRequest();
         request.getAction().getAttributes().clear();
-        throwsPIPProcessingException(request, "action without any attribute");
+        throwsPIPProcessingException(request, "Action without any attribute");
     }
 
     public void testNoSubjectAttribute() {
@@ -124,7 +124,7 @@ public class RequestValidatorPIPTest extends TestCase {
             subject.getAttributes().clear();
             break;
         }
-        throwsPIPProcessingException(request, "subject without any attribute");
+        throwsPIPProcessingException(request, "Subject without any attribute");
     }
 
     public void testNoResourceAttribute() {
@@ -133,7 +133,7 @@ public class RequestValidatorPIPTest extends TestCase {
             resource.getAttributes().clear();
             break;
         }
-        throwsPIPProcessingException(request, "resource without any attribute");
+        throwsPIPProcessingException(request, "Resource without any attribute");
     }
 
     public void testNullActionAttribute() {
