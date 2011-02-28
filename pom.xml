@@ -10,7 +10,7 @@
         <relativePath>../org.glite.authz</relativePath>
     </parent>
 
-    <name>Argus PEP server</name>
+    <name>Argus PEP Server</name>
     <groupId>org.glite.authz</groupId>
     <artifactId>pepd</artifactId>
     <version>${pepd.version}</version>
@@ -190,7 +190,7 @@
                             <manifestSection>
                                 <name>org/glite/authz/pep/server/</name>
                                 <manifestEntries>
-                                    <Implementation-Title>${pom.artifactId}</Implementation-Title>
+                                    <Implementation-Title>${project.name}</Implementation-Title>
                                     <Implementation-Version>${pom.version}</Implementation-Version>
                                     <Implementation-Vendor>EGEE Collaboration</Implementation-Vendor>
                                 </manifestEntries>
