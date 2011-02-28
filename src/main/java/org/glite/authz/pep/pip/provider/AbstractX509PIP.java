@@ -183,7 +183,7 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
             }
         }
 
-        String errMsg = "Subject did not contain the required subject certificate";
+        String errMsg = "Subject did not contain the required certificate chain in " + getCertificateAttributeId();
         log.error(errMsg);
         throw new PIPProcessingException(errMsg);
     }
