@@ -86,7 +86,13 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
     /** {@inheritDoc} */
     public boolean evaluateObligation(Request request, Result result) throws ObligationProcessingException {
         boolean applied = false;
+        
         Subject subject = getSubject(request);
+
+        // TODO: check for the key-info attribute in the request
+        // or add continueOnError flag?!?
+        
+        
 
         X500Principal subjectDN = getDN(subject);
         FQAN primaryFQAN = getPrimaryFQAN(subject);
@@ -148,24 +154,16 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
      */
     private X500Principal getDN(Subject subject) throws ObligationProcessingException {
         Attribute dnAttribute = null;
-
         for (Attribute attribute : subject.getAttributes()) {
-            if (attribute.getId().equals(Attribute.ID_SUB_ID)) {
+            if (Attribute.ID_SUB_ID.equals(attribute.getId()) && Attribute.DT_X500_NAME.equals(attribute.getDataType())) {
                 log.debug("Extracted subject attribute from request: {}", attribute);
                 dnAttribute = attribute;
                 break;
             }
         }
-
         if (dnAttribute == null) {
-            log.error("Subject of the authorization request did not contain a subject ID attribute");
-            throw new ObligationProcessingException("Invalid request, missing subject attribute");
-        }
-
-        if (!dnAttribute.getDataType().equals(Attribute.DT_X500_NAME)) {
-            log.error("Subject ID attribute of the authorization request was of the incorrect data type: {}",
-                    dnAttribute.getDataType());
-            throw new ObligationProcessingException("Invalid request, subject attribute of invalid data type");
+            log.error("Subject of the authorization request did not contain a subject ID attribute {} datatype {}", Attribute.ID_SUB_ID, Attribute.DT_X500_NAME);
+            throw new ObligationProcessingException("Invalid request, missing subject attribute: " + Attribute.ID_SUB_ID + " datatype: " + Attribute.DT_X500_NAME);
         }
 
         Set<?> values = dnAttribute.getValues();
