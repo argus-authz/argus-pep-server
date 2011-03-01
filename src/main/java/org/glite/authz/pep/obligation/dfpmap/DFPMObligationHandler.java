@@ -53,6 +53,9 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
 
     /** DN/FQAN to POSIX account mapper. */
     private AccountMapper accountMapper;
+    
+    /** Request subject must contain a key-info attribute for this OH to apply: Default {@value} */
+    private boolean requireSubjectKeyInfo= true;
 
     /**
      * Constructor.
@@ -89,9 +92,11 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
         
         Subject subject = getSubject(request);
 
-        // TODO: check for the key-info attribute in the request
-        // or add continueOnError flag?!?
-        
+        // check for the key-info attribute in the request, if required and not present, don't apply OH
+        if (requireSubjectKeyInfo && !subjectContainsKeyInfo(subject)) {
+            log.info("Does not apply. Requires a request subject key-info attribute, but none found.");
+            return false;
+        }
         
 
         X500Principal subjectDN = getDN(subject);
@@ -143,6 +148,24 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
     }
 
     /**
+     * Checks if the subject contains at least one key-info attribute.
+     * 
+     * @param subject the Subject to check
+     * @return <code>true</code> if the subject contains a key-info attribute
+     */
+    private boolean subjectContainsKeyInfo(Subject subject) {
+        Set<Attribute> attributes= subject.getAttributes();
+        if (attributes != null) {
+            for (Attribute attribute : attributes) {
+                if (Attribute.ID_SUB_KEY_INFO.equals(attribute.getId())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    /**
      * Gets the subject's DN from the subject DN attribute.
      * 
      * @param subject the subject of the request
@@ -177,11 +200,19 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
         }
 
         try {
-            return new X500Principal(values.iterator().next().toString());
+            String subjectDN= values.iterator().next().toString();
+            return new X500Principal(subjectDN);
         } catch (IllegalArgumentException e) {
             log.error("Value of the Subject ID attribute of the authorization request was not a valid X.509 DN");
-            throw new ObligationProcessingException("Invalid value for subject ID attribute");
+            throw new ObligationProcessingException("Invalid request, value of the Subject ID attribute was not a valid X.509 DN");
         }
+    }
+
+    /**
+     * @param requireSubjectKeyInfo the requireSubjectKeyInfo to set
+     */
+    protected void setRequireSubjectKeyInfo(boolean requireSubjectKeyInfo) {
+        this.requireSubjectKeyInfo= requireSubjectKeyInfo;
     }
 
     /**
