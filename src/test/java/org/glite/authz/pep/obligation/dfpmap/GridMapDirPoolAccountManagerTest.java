@@ -27,42 +27,63 @@ import javax.security.auth.x500.X500Principal;
 import junit.framework.TestCase;
 
 /**
- * JUnit for pool account management and mapping for bug https://savannah.cern.ch/bugs/?66574
+ * JUnit for pool account management and mapping for bug
+ * https://savannah.cern.ch/bugs/?66574
  */
 public class GridMapDirPoolAccountManagerTest extends TestCase {
 
-    File gridmapdir = null;
+    File gridmapdir= null;
 
-    static int N_POOL = 3;
+    static int N_POOL= 3;
 
-    GridMapDirPoolAccountManager gridmapPool = null;
+    GridMapDirPoolAccountManager gridmapPool= null;
 
-    List<String> prefixes = Arrays.asList("dteam", "dteamprod", "user1test", "user2test", "a", "aa", "1a", "1aa");
+    List<String> prefixes= Arrays.asList("dteam",
+                                         "dteamprod",
+                                         "user1test",
+                                         "user2test",
+                                         "a",
+                                         "aa",
+                                         "a-",
+                                         "a_0a",
+                                         "Z.",
+                                         "lte-dteam");
 
-    List<String> invalids = Arrays.asList("invalid", "001temp", "0", "001");
+    List<String> invalids= Arrays.asList("-invalid",
+                                         ".invalid",
+                                         "_invalid",
+                                         "0invalid",
+                                         "0",
+                                         "001",
+                                         "_");
 
     private File createTempGridMapDir() throws IOException {
-        File temp = File.createTempFile("gridmapdir", ".junit");
+        File temp= File.createTempFile("gridmapdir", ".junit");
         if (!(temp.delete())) {
-            throw new IOException("Could not delete temp file: " + temp.getAbsolutePath());
+            throw new IOException("Could not delete temp file: "
+                    + temp.getAbsolutePath());
         }
         if (!(temp.mkdir())) {
-            throw new IOException("Could not create temp directory: " + temp.getAbsolutePath());
+            throw new IOException("Could not create temp directory: "
+                    + temp.getAbsolutePath());
         }
         temp.deleteOnExit();
         // populate with pool accounts
         for (String prefix : prefixes) {
-            for (int i = 1; i <= N_POOL; i++) {
-                File f = new File(temp, prefix + "0" + i);
+            for (int i= 1; i <= N_POOL; i++) {
+                File f= new File(temp, prefix + "0" + i);
                 f.createNewFile();
+                // System.out.println("pool account " + f.getName() +
+                // " created");
                 f.deleteOnExit();
             }
         }
         // create invalid files
         for (String invalid : invalids) {
-            for (int i = 1; i <= N_POOL; i++) {
-                File f = new File(temp,invalid);
+            for (int i= 1; i <= N_POOL; i++) {
+                File f= new File(temp, invalid + "0" + i);
                 f.createNewFile();
+                // System.out.println("invalid " + f.getName() + " created");
                 f.deleteOnExit();
             }
         }
@@ -71,11 +92,12 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
 
     public boolean deleteTempGridMapDir(File path) {
         if (path.exists()) {
-            File[] files = path.listFiles();
-            for (int i = 0; i < files.length; i++) {
+            File[] files= path.listFiles();
+            for (int i= 0; i < files.length; i++) {
                 if (files[i].isDirectory()) {
                     deleteTempGridMapDir(files[i]);
-                } else {
+                }
+                else {
                     files[i].delete();
                 }
             }
@@ -86,57 +108,90 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
     /** {@inheritDoc} */
     protected void setUp() throws Exception {
         super.setUp();
-        gridmapdir = createTempGridMapDir();
+        gridmapdir= createTempGridMapDir();
         // System.out.println("setUp: temp gridmapdir: " + gridmapdir);
-        gridmapPool = new GridMapDirPoolAccountManager(gridmapdir);
+        gridmapPool= new GridMapDirPoolAccountManager(gridmapdir);
     }
 
     /** {@inheritDoc} */
     protected void tearDown() throws Exception {
         super.tearDown();
-        // System.out.println("tearDown: delete temp gridmapdir: " + gridmapdir);
-        assertTrue("Failed to delete temp gridmapdir: " + gridmapdir, deleteTempGridMapDir(gridmapdir));
+        // System.out.println("tearDown: delete temp gridmapdir: " +
+        // gridmapdir);
+        assertTrue("Failed to delete temp gridmapdir: " + gridmapdir,
+                   deleteTempGridMapDir(gridmapdir));
     }
 
     public void testPoolAccountNamesPrefixed() {
-        String prefix = "dteam";
-        List<String> accountNames = gridmapPool.getPoolAccountNames(prefix);
+        System.out.println("------------testPoolAccountNamesPrefixed------------");
+        String prefix= "dteam";
+        List<String> accountNames= gridmapPool.getPoolAccountNames(prefix);
+        System.out.println("accountNames(" + prefix +"): " + accountNames);
+        assertTrue("Empty pool account names for prefix: " + prefix,
+                   accountNames.size() > 0);
         for (String accountName : accountNames) {
             System.out.println("checking: " + accountName);
-            assertTrue(accountName + " doesn't match", accountName.matches(prefix + "\\d+"));
+            assertTrue(accountName + " doesn't match",
+                       accountName.matches(prefix + "\\d+"));
         }
     }
 
     public void testPoolAccountNamesPrefixes() {
-        List<String> accountNames = gridmapPool.getPoolAccountNamePrefixes();
+        System.out.println("------------testPoolAccountNamesPrefixes------------");
+        List<String> accountNames= gridmapPool.getPoolAccountNamePrefixes();
+        System.out.println("accountNamePrefixes: " + accountNames);
         for (String accountName : accountNames) {
-            System.out.println(accountName);
-            assertTrue(accountName + " not in prefix list", prefixes.contains(accountName));
+            assertTrue(accountName + " not in prefix list",
+                       prefixes.contains(accountName));
         }
 
     }
 
     public void testPoolAccountNames() {
-        List<String> accountNames = gridmapPool.getPoolAccountNames();
-        for (String accountName : accountNames) {
-            System.out.println("pool account: " + accountName);
-        }
+        System.out.println("------------testPoolAccountNames------------");
+        List<String> accountNames= gridmapPool.getPoolAccountNames();
+        System.out.println("poolAccountNames: " + accountNames);
+        assertTrue("Empty pool account names", accountNames.size() > 0);
         assertEquals(prefixes.size() * N_POOL, accountNames.size());
     }
 
     public void testCreateMapping() {
-        String prefix = "dteam";
-        String identifier = "%2fcn%3djohn%20doe:dteam";
-        String accountName = gridmapPool.createMapping(prefix, identifier);
-        System.out.println(identifier + " mapped to " + accountName);
-        assertTrue(accountName + " doesn't match dteam pool", accountName.matches(prefix + "\\d+"));
+        System.out.println("------------testCreateMapping------------");
+        String prefix= "dteam";
+        String identifier= "%2fcn%3djohn%20doe:dteam";
+        String accountName= gridmapPool.createMapping(prefix, identifier);
+        System.out.println("identifier '" + identifier + "' mapped to: " + accountName);
+        assertTrue(accountName + " doesn't match dteam pool",
+                   accountName.matches(prefix + "\\d+"));
     }
 
-    public void testMapToAccount() throws Exception {
-        String prefix = "dteam";
-        String subject = "CN=John Doe";
-        X500Principal principal = new X500Principal(subject);
-        String accountName = gridmapPool.mapToAccount(prefix, principal, prefix, null);
-        assertTrue(accountName + " doesn't match dteam pool", accountName.matches(prefix + "\\d+"));
+    public void testMapToAccountPoolDteam() throws Exception {
+        System.out.println("------------testMapToAccountPoolDteam------------");
+        String prefix= "dteam";
+        String subject= "CN=Robin";
+        X500Principal principal= new X500Principal(subject);
+        String accountName= gridmapPool.mapToAccount(prefix,
+                                                     principal,
+                                                     prefix,
+                                                     null);
+        System.out.println("principal '" + principal + "' with prefix '" + prefix + "' mapped to: " + accountName);
+        assertTrue(accountName + " doesn't match dteam pool",
+                   accountName.matches(prefix + "\\d+"));
+    }
+
+    public void testMapToAccountPoolLTEDteam() throws Exception {
+        System.out.println("------------testMapToAccountPoolLTEDteam------------");
+        String prefix= "lte-dteam";
+        List<String> subjects= Arrays.asList("CN=Batman", "CN=Robin", "CN=John Doe");
+        for (String subject : subjects) {
+            X500Principal principal= new X500Principal(subject);
+            String accountName= gridmapPool.mapToAccount(prefix,
+                                                         principal,
+                                                         prefix,
+                                                         null);
+            System.out.println("principal '" + principal + "' with prefix '" + prefix + "' mapped to: " + accountName);
+            assertTrue(accountName + " doesn't match " + prefix + " pool",
+                       accountName.matches(prefix + "\\d+"));
+        }
     }
 }
