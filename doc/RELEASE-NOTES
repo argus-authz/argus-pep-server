@@ -1,3 +1,27 @@
+Changes in Release 1.3.0
+========================
+
+The Argus PEP Server have been repackaged to be compliant with EMI packaging policies.
+
+New features:
+
+- New PIP to support DPM/LFC openssl oneline DN format, and automatically convert
+  them to RFC2253 format: https://savannah.cern.ch/bugs/?77527
+- New PIP to validate incoming authz request (subject, resource, action without 
+  empty values): https://savannah.cern.ch/bugs/?78414
+
+Bug fixed:
+
+- Processing error returns DENY decision, should be INDETERMINATE
+  https://savannah.cern.ch/bugs/?78831
+- POSIX mapping OH fails to match pool accounts which contain non alphabetic characters
+  https://savannah.cern.ch/bugs/?80526
+- First authz request after service start timeout very often
+  https://savannah.cern.ch/bugs/?78751
+- All ECDH based ciphers suites are disabled because of the OpenSSL 1.0 problem
+  with SSL handshake (in pdp-pep-common).
+
+
 Changes in Release 1.2.0
 ========================
 
