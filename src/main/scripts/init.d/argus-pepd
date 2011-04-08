@@ -62,10 +62,6 @@ case "$1" in
     stop)
         $PEPDCTL stop
         ;;
-    forcestop)
-        $PEPDCTL stop
-        exit 0
-        ;;
     restart)
         $PEPDCTL stop
         sleep 5
