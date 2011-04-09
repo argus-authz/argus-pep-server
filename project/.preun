@@ -1,1 +1,1 @@
-/etc/init.d/argus-pepd stop  2&>1 /dev/null || :
+/etc/init.d/argus-pepd stop  2>&1 /dev/null || :
