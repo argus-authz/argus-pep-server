@@ -241,7 +241,7 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
             String datatype= certAttribute.getDataType();
             for (Attribute subjectAttribute : subject.getAttributes()) {
                 if (subjectAttribute.getId().equals(id) && subjectAttribute.getDataType().equals(datatype)) {
-                    log.warn("Subject attribute {} already contains values, replace them with {}",subjectAttribute,certAttribute);
+                    log.warn("Subject {} already contains values, replace them with {}",subjectAttribute,certAttribute);
                     subjectAttribute.getValues().clear();
                     subjectAttribute.getValues().addAll(certAttribute.getValues());
                 }
