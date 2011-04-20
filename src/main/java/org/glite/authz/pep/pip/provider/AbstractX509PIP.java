@@ -237,14 +237,23 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
     private void updateSubjectCertificateAttributes(Subject subject,
             Collection<Attribute> certAttributes) {
         for (Attribute certAttribute : certAttributes) {
-            String id= certAttribute.getId();
-            String datatype= certAttribute.getDataType();
+            boolean alreadyExists= false;
+            String certAttributeId= certAttribute.getId();
+            String certAttributeDataType= certAttribute.getDataType();
             for (Attribute subjectAttribute : subject.getAttributes()) {
-                if (subjectAttribute.getId().equals(id) && subjectAttribute.getDataType().equals(datatype)) {
-                    log.warn("Subject {} already contains values, replace them with {}",subjectAttribute,certAttribute);
+                if (subjectAttribute.getId().equals(certAttributeId)
+                        && subjectAttribute.getDataType().equals(certAttributeDataType)) {
+                    alreadyExists= true;
+                    log.warn("Subject {} already contains values, replace them with {}",
+                             subjectAttribute,
+                             certAttribute);
                     subjectAttribute.getValues().clear();
                     subjectAttribute.getValues().addAll(certAttribute.getValues());
                 }
+            }
+            if (!alreadyExists) {
+                log.debug("Add {} to Subject", certAttribute);
+                subject.getAttributes().add(certAttribute);
             }
         }
     }
