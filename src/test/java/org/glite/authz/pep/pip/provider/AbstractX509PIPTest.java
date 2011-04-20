@@ -81,6 +81,7 @@ public class AbstractX509PIPTest extends TestCase {
         Collection<Attribute> certAttributes= processCertChain();
         System.out.println("Incoming Subject: " + subject);
         updateSubjectCertificateAttributes(subject, certAttributes);
+        boolean voNamePresent= false;
         for (Attribute attribute : subject.getAttributes()) {
             if (attribute.getId().equals(Attribute.ID_SUB_ID)) {
                 for (Object object : attribute.getValues()) {
@@ -97,10 +98,12 @@ public class AbstractX509PIPTest extends TestCase {
             else if (attribute.getId().equals(AuthorizationProfileConstants.ID_ATTRIBUTE_VIRTUAL_ORGANIZATION)) {
                 for (Object object : attribute.getValues()) {
                     assertEquals(voName, object.toString());
+                    voNamePresent= true;
                 }
             }
 
         }
+        assertTrue("missing vo attribute",voNamePresent);
         System.out.println("Updated Subject: " + subject);
     }
 
