@@ -24,10 +24,11 @@ import java.util.Map;
 import org.glite.authz.common.util.Strings;
 
 /** An implementation of {@link DFPM} that orders entries by insertion order. */
-public class OrderedDFPM extends LinkedHashMap<String, List<String>> implements DFPM {
+public class OrderedDFPM extends LinkedHashMap<String, List<String>> implements
+        DFPM {
 
     /** Serial version UID. */
-    private static final long serialVersionUID = -4204108400547508390L;
+    private static final long serialVersionUID= -4204108400547508390L;
 
     /** Constructor. */
     public OrderedDFPM() {
@@ -37,23 +38,25 @@ public class OrderedDFPM extends LinkedHashMap<String, List<String>> implements 
     /**
      * Constructor.
      * 
-     * @param map map whose entries will be added to this map in the order returned by its iterator
+     * @param map
+     *            map whose entries will be added to this map in the order
+     *            returned by its iterator
      */
     public OrderedDFPM(Map<String, List<String>> map) {
         super(map);
     }
-    
+
     /** {@inheritDoc} */
     public boolean isDNMapEntry(String key) {
         return !isFQANMapEntry(key);
     }
-    
+
     /** {@inheritDoc} */
     public boolean isFQANMapEntry(String key) {
         // DNs must contain a = in their first component
         // a FQAN must not
 
-        String[] components = key.split("/");
+        String[] components= key.split("/");
         // both DNs and FQANs must begin with a / so there is an empty
         // component preceding the first real component
         if (components.length > 1 && !components[1].contains("=")) {
@@ -65,13 +68,14 @@ public class OrderedDFPM extends LinkedHashMap<String, List<String>> implements 
 
     /** {@inheritDoc} */
     public List<String> put(String key, List<String> value) {
-        String trimmedKey = Strings.safeTrim(key);
+        String trimmedKey= Strings.safeTrim(key);
         if (trimmedKey == null) {
             throw new IllegalArgumentException("key may not be null or empty");
         }
 
         if (containsKey(trimmedKey)) {
-            throw new IllegalArgumentException("An entry with that key already exists, it can not be replaced");
+            throw new IllegalArgumentException("An entry with the key: "
+                    + trimmedKey + " already exists, it can not be replaced");
         }
 
         if (value == null || value.isEmpty()) {
