@@ -40,108 +40,133 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An obligation handler that transforms an {@value AuthorizationProfileConstants#ID_OBLIGATION_LOCAL_ENV_MAP}
- * obligation in to a {@value AuthorizationProfileConstants#ID_OBLIGATION_POSIX_ENV_MAP} obligation. The POSIX login
- * name and primary and secondary group values are determined by mapping the {@value Attribute#ID_SUB_ID},
- * {@value AuthorizationProfileConstants#ID_ATTRIBUTE_PRIMARY_FQAN} and {@value AuthorizationProfileConstants#ID_ATTRIBUTE_FQAN} attributes
- * found within the {@link Subject} of the authorization request.
+ * An obligation handler that transforms an
+ * {@value AuthorizationProfileConstants#ID_OBLIGATION_LOCAL_ENV_MAP} obligation
+ * in to a {@value AuthorizationProfileConstants#ID_OBLIGATION_POSIX_ENV_MAP}
+ * obligation. The POSIX login name and primary and secondary group values are
+ * determined by mapping the {@value Attribute#ID_SUB_ID},
+ * {@value AuthorizationProfileConstants#ID_ATTRIBUTE_PRIMARY_FQAN} and
+ * {@value AuthorizationProfileConstants#ID_ATTRIBUTE_FQAN} attributes found
+ * within the {@link Subject} of the authorization request.
  */
 public class DFPMObligationHandler extends AbstractObligationHandler {
 
     /** Class logger. */
-    private final Logger log = LoggerFactory.getLogger(DFPMObligationHandler.class);
+    private final Logger log= LoggerFactory.getLogger(DFPMObligationHandler.class);
 
     /** DN/FQAN to POSIX account mapper. */
     private AccountMapper accountMapper;
-    
-    /** Request subject must contain a key-info attribute for this OH to apply: Default {@value} */
+
+    /**
+     * Request subject must contain a key-info attribute for this OH to apply:
+     * Default {@value}
+     */
     private boolean requireSubjectKeyInfo= true;
 
     /**
      * Constructor.
      * 
-     * @param mapper mapper used to map a subject to a POSIX account
+     * @param mapper
+     *            mapper used to map a subject to a POSIX account
      */
-    public DFPMObligationHandler(AccountMapper mapper) {
-        super(AuthorizationProfileConstants.ID_OBLIGATION_LOCAL_ENV_MAP);
+    public DFPMObligationHandler(String id, AccountMapper mapper) {
+        super(id, AuthorizationProfileConstants.ID_OBLIGATION_LOCAL_ENV_MAP);
 
         if (mapper == null) {
             throw new IllegalArgumentException("Account mapper may not be null");
         }
-        accountMapper = mapper;
+        accountMapper= mapper;
     }
 
     /**
      * Constructor.
      * 
-     * @param precedence precendence of this obligation handler
-     * @param mapper mapper used to map a subject to a POSIX account
+     * @param precedence
+     *            precendence of this obligation handler
+     * @param mapper
+     *            mapper used to map a subject to a POSIX account
      */
-    public DFPMObligationHandler(int precedence, AccountMapper mapper) {
-        super(AuthorizationProfileConstants.ID_OBLIGATION_LOCAL_ENV_MAP, precedence);
+    public DFPMObligationHandler(String id, int precedence, AccountMapper mapper) {
+        super(id,
+              AuthorizationProfileConstants.ID_OBLIGATION_LOCAL_ENV_MAP,
+              precedence);
 
         if (mapper == null) {
             throw new IllegalArgumentException("Account mapper may not be null");
         }
-        accountMapper = mapper;
+        accountMapper= mapper;
     }
 
     /** {@inheritDoc} */
-    public boolean evaluateObligation(Request request, Result result) throws ObligationProcessingException {
-        boolean applied = false;
-        
-        Subject subject = getSubject(request);
+    public boolean evaluateObligation(Request request, Result result)
+            throws ObligationProcessingException {
+        boolean applied= false;
 
-        // check for the key-info attribute in the request, if required and not present, don't apply OH
+        Subject subject= getSubject(request);
+
+        // check for the key-info attribute in the request, if required and not
+        // present, don't apply OH
         if (requireSubjectKeyInfo && !subjectContainsKeyInfo(subject)) {
             log.info("Does not apply. Requires a request subject key-info attribute, but none found.");
             return false;
         }
-        
 
-        X500Principal subjectDN = getDN(subject);
-        FQAN primaryFQAN = getPrimaryFQAN(subject);
-        List<FQAN> secondaryFQANs = getSecondaryFQANs(subject);
+        X500Principal subjectDN= getDN(subject);
+        FQAN primaryFQAN= getPrimaryFQAN(subject);
+        List<FQAN> secondaryFQANs= getSecondaryFQANs(subject);
 
-        PosixAccount mappedAccount = accountMapper.mapToAccount(subjectDN, primaryFQAN, secondaryFQANs);
+        PosixAccount mappedAccount= accountMapper.mapToAccount(subjectDN,
+                                                               primaryFQAN,
+                                                               secondaryFQANs);
 
         if (mappedAccount != null) {
             addPosixMappingObligation(result, mappedAccount);
-            applied = true;
+            applied= true;
 
-            // Remove the local environment mapping obligation (even if it appears multiple times)
-            // since we've handled it and replaced it with the POSIX mapping obligations
-            Iterator<Obligation> obligationItr = result.getObligations().iterator();
+            // Remove the local environment mapping obligation (even if it
+            // appears multiple times)
+            // since we've handled it and replaced it with the POSIX mapping
+            // obligations
+            Iterator<Obligation> obligationItr= result.getObligations().iterator();
             Obligation obligation;
-            List<Obligation> removedObligations = new ArrayList<Obligation>();
+            List<Obligation> removedObligations= new ArrayList<Obligation>();
             while (obligationItr.hasNext()) {
-                obligation = obligationItr.next();
+                obligation= obligationItr.next();
                 if (AuthorizationProfileConstants.ID_OBLIGATION_LOCAL_ENV_MAP.equals(obligation.getId())) {
                     removedObligations.add(obligation);
                 }
             }
             result.getObligations().removeAll(removedObligations);
+            log.info("DN: {} pFQAN: {} FQANs: {} mapped to POSIX account: {}",
+                     new Object[] { subjectDN.getName(X500Principal.RFC2253),
+                                   primaryFQAN, secondaryFQANs, mappedAccount });
         }
-        log.debug("Finished processing DN/FQAN to POSIX account mapping obligation for subject {}", subjectDN.getName());
+        log.debug("Finished processing DN/FQAN to POSIX account mapping obligation for subject {}",
+                  subjectDN.getName());
         return applied;
     }
 
     /**
      * Gets the subject from the request.
      * 
-     * @param request authorization request
+     * @param request
+     *            authorization request
      * 
      * @return the subject of the request
      * 
-     * @throws ObligationProcessingException thrown if there is zero or more than one subject in the request
+     * @throws ObligationProcessingException
+     *             thrown if there is zero or more than one subject in the
+     *             request
      */
-    private Subject getSubject(Request request) throws ObligationProcessingException {
-        Set<Subject> subjects = request.getSubjects();
+    private Subject getSubject(Request request)
+            throws ObligationProcessingException {
+        Set<Subject> subjects= request.getSubjects();
         if (subjects == null || subjects.isEmpty()) {
             throw new ObligationProcessingException("Unable to process request, it does not contain a subject");
         }
         if (subjects.size() != 1) {
-            log.warn("Request contains '{}' subject, unable to process it", subjects.size());
+            log.warn("Request contains '{}' subject, unable to process it",
+                     subjects.size());
             throw new ObligationProcessingException("Requests contains more than one subject");
         }
         return subjects.iterator().next();
@@ -150,7 +175,8 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
     /**
      * Checks if the subject contains at least one key-info attribute.
      * 
-     * @param subject the Subject to check
+     * @param subject
+     *            the Subject to check
      * @return <code>true</code> if the subject contains a key-info attribute
      */
     private boolean subjectContainsKeyInfo(Subject subject) {
@@ -164,32 +190,42 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
         }
         return false;
     }
-    
+
     /**
      * Gets the subject's DN from the subject DN attribute.
      * 
-     * @param subject the subject of the request
+     * @param subject
+     *            the subject of the request
      * 
      * @return the subject DN
      * 
-     * @throws ObligationProcessingException thrown if the given attribute contains no values, is not of the right data
-     *             type, or its value is not a valid DN
+     * @throws ObligationProcessingException
+     *             thrown if the given attribute contains no values, is not of
+     *             the right data type, or its value is not a valid DN
      */
-    private X500Principal getDN(Subject subject) throws ObligationProcessingException {
-        Attribute dnAttribute = null;
+    private X500Principal getDN(Subject subject)
+            throws ObligationProcessingException {
+        Attribute dnAttribute= null;
         for (Attribute attribute : subject.getAttributes()) {
-            if (Attribute.ID_SUB_ID.equals(attribute.getId()) && Attribute.DT_X500_NAME.equals(attribute.getDataType())) {
-                log.debug("Extracted subject attribute from request: {}", attribute);
-                dnAttribute = attribute;
+            if (Attribute.ID_SUB_ID.equals(attribute.getId())
+                    && Attribute.DT_X500_NAME.equals(attribute.getDataType())) {
+                log.debug("Extracted subject attribute from request: {}",
+                          attribute);
+                dnAttribute= attribute;
                 break;
             }
         }
         if (dnAttribute == null) {
-            log.error("Subject of the authorization request did not contain a subject ID attribute {} datatype {}", Attribute.ID_SUB_ID, Attribute.DT_X500_NAME);
-            throw new ObligationProcessingException("Invalid request, missing subject attribute: " + Attribute.ID_SUB_ID + " datatype: " + Attribute.DT_X500_NAME);
+            log.error("Subject of the authorization request did not contain a subject ID attribute {} datatype {}",
+                      Attribute.ID_SUB_ID,
+                      Attribute.DT_X500_NAME);
+            throw new ObligationProcessingException("Invalid request, missing subject attribute: "
+                    + Attribute.ID_SUB_ID
+                    + " datatype: "
+                    + Attribute.DT_X500_NAME);
         }
 
-        Set<?> values = dnAttribute.getValues();
+        Set<?> values= dnAttribute.getValues();
         if (values == null || values.isEmpty()) {
             log.error("Subject ID attribute of the authorization request did not contain any values");
             throw new ObligationProcessingException("Invalid request, subject attribute did not contain any values");
@@ -209,7 +245,8 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
     }
 
     /**
-     * @param requireSubjectKeyInfo the requireSubjectKeyInfo to set
+     * @param requireSubjectKeyInfo
+     *            the requireSubjectKeyInfo to set
      */
     protected void setRequireSubjectKeyInfo(boolean requireSubjectKeyInfo) {
         this.requireSubjectKeyInfo= requireSubjectKeyInfo;
@@ -218,20 +255,24 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
     /**
      * Gets the primary FQAN from the request subject.
      * 
-     * @param subject the subject of the request
+     * @param subject
+     *            the subject of the request
      * 
      * @return the primary FQAN
      * 
-     * @throws ObligationProcessingException thrown if the given attribute contains no values, is not of the right data
-     *             type, or its value is not a valid FQAN
+     * @throws ObligationProcessingException
+     *             thrown if the given attribute contains no values, is not of
+     *             the right data type, or its value is not a valid FQAN
      */
-    private FQAN getPrimaryFQAN(Subject subject) throws ObligationProcessingException {
-        Attribute primaryFQANAttribute = null;
+    private FQAN getPrimaryFQAN(Subject subject)
+            throws ObligationProcessingException {
+        Attribute primaryFQANAttribute= null;
 
         for (Attribute attribute : subject.getAttributes()) {
             if (AuthorizationProfileConstants.ID_ATTRIBUTE_PRIMARY_FQAN.equals(attribute.getId())) {
-                log.debug("Extracted primary FQAN attribute from request: {}", attribute);
-                primaryFQANAttribute = attribute;
+                log.debug("Extracted primary FQAN attribute from request: {}",
+                          attribute);
+                primaryFQANAttribute= attribute;
                 break;
             }
         }
@@ -243,11 +284,11 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
 
         if (!AuthorizationProfileConstants.DATATYPE_FQAN.equals(primaryFQANAttribute.getDataType())) {
             log.error("Subject primary FQAN attribute of the authorization request was of the incorrect data type: {}",
-                    primaryFQANAttribute.getDataType());
+                      primaryFQANAttribute.getDataType());
             throw new ObligationProcessingException("Invalid request, subject attribute of invalid data type");
         }
 
-        Set<?> values = primaryFQANAttribute.getValues();
+        Set<?> values= primaryFQANAttribute.getValues();
         if (values == null || values.isEmpty()) {
             log.error("Subject primary FQAN attribute of the authorization request did not contain any values");
             throw new ObligationProcessingException("Invalid request, subject attribute did not contain any values");
@@ -261,29 +302,33 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
             return FQAN.parseFQAN(values.iterator().next().toString());
         } catch (ParseException e) {
             log.error("Value of the Subject primary FQAN attribute of the authorization request was not a valid FQAN",
-                    e);
-            throw new ObligationProcessingException(
-                    "Invalid request, subject's primary FQAN attribute value was invalid", e);
+                      e);
+            throw new ObligationProcessingException("Invalid request, subject's primary FQAN attribute value was invalid",
+                                                    e);
         }
     }
 
     /**
      * Gets the secondary FQANs from the request subject.
      * 
-     * @param subject the subject of the request
+     * @param subject
+     *            the subject of the request
      * 
      * @return the secondary FQANs
      * 
-     * @throws ObligationProcessingException thrown if the given attribute contains no values, is not of the right data
-     *             type, or its value is not a valid FQAN
+     * @throws ObligationProcessingException
+     *             thrown if the given attribute contains no values, is not of
+     *             the right data type, or its value is not a valid FQAN
      */
-    private List<FQAN> getSecondaryFQANs(Subject subject) throws ObligationProcessingException {
-        Attribute secondaryFQANsAttribute = null;
+    private List<FQAN> getSecondaryFQANs(Subject subject)
+            throws ObligationProcessingException {
+        Attribute secondaryFQANsAttribute= null;
 
         for (Attribute attribute : subject.getAttributes()) {
             if (AuthorizationProfileConstants.ID_ATTRIBUTE_FQAN.equals(attribute.getId())) {
-                log.debug("Extracted secondary FQAN attribute from request: {}", attribute);
-                secondaryFQANsAttribute = attribute;
+                log.debug("Extracted secondary FQAN attribute from request: {}",
+                          attribute);
+                secondaryFQANsAttribute= attribute;
                 break;
             }
         }
@@ -294,13 +339,12 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
         }
 
         if (!AuthorizationProfileConstants.DATATYPE_FQAN.equals(secondaryFQANsAttribute.getDataType())) {
-            log.error(
-                    "Subject secondary FQAN attribute of the authorization request was of the incorrect data type: {}",
-                    secondaryFQANsAttribute.getDataType());
+            log.error("Subject secondary FQAN attribute of the authorization request was of the incorrect data type: {}",
+                      secondaryFQANsAttribute.getDataType());
             throw new ObligationProcessingException("Invalid request, subject attribute of invalid data type");
         }
 
-        Set<?> values = secondaryFQANsAttribute.getValues();
+        Set<?> values= secondaryFQANsAttribute.getValues();
         if (values == null || values.isEmpty()) {
             log.error("Subject secondary FQAN attribute of the authorization request did not contain any values");
             throw new ObligationProcessingException("Invalid request, subject attribute did not contain any values");
@@ -310,62 +354,68 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
             log.warn("Secondary FQAN attribute contains more than one value, only the first will be used");
         }
 
-        ArrayList<FQAN> secondaryFQANs = new ArrayList<FQAN>();
-        Iterator<?> valueItr = values.iterator();
-        String value = null;
+        ArrayList<FQAN> secondaryFQANs= new ArrayList<FQAN>();
+        Iterator<?> valueItr= values.iterator();
+        String value= null;
         while (valueItr.hasNext()) {
             try {
-                value = valueItr.next().toString();
+                value= valueItr.next().toString();
                 FQAN parsedFQAN= FQAN.parseFQAN(value);
                 secondaryFQANs.add(parsedFQAN);
             } catch (ParseException e) {
-                log.error("Subject's secondary FQAN attribute value " + value + " is not a valid FQAN");
-                throw new ObligationProcessingException(
-                        "Invalid request, subject's secondary FQAN attribute value was invalid");
+                log.error("Subject's secondary FQAN attribute value " + value
+                        + " is not a valid FQAN");
+                throw new ObligationProcessingException("Invalid request, subject's secondary FQAN attribute value was invalid");
             }
         }
         return secondaryFQANs;
     }
 
     /**
-     * Adds a {@link WorkerNodeProfileV1Constants#OBL_POSIX_ENV_MAP} to the result.
+     * Adds a {@link WorkerNodeProfileV1Constants#OBL_POSIX_ENV_MAP} to the
+     * result.
      * 
-     * @param result current result
-     * @param account account whose information will be used to populate the
+     * @param result
+     *            current result
+     * @param account
+     *            account whose information will be used to populate the
      *            {@link AuthorizationProfileConstants#ID_ATTRIBUTE_USER_ID},
-     *            {@link AuthorizationProfileConstants#ID_ATTRIBUTE_PRIMARY_GROUP_ID}, and
-     *            {@link AuthorizationProfileConstants#ID_ATTRIBUTE_GROUP_ID} attribute assignments of the obligation
+     *            {@link AuthorizationProfileConstants#ID_ATTRIBUTE_PRIMARY_GROUP_ID}
+     *            , and
+     *            {@link AuthorizationProfileConstants#ID_ATTRIBUTE_GROUP_ID}
+     *            attribute assignments of the obligation
      */
     protected void addPosixMappingObligation(Result result, PosixAccount account) {
-        Obligation posixMapping = new Obligation();
+        Obligation posixMapping= new Obligation();
         posixMapping.setId(AuthorizationProfileConstants.ID_OBLIGATION_POSIX_ENV_MAP);
         posixMapping.setFulfillOn(Result.DECISION_PERMIT);
 
-        AttributeAssignment userid = new AttributeAssignment();
+        AttributeAssignment userid= new AttributeAssignment();
         userid.setAttributeId(AuthorizationProfileConstants.ID_ATTRIBUTE_USER_ID);
         userid.setDataType(Attribute.DT_STRING);
         userid.setValue(account.getLoginName());
         posixMapping.getAttributeAssignments().add(userid);
 
         if (account.getPrimaryGroup() != null) {
-            String groupId = account.getPrimaryGroup();
-            AttributeAssignment primaryGroupId = new AttributeAssignment();
+            String groupId= account.getPrimaryGroup();
+            AttributeAssignment primaryGroupId= new AttributeAssignment();
             primaryGroupId.setAttributeId(AuthorizationProfileConstants.ID_ATTRIBUTE_PRIMARY_GROUP_ID);
             primaryGroupId.setDataType(Attribute.DT_STRING);
             primaryGroupId.setValue(groupId);
             posixMapping.getAttributeAssignments().add(primaryGroupId);
             // BUG FIX: profile attribute/group-id doesn't contain primary group
             // see https://savannah.cern.ch/bugs/index.php?64340
-            AttributeAssignment secondaryGroupId = new AttributeAssignment();
+            AttributeAssignment secondaryGroupId= new AttributeAssignment();
             secondaryGroupId.setAttributeId(AuthorizationProfileConstants.ID_ATTRIBUTE_GROUP_ID);
             secondaryGroupId.setDataType(Attribute.DT_STRING);
             secondaryGroupId.setValue(groupId);
             posixMapping.getAttributeAssignments().add(secondaryGroupId);
         }
 
-        if (account.getSecondaryGroups() != null && !account.getSecondaryGroups().isEmpty()) {
+        if (account.getSecondaryGroups() != null
+                && !account.getSecondaryGroups().isEmpty()) {
             for (String secondaryGroup : account.getSecondaryGroups()) {
-                AttributeAssignment secondaryGroupId = new AttributeAssignment();
+                AttributeAssignment secondaryGroupId= new AttributeAssignment();
                 secondaryGroupId.setAttributeId(AuthorizationProfileConstants.ID_ATTRIBUTE_GROUP_ID);
                 secondaryGroupId.setDataType(Attribute.DT_STRING);
                 secondaryGroupId.setValue(secondaryGroup);
