@@ -66,6 +66,8 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
     /**
      * Constructor.
      * 
+     * @param id
+     *            the obligation handler ID
      * @param mapper
      *            mapper used to map a subject to a POSIX account
      */
@@ -81,6 +83,8 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
     /**
      * Constructor.
      * 
+     * @param id
+     *            the obligation handler id
      * @param precedence
      *            precendence of this obligation handler
      * @param mapper
@@ -107,7 +111,8 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
         // check for the key-info attribute in the request, if required and not
         // present, don't apply OH
         if (requireSubjectKeyInfo && !subjectContainsKeyInfo(subject)) {
-            log.info("Does not apply. Requires a request subject key-info attribute, but none found.");
+            log.info("{}: Does not apply. Requires a request subject key-info attribute, but none found.",
+                     getId());
             return false;
         }
 
@@ -137,8 +142,9 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
                 }
             }
             result.getObligations().removeAll(removedObligations);
-            log.info("DN: {} pFQAN: {} FQANs: {} mapped to POSIX account: {}",
-                     new Object[] { subjectDN.getName(X500Principal.RFC2253),
+            log.info("{}: DN: {} pFQAN: {} FQANs: {} mapped to POSIX account: {}",
+                     new Object[] { getId(),
+                                   subjectDN.getName(X500Principal.RFC2253),
                                    primaryFQAN, secondaryFQANs, mappedAccount });
         }
         log.debug("Finished processing DN/FQAN to POSIX account mapping obligation for subject {}",

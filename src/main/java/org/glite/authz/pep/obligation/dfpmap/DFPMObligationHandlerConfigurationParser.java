@@ -204,7 +204,7 @@ public class DFPMObligationHandlerConfigurationParser implements
                                                         gridMapDir,
                                                         noPrimaryGroupNameIsError);
 
-        DFPMObligationHandler obligationHandler= new DFPMObligationHandler(accountMapper);
+        DFPMObligationHandler obligationHandler= new DFPMObligationHandler(name,accountMapper);
 
         boolean requireSubjectKeyInfo= IniConfigUtil.getBoolean(iniConfig,
                                                                 REQUIRE_SUBJECT_KEYINFO_PROP,

@@ -24,45 +24,58 @@ import org.glite.authz.common.util.Strings;
 /**
  * Base class for all obligation handlers.
  * 
- * Handlers are executed in order of precedence. Handlers with a higher precedence are executed before those with a
- * lower precedence. Handlers with the same precedence are executed in random order.
+ * Handlers are executed in order of precedence. Handlers with a higher
+ * precedence are executed before those with a lower precedence. Handlers with
+ * the same precedence are executed in random order.
  * 
  * Obligation handlers <strong>must</strong> be stateless.
  */
 @ThreadSafe
 public abstract class AbstractObligationHandler implements ObligationHandler {
 
+    /** ID of the obligation handler */
+    private String id_;
+
     /** ID of the handled obligation. */
-    private String id;
+    private String obligationId_;
 
     /** Precedence of this handler. */
-    private int precedence;
+    private int precedence_;
 
     /**
      * Constructor. Obligation has the lowest precedence, zero.
      * 
-     * @param obligationId ID of the handled obligation
+     * @param id
+     *            the obligation handler ID
+     * @param obligationId
+     *            ID of the handled obligation
      */
-    protected AbstractObligationHandler(String obligationId) {
-        this(obligationId, 0);
+    protected AbstractObligationHandler(String id, String obligationId) {
+        this(id, obligationId, 0);
     }
 
     /**
      * Constructor.
      * 
-     * @param obligationId ID of the handled obligation
-     * @param handlerPrecedence precedence of this handler, must be 0 or greater
+     * @param id
+     *            the obligation handler ID
+     * @param obligationId
+     *            ID of the handled obligation
+     * @param handlerPrecedence
+     *            precedence of this handler, must be 0 or greater
      */
-    protected AbstractObligationHandler(String obligationId, int handlerPrecedence) {
-        id = Strings.safeTrimOrNullString(obligationId);
-        if (id == null) {
+    protected AbstractObligationHandler(String id, String obligationId,
+            int handlerPrecedence) {
+        setId(id);
+        obligationId_= Strings.safeTrimOrNullString(obligationId);
+        if (obligationId_ == null) {
             throw new IllegalArgumentException("Provided obligation ID may not be null or empty");
         }
 
         if (handlerPrecedence < 0) {
             throw new IllegalArgumentException("Handler precedence must be 0 or greater");
         }
-        precedence = handlerPrecedence;
+        precedence_= handlerPrecedence;
     }
 
     /**
@@ -71,7 +84,7 @@ public abstract class AbstractObligationHandler implements ObligationHandler {
      * @return ID of the handled obligation
      */
     public String getObligationId() {
-        return id;
+        return obligationId_;
     }
 
     /**
@@ -80,7 +93,30 @@ public abstract class AbstractObligationHandler implements ObligationHandler {
      * @return precedence of the handler
      */
     public int getHandlerPrecedence() {
-        return precedence;
+        return precedence_;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.glite.authz.pep.obligation.ObligationHandler#getId()
+     */
+    public String getId() {
+        return id_;
+    }
+
+    /**
+     * Sets the obligation handler id
+     * 
+     * @param id
+     *            the obligation handler ID
+     */
+    protected void setId(String id) {
+        String tempId= Strings.safeTrimOrNullString(id);
+        if (tempId == null) {
+            throw new IllegalArgumentException("Obligation Handler ID may not be null or empty");
+        }
+        id_= tempId;
     }
 
     /** {@inheritDoc} */
@@ -95,7 +131,8 @@ public abstract class AbstractObligationHandler implements ObligationHandler {
         }
 
         if (obj instanceof ObligationHandler) {
-            return Strings.safeEquals(getObligationId(), ((ObligationHandler) obj).getObligationId());
+            return Strings.safeEquals(getObligationId(),
+                                      ((ObligationHandler) obj).getObligationId());
         }
 
         return false;
