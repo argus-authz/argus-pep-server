@@ -1,5 +1,5 @@
 #
-# Options for the PEP server
+# Options for the Argus PEP server
 #
 #JAVACMD="/usr/bin/java"
 #PEPD_JOPTS="-Djava.net.preferIPv4Stack=true"
