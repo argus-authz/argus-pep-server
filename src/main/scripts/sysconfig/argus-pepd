@@ -2,7 +2,10 @@
 # Options for the Argus PEP server
 #
 #JAVACMD="/usr/bin/java"
+# IPv4 instead of IPv6
 #PEPD_JOPTS="-Djava.net.preferIPv4Stack=true"
+# Max memory: 512MB
+PEPD_JOPTS="-Xmx512M"
 #PEPD_HOME="/usr/share/argus/pepd"
 #PEPD_CONF="/etc/argus/pepd/pepd.ini"
 #PEPD_CONFDIR="/etc/argus/pepd"
