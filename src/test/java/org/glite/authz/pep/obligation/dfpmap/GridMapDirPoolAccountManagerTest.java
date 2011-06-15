@@ -174,7 +174,7 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
                                                      principal,
                                                      prefix,
                                                      null);
-        System.out.println("principal '" + principal + "' with prefix '" + prefix + "' mapped to: " + accountName);
+        System.out.println("principal '" + principal + "' with account prefix '" + prefix + "' mapped to: " + accountName);
         assertTrue(accountName + " doesn't match dteam pool",
                    accountName.matches(prefix + "\\d+"));
     }
@@ -182,16 +182,48 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
     public void testMapToAccountPoolLTEDteam() throws Exception {
         System.out.println("------------testMapToAccountPoolLTEDteam------------");
         String prefix= "lte-dteam";
-        List<String> subjects= Arrays.asList("CN=Batman", "CN=Robin", "CN=John Doe");
+        List<String> subjects= Arrays.asList("CN=John-Doe","CN=Batman", "CN=John-Doe", "CN=Robin", "CN=John-Doe");
         for (String subject : subjects) {
             X500Principal principal= new X500Principal(subject);
             String accountName= gridmapPool.mapToAccount(prefix,
                                                          principal,
                                                          prefix,
                                                          null);
-            System.out.println("principal '" + principal + "' with prefix '" + prefix + "' mapped to: " + accountName);
+            System.out.println("principal '" + principal + "' with account prefix '" + prefix + "' mapped to: " + accountName);
             assertTrue(accountName + " doesn't match " + prefix + " pool",
                        accountName.matches(prefix + "\\d+"));
         }
     }
+    
+    public void testSubjectIdentifierFileTimestamp() throws Exception {
+        System.out.println("------------testAccountLinkTimestamp------------");
+        String prefix= "dteam";
+        List<String> subjects= Arrays.asList("CN=John-Doe", "CN=John-Doe", "CN=John-Doe","CN=John-Doe","CN=John-Doe");
+        // force a first mapping
+        gridmapPool.mapToAccount(prefix, new X500Principal("CN=Batman"), prefix, null);
+        long lastmodified= 0;
+        for (String subject : subjects) {
+            X500Principal principal= new X500Principal(subject);
+            String accountName= gridmapPool.mapToAccount(prefix,
+                                                         principal,
+                                                         prefix,
+                                                         null);
+            System.out.println("principal '" + principal + "' with account prefix '" + prefix + "' mapped to: " + accountName);
+            assertTrue(accountName + " doesn't match " + prefix + " pool",
+                       accountName.matches(prefix + "\\d+"));
+            
+            String subjectIdentifier= gridmapPool.buildSubjectIdentifier(principal, prefix, null);
+            String subjectIdentifierFilePath= gridmapPool.buildSubjectIdentifierFilePath(subjectIdentifier);
+            File subjectIdentifierFile= new File(subjectIdentifierFilePath);
+            System.out.println("subject identifier file: " + subjectIdentifierFile);
+            System.out.println("lastmodified: " + lastmodified + " < " + subjectIdentifierFile.lastModified());
+            assertTrue("Timestamp not updated", lastmodified < subjectIdentifierFile.lastModified());
+            lastmodified= subjectIdentifierFile.lastModified();
+            
+            Thread.sleep(1000);
+        }
+
+        
+    }
+    
 }
