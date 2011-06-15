@@ -28,11 +28,12 @@ import java.util.regex.Pattern;
 
 import javax.security.auth.x500.X500Principal;
 
-import org.apache.commons.httpclient.URIException;
-import org.apache.commons.httpclient.util.URIUtil;
 import org.glite.authz.common.util.Strings;
 import org.glite.authz.pep.obligation.ObligationProcessingException;
 import org.glite.voms.PKIUtils;
+
+import org.apache.commons.httpclient.URIException;
+import org.apache.commons.httpclient.util.URIUtil;
 import org.jruby.ext.posix.FileStat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -210,6 +211,11 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
                             + accountFile.getAbsolutePath()
                             + " has a link count greater than 2.  This mapping is corrupted and can not be used.");
                 }
+
+                // TOUCH the subjectIdentifierFile every time a mapping is done.
+                // BUG FIX: https://savannah.cern.ch/bugs/index.php?83281
+                PosixUtil.touchFile(subjectIdentifierFile);
+
                 return accountFile.getName();
             }
         }
@@ -229,7 +235,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
      * @return the account to which the subject was mapped or null if not
      *         account was available
      */
-    public String createMapping(String accountNamePrefix,
+    protected String createMapping(String accountNamePrefix,
             String subjectIdentifier) {
         FileStat accountFileStat;
         for (File accountFile : getAccountFiles(accountNamePrefix)) {
@@ -239,9 +245,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
             String subjectIdentifierFilePath= buildSubjectIdentifierFilePath(subjectIdentifier);
             accountFileStat= PosixUtil.getFileStat(accountFile.getAbsolutePath());
             if (accountFileStat.nlink() == 1) {
-                PosixUtil.createLink(accountFile.getAbsolutePath(),
-                                     subjectIdentifierFilePath,
-                                     false);
+                PosixUtil.createHardlink(accountFile.getAbsolutePath(), subjectIdentifierFilePath);
                 accountFileStat= PosixUtil.getFileStat(accountFile.getAbsolutePath());
                 if (accountFileStat.nlink() == 2) {
                     log.debug("Linked subject identifier {} to pool account file {}",
@@ -270,16 +274,16 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
      * 
      * @return the identifier for the subject
      */
-    private String buildSubjectIdentifier(X500Principal subjectDN,
+    protected String buildSubjectIdentifier(X500Principal subjectDN,
             String primaryGroupName, List<String> secondaryGroupNames) {
         StringBuilder identifier= new StringBuilder();
 
         try {
-            String encodedId= URIUtil.encodeWithinPath(PKIUtils.getOpenSSLFormatPrincipal(subjectDN,
-                                                                                          true));
+            String openSSLPrincipal= PKIUtils.getOpenSSLFormatPrincipal(subjectDN,true);
+            String encodedId= URIUtil.encodeWithinPath(openSSLPrincipal);                        
             identifier.append(encodedId.toLowerCase());
         } catch (URIException e) {
-            throw new RuntimeException("US-ASCII charset required to be supported by JVM but is not available");
+            throw new RuntimeException("Charset required to be supported by JVM but is not available", e);
         }
 
         if (primaryGroupName != null) {
@@ -304,7 +308,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
      * 
      * @return the absolute path to the subject identifier file
      */
-    private String buildSubjectIdentifierFilePath(String subjectIdentifier) {
+    protected String buildSubjectIdentifierFilePath(String subjectIdentifier) {
         return gridMapDirectory.getAbsolutePath() + File.separator
                 + subjectIdentifier;
     }
@@ -358,4 +362,5 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
             }
         });
     }
+
 }
