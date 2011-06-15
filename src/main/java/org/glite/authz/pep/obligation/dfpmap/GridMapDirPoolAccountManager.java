@@ -275,8 +275,8 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
         StringBuilder identifier= new StringBuilder();
 
         try {
-            String encodedId= URIUtil.encodeWithinPath(PKIUtils.getOpenSSLFormatPrincipal(subjectDN,
-                                                                                          true));
+            String opensslId= PKIUtils.getOpenSSLFormatPrincipal(subjectDN,true);
+            String encodedId= URIUtil.encodeWithinPath(opensslId);
             identifier.append(encodedId.toLowerCase());
         } catch (URIException e) {
             throw new RuntimeException("US-ASCII charset required to be supported by JVM but is not available");

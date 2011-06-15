@@ -41,6 +41,7 @@ import org.glite.authz.common.http.StatusCommand;
 import org.glite.authz.common.http.TimerShutdownTask;
 import org.glite.authz.common.logging.AccessLoggingFilter;
 import org.glite.authz.common.logging.LoggingReloadTask;
+import org.glite.authz.common.model.util.XACMLConverter;
 import org.glite.authz.common.util.Files;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
 import org.glite.authz.pep.server.config.PEPDaemonConfiguration;
@@ -82,7 +83,7 @@ public final class PEPDaemon {
     public static int DEFAULT_ADMIN_PORT= 8155;
 
     /** Default admin host: {@value} */
-    public static String DEFAULT_ADMIN_HOST= "127.0.0.1";
+    public static String DEFAULT_ADMIN_HOST= "localhost";
 
     /** Default service port: {@value} */
     public static int DEFAULT_SERVICE_PORT= 8154;
@@ -124,6 +125,8 @@ public final class PEPDaemon {
 
         Security.addProvider(new BouncyCastleProvider());
         DefaultBootstrap.bootstrap();
+        // speed up classloading
+        XACMLConverter.bootstrap();
 
         final PEPDaemonConfiguration daemonConfig= parseConfiguration(args[0]);
 
@@ -139,7 +142,7 @@ public final class PEPDaemon {
 
         Server pepDaemonService= createPEPDaemonService(daemonConfig);
         JettyRunThread pepDaemonServiceThread= new JettyRunThread(pepDaemonService);
-        pepDaemonServiceThread.setName("PEP Deamon Service");
+        pepDaemonServiceThread.setName("PEP Server Service");
         pepDaemonServiceThread.start();
 
         JettyAdminService adminService= createAdminService(daemonConfig,
@@ -184,7 +187,7 @@ public final class PEPDaemon {
         httpServer.setConnectors(new Connector[] { connector });
 
         Context servletContext= new Context(httpServer, "/", false, false);
-        servletContext.setDisplayName("PEP Daemon");
+        servletContext.setDisplayName("PEP Server");
         servletContext.setAttribute(PEPDaemonConfiguration.BINDING_NAME,
                                     daemonConfig);
 
@@ -192,7 +195,7 @@ public final class PEPDaemon {
         servletContext.addFilter(accessLoggingFilter, "/*", Context.REQUEST);
 
         ServletHolder daemonRequestServlet= new ServletHolder(new PEPDaemonServlet());
-        daemonRequestServlet.setName("PEP Daemon Servlet");
+        daemonRequestServlet.setName("PEP Server Servlet");
         servletContext.addServlet(daemonRequestServlet, "/authz");
 
         return httpServer;
@@ -312,7 +315,7 @@ public final class PEPDaemon {
         File configFile= null;
 
         try {
-            LOG.info("PEP Daemon configuration file: {}", configFilePath);
+            LOG.info("PEP Server configuration file: {}", configFilePath);
             configFile= Files.getReadableFile(configFilePath);
         } catch (IOException e) {
             errorAndExit(e.getMessage(), null);

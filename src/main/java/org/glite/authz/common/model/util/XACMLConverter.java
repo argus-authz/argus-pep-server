@@ -151,6 +151,13 @@ public class XACMLConverter {
     }
 
     /**
+     * Bootstraps the underlying object builders.
+     */
+    public static void bootstrap() {
+        // nothing to do, just load the class
+    }
+    
+    /**
      * Converts a XACML {@link ActionType} to a simple model {@link Action}.
      * 
      * @param xacmlAction the XACML action to be converted

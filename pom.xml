@@ -6,14 +6,14 @@
     <parent>
         <groupId>org.glite.authz</groupId>
         <artifactId>argus-parent</artifactId>
-        <version>1.3.0</version>
+        <version>1.4.0</version>
         <relativePath>../org.glite.authz</relativePath>
     </parent>
 
     <name>Argus PEP Server</name>
     <groupId>org.glite.authz</groupId>
     <artifactId>pepd</artifactId>
-    <version>1.3.0</version>
+    <version>1.4.0</version>
     <packaging>jar</packaging>
 
     <description>XACML based authorization service developed within the gLite project.</description>
