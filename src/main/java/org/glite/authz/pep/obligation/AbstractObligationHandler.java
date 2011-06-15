@@ -43,30 +43,42 @@ public abstract class AbstractObligationHandler implements ObligationHandler {
     private int precedence_;
 
     /**
+     * Old constructor, keep for back compatibility (EES OH!!!).
+     * 
+     * @param obligationId
+     *            ID of the handled obligation
+     * @deprecated use the new constructor
+     *             {@link #AbstractObligationHandler(String, String)}
+     */
+    protected AbstractObligationHandler(String obligationId) {
+        this(obligationId, obligationId);
+    }
+
+    /**
      * Constructor. Obligation has the lowest precedence, zero.
      * 
-     * @param id
-     *            the obligation handler ID
+     * @param name
+     *            the obligation handler unique identifier (name)
      * @param obligationId
      *            ID of the handled obligation
      */
-    protected AbstractObligationHandler(String id, String obligationId) {
-        this(id, obligationId, 0);
+    protected AbstractObligationHandler(String name, String obligationId) {
+        this(name, obligationId, 0);
     }
 
     /**
      * Constructor.
      * 
-     * @param id
-     *            the obligation handler ID
+     * @param name
+     *            the obligation handler unique identifier (name)
      * @param obligationId
      *            ID of the handled obligation
      * @param handlerPrecedence
      *            precedence of this handler, must be 0 or greater
      */
-    protected AbstractObligationHandler(String id, String obligationId,
+    protected AbstractObligationHandler(String name, String obligationId,
             int handlerPrecedence) {
-        setId(id);
+        setId(name);
         obligationId_= Strings.safeTrimOrNullString(obligationId);
         if (obligationId_ == null) {
             throw new IllegalArgumentException("Provided obligation ID may not be null or empty");
@@ -96,20 +108,20 @@ public abstract class AbstractObligationHandler implements ObligationHandler {
         return precedence_;
     }
 
-    /*
-     * (non-Javadoc)
+    /**
+     * Gets a unique identifier (name) for this obligation handle.
      * 
-     * @see org.glite.authz.pep.obligation.ObligationHandler#getId()
+     * @return the unique identifier (name) for this obligation handle
      */
     public String getId() {
         return id_;
     }
 
     /**
-     * Sets the obligation handler id
+     * Sets the obligation handler unique identifier (name)
      * 
      * @param id
-     *            the obligation handler ID
+     *            the obligation handler unique identifier (name)
      */
     protected void setId(String id) {
         String tempId= Strings.safeTrimOrNullString(id);
