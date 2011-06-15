@@ -18,7 +18,10 @@
 package org.glite.authz.pep.obligation.dfpmap;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PrintStream;
 
 import org.jruby.ext.posix.FileStat;
@@ -95,6 +98,26 @@ public class PosixUtil {
      */
     public static void createHardlink(String sourcePath, String targetPath) {
         createLink(sourcePath, targetPath, false);
+    }
+
+    /**
+     * Tries to "touch" a file, like the UNIX touch command, and update the last
+     * modified timestamp.
+     * 
+     * @param file
+     *            the file to "touch"
+     */
+    public static void touchFile(File file) {
+        try {
+            log.debug("touch {}", file.getAbsolutePath());
+            OutputStream out= new FileOutputStream(file);
+            out.close();
+        } catch (IOException e) {
+            log.warn("touch {} failed: {}",
+                     file.getAbsolutePath(),
+                     e.getMessage());
+        }
+
     }
 
     /** A basic handler for logging and stream handling. */
