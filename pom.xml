@@ -54,13 +54,6 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
         </dependency>
-<!--
-        MOVED IN pep-common
-        <dependency>
-            <groupId>com.caucho</groupId>
-            <artifactId>hessian</artifactId>
-        </dependency>
--->
         <dependency>
             <groupId>org.jruby.ext.posix</groupId>
             <artifactId>jna-posix</artifactId>
