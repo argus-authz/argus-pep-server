@@ -24,6 +24,10 @@ import java.util.List;
 
 import javax.security.auth.x500.X500Principal;
 
+import org.glite.voms.PKIUtils;
+
+import org.apache.commons.httpclient.URIException;
+
 import junit.framework.TestCase;
 
 /**
@@ -109,7 +113,12 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
     protected void setUp() throws Exception {
         super.setUp();
         gridmapdir= createTempGridMapDir();
-        // System.out.println("setUp: temp gridmapdir: " + gridmapdir);
+        
+        // System.out.println("gridmapdir: " + gridmapdir);
+        // for (File file : gridmapdir.listFiles()) {
+        // System.out.println(file);
+        // }
+        
         gridmapPool= new GridMapDirPoolAccountManager(gridmapdir);
     }
 
@@ -134,6 +143,7 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
             assertTrue(accountName + " doesn't match",
                        accountName.matches(prefix + "\\d+"));
         }
+        System.out.println("TEST PASSED");
     }
 
     public void testPoolAccountNamesPrefixes() {
@@ -145,6 +155,7 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
                        prefixes.contains(accountName));
         }
 
+        System.out.println("TEST PASSED");
     }
 
     public void testPoolAccountNames() {
@@ -153,6 +164,7 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
         System.out.println("poolAccountNames: " + accountNames);
         assertTrue("Empty pool account names", accountNames.size() > 0);
         assertEquals(prefixes.size() * N_POOL, accountNames.size());
+        System.out.println("TEST PASSED");
     }
 
     public void testCreateMapping() {
@@ -160,9 +172,10 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
         String prefix= "dteam";
         String identifier= "%2fcn%3djohn%20doe:dteam";
         String accountName= gridmapPool.createMapping(prefix, identifier);
-        System.out.println("identifier '" + identifier + "' mapped to: " + accountName);
+        System.out.println("Identifier '" + identifier + "' mapped to: " + accountName);
         assertTrue(accountName + " doesn't match dteam pool",
                    accountName.matches(prefix + "\\d+"));
+        System.out.println("TEST PASSED");
     }
 
     public void testMapToAccountPoolDteam() throws Exception {
@@ -174,15 +187,16 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
                                                      principal,
                                                      prefix,
                                                      null);
-        System.out.println("principal '" + principal + "' with account prefix '" + prefix + "' mapped to: " + accountName);
+        System.out.println("Principal '" + principal + "' with account prefix '" + prefix + "' mapped to: " + accountName);
         assertTrue(accountName + " doesn't match dteam pool",
                    accountName.matches(prefix + "\\d+"));
+        System.out.println("TEST PASSED");
     }
 
     public void testMapToAccountPoolLTEDteam() throws Exception {
         System.out.println("------------testMapToAccountPoolLTEDteam------------");
         String prefix= "lte-dteam";
-        List<String> subjects= Arrays.asList("CN=John-Doe","CN=Batman", "CN=John-Doe", "CN=Robin", "CN=John-Doe");
+        List<String> subjects= Arrays.asList("CN=John-John Doe","CN=Batman", "CN=John-John Doe", "CN=Robin", "CN=John-John Doe");
         for (String subject : subjects) {
             X500Principal principal= new X500Principal(subject);
             String accountName= gridmapPool.mapToAccount(prefix,
@@ -193,12 +207,13 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
             assertTrue(accountName + " doesn't match " + prefix + " pool",
                        accountName.matches(prefix + "\\d+"));
         }
+        System.out.println("TEST PASSED");
     }
     
-    public void testSubjectIdentifierFileTimestamp() throws Exception {
-        System.out.println("------------testAccountLinkTimestamp------------");
+    public void testSubjectIdentifierFileTimestampUpdate() throws Exception {
+        System.out.println("------------testSubjectIdentifierFileTimestampUpdate------------");
         String prefix= "dteam";
-        List<String> subjects= Arrays.asList("CN=John-Doe", "CN=John-Doe", "CN=John-Doe","CN=John-Doe","CN=John-Doe");
+        List<String> subjects= Arrays.asList("CN=John-John Doe", "CN=John-John Doe", "CN=John-John Doe","CN=John-John Doe","CN=John-John Doe");
         // force a first mapping
         gridmapPool.mapToAccount(prefix, new X500Principal("CN=Batman"), prefix, null);
         long lastmodified= 0;
@@ -208,22 +223,52 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
                                                          principal,
                                                          prefix,
                                                          null);
-            System.out.println("principal '" + principal + "' with account prefix '" + prefix + "' mapped to: " + accountName);
+            System.out.println("Principal '" + principal + "' with account prefix '" + prefix + "' mapped to: " + accountName);
             assertTrue(accountName + " doesn't match " + prefix + " pool",
                        accountName.matches(prefix + "\\d+"));
             
             String subjectIdentifier= gridmapPool.buildSubjectIdentifier(principal, prefix, null);
             String subjectIdentifierFilePath= gridmapPool.buildSubjectIdentifierFilePath(subjectIdentifier);
             File subjectIdentifierFile= new File(subjectIdentifierFilePath);
-            System.out.println("subject identifier file: " + subjectIdentifierFile);
-            System.out.println("lastmodified: " + lastmodified + " < " + subjectIdentifierFile.lastModified());
+            System.out.println("Subject identifier file: " + subjectIdentifierFile);
+            System.out.println("Lastmodified: " + lastmodified + " < " + subjectIdentifierFile.lastModified());
             assertTrue("Timestamp not updated", lastmodified < subjectIdentifierFile.lastModified());
             lastmodified= subjectIdentifierFile.lastModified();
             
             Thread.sleep(1000);
         }
 
+        System.out.println("TEST PASSED");
         
+    }
+    
+    public void testSubjectIdentifierFilename() throws URIException {
+        System.out.println("------------testSubjectIdentifierFilename------------");
+        String group= "lte-dteam";
+        List<String> groups= Arrays.asList("cms","lte","dteam");
+        X500Principal principal= new X500Principal("CN=John-John Doe,DC=Test,DC=users");
+        System.out.println("Principal: " + principal);
+        System.out.println("Group: " + group);
+        System.out.println("Groups: " + groups);
+        String leaseFilename= gridmapPool.buildSubjectIdentifier(principal, group, groups);
+        System.out.println("Lease filename: " + leaseFilename);
+        System.out.println("TEST PASSED");
+    }
+    
+    public void testSubjectIdentifierEncoding() throws URIException {
+        System.out.println("------------testSubjectIdentifierEncoding------------");
+        X500Principal principal= new X500Principal("CN=John-John Doe,DC=Test,DC=users");
+        System.out.println("Principal: " + principal);
+        String openSSLPrincipal= PKIUtils.getOpenSSLFormatPrincipal(principal,
+                                                                    true);
+        System.out.println("Subject: " + openSSLPrincipal);
+        String encodedSubject= gridmapPool.encodeSubjectIdentifier(openSSLPrincipal);
+        System.out.println("Encoded subject: " + encodedSubject);
+        assertFalse("Subject not correctly encoded",encodedSubject.contains("-"));
+        assertFalse("Subject not correctly encoded",encodedSubject.contains("/"));
+        assertFalse("Subject not correctly encoded",encodedSubject.contains("="));
+        assertFalse("Subject not correctly encoded",encodedSubject.contains(" "));
+        System.out.println("TEST PASSED");
     }
     
 }
