@@ -21,8 +21,8 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.List;
-import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -102,8 +102,6 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
         for (File file : files) {
             if (file.isFile()) {
                 nameMatcher= poolAccountNamePattern.matcher(file.getName());
-                // XXX System.out.println("XXX: nameMatcher.matches(): " +
-                // file.getName() + ": " + nameMatcher.matches());
                 if (nameMatcher.matches()
                         && !poolAccountNames.contains(nameMatcher.group(1))) {
                     poolAccountNames.add(nameMatcher.group(1));
@@ -212,8 +210,8 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
                             + " has a link count greater than 2.  This mapping is corrupted and can not be used.");
                 }
 
-                // TOUCH the subjectIdentifierFile every time a mapping is done.
                 // BUG FIX: https://savannah.cern.ch/bugs/index.php?83281
+                // touch the subjectIdentifierFile every time a mapping is done.
                 PosixUtil.touchFile(subjectIdentifierFile);
 
                 return accountFile.getName();
@@ -245,7 +243,8 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
             String subjectIdentifierFilePath= buildSubjectIdentifierFilePath(subjectIdentifier);
             accountFileStat= PosixUtil.getFileStat(accountFile.getAbsolutePath());
             if (accountFileStat.nlink() == 1) {
-                PosixUtil.createHardlink(accountFile.getAbsolutePath(), subjectIdentifierFilePath);
+                PosixUtil.createHardlink(accountFile.getAbsolutePath(),
+                                         subjectIdentifierFilePath);
                 accountFileStat= PosixUtil.getFileStat(accountFile.getAbsolutePath());
                 if (accountFileStat.nlink() == 2) {
                     log.debug("Linked subject identifier {} to pool account file {}",
@@ -264,13 +263,16 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
     /**
      * Creates an identifier for the subject that is based on the subject's DN
      * and primary and secondary groups.
+     * <p>
+     * Implements the legacy gLExec LCAS/LCMAP encoding.
      * 
      * @param subjectDN
      *            DN of the subject
      * @param primaryGroupName
      *            primary group to which the subject was assigned, may be null
      * @param secondaryGroupNames
-     *            secondary groups to which the subject assigned, may be null
+     *            ordered list of secondary groups to which the subject
+     *            assigned, may be null
      * 
      * @return the identifier for the subject
      */
@@ -279,11 +281,15 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
         StringBuilder identifier= new StringBuilder();
 
         try {
-            String openSSLPrincipal= PKIUtils.getOpenSSLFormatPrincipal(subjectDN,true);
-            String encodedId= URIUtil.encodeWithinPath(openSSLPrincipal);                        
-            identifier.append(encodedId.toLowerCase());
+            String openSSLPrincipal= PKIUtils.getOpenSSLFormatPrincipal(subjectDN,
+                                                                        true);
+            // BUG FIX: https://savannah.cern.ch/bugs/index.php?83419
+            // encode using the legacy gLExec LCAS/LCMAP algorithm
+            String encodedId= encodeSubjectIdentifier(openSSLPrincipal);
+            identifier.append(encodedId);
         } catch (URIException e) {
-            throw new RuntimeException("Charset required to be supported by JVM but is not available", e);
+            throw new RuntimeException("Charset required to be supported by JVM but is not available",
+                                       e);
         }
 
         if (primaryGroupName != null) {
@@ -291,13 +297,51 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
         }
 
         if (secondaryGroupNames != null && !secondaryGroupNames.isEmpty()) {
-            TreeSet<String> sortedNames= new TreeSet<String>(secondaryGroupNames);
-            for (String name : sortedNames) {
-                identifier.append(":").append(name);
+            for (String secondaryGroupName : secondaryGroupNames) {
+                identifier.append(":").append(secondaryGroupName);
             }
         }
 
+        // FIXME ??? requires toLowerCase() also for group(s) ???
         return identifier.toString();
+    }
+
+    /**
+     * Alpha numeric characters set: <code>[0-9a-zA-Z]</code>
+     */
+    protected static final BitSet ALPHANUM= new BitSet(256);
+    // Static initializer for alphanum
+    static {
+        for (int i= 'a'; i <= 'z'; i++) {
+            ALPHANUM.set(i);
+        }
+        for (int i= 'A'; i <= 'Z'; i++) {
+            ALPHANUM.set(i);
+        }
+        for (int i= '0'; i <= '9'; i++) {
+            ALPHANUM.set(i);
+        }
+    }
+
+    /**
+     * Encodes the unescaped subject identifier, typically the user DN.
+     * <p>
+     * Implements the legacy string encoding used by gLExec LCAS/LCMAP for the
+     * lease file names:
+     * <ul>
+     * <li>URL encode all no alpha-numeric characters <code>[0-9a-zA-Z]</code>
+     * <li>apply lower case
+     * </ul>
+     * 
+     * @param unescaped
+     *            The unescaped user DN
+     * @return encoded, escaped, user DN, compatible with gLExec
+     * @throws URIException
+     */
+    protected String encodeSubjectIdentifier(String unescaped)
+            throws URIException {
+        String encoded= URIUtil.encode(unescaped, ALPHANUM);
+        return encoded.toLowerCase();
     }
 
     /**
