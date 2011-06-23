@@ -130,9 +130,22 @@ public class PosixAccount implements Serializable {
     private void computeString() {
         StringBuilder string = new StringBuilder("PosixAccount");
         string.append("{");
-        string.append("name:").append(loginName).append(", ");
-        string.append("primary group:").append(primaryGroup).append(", ");
-        string.append("secondary groups:").append(secondaryGroups);
+        string.append("username=").append(loginName);
+        if (primaryGroup!=null) {
+            string.append(" group=").append(primaryGroup);
+        }
+        if (secondaryGroups!=null && !secondaryGroups.isEmpty()) {
+            string.append(" groups=");
+            boolean first= true;
+            for (String group : secondaryGroups) {
+                if (!first) {
+                    string.append(",");
+                }
+                string.append(group);
+                first= false;
+            }
+            string.append(secondaryGroups);
+        }
         string.append("}");
         stringRepresentation = string.toString();
     }
