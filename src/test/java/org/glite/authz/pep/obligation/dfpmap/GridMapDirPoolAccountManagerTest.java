@@ -119,7 +119,7 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
         // System.out.println(file);
         // }
         
-        gridmapPool= new GridMapDirPoolAccountManager(gridmapdir);
+        gridmapPool= new GridMapDirPoolAccountManager(gridmapdir, true);
     }
 
     /** {@inheritDoc} */
@@ -195,6 +195,7 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
 
     public void testMapToAccountPoolLTEDteam() throws Exception {
         System.out.println("------------testMapToAccountPoolLTEDteam------------");
+        System.out.println("BUG FIX: https://savannah.cern.ch/bugs/?66574");
         String prefix= "lte-dteam";
         List<String> subjects= Arrays.asList("CN=John-John Doe","CN=Batman", "CN=John-John Doe", "CN=Robin", "CN=John-John Doe");
         for (String subject : subjects) {
@@ -212,6 +213,7 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
     
     public void testSubjectIdentifierFileTimestampUpdate() throws Exception {
         System.out.println("------------testSubjectIdentifierFileTimestampUpdate------------");
+        System.out.println("BUG FIX: https://savannah.cern.ch/bugs/index.php?83281");
         String prefix= "dteam";
         List<String> subjects= Arrays.asList("CN=John-John Doe", "CN=John-John Doe", "CN=John-John Doe","CN=John-John Doe","CN=John-John Doe");
         // force a first mapping
@@ -242,21 +244,47 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
         
     }
     
-    public void testSubjectIdentifierFilename() throws URIException {
-        System.out.println("------------testSubjectIdentifierFilename------------");
+    public void testSubjectIdentifierFilenameWithSecGroups() throws URIException {
+        System.out.println("------------testSubjectIdentifierFilenameWithSecGroups------------");
+        System.out.println("BUG FIX: https://savannah.cern.ch/bugs/?83317");
         String group= "lte-dteam";
-        List<String> groups= Arrays.asList("cms","lte","dteam");
+        List<String> groups= Arrays.asList("cms","LTE","DTEAM");
         X500Principal principal= new X500Principal("CN=John-John Doe,DC=Test,DC=users");
         System.out.println("Principal: " + principal);
         System.out.println("Group: " + group);
         System.out.println("Groups: " + groups);
         String leaseFilename= gridmapPool.buildSubjectIdentifier(principal, group, groups);
         System.out.println("Lease filename: " + leaseFilename);
+        assertTrue("Wrong lease filename generated",leaseFilename.contains("lte-dteam"));
+        assertTrue("Wrong lease filename generated",leaseFilename.contains("cms"));
+        assertTrue("Wrong lease filename generated",leaseFilename.contains("LTE"));
+        assertTrue("Wrong lease filename generated",leaseFilename.contains("DTEAM"));
         System.out.println("TEST PASSED");
     }
+
+    public void testSubjectIdentifierFilenameWithoutSecGroups() throws URIException {
+        System.out.println("------------testSubjectIdentifierFilenameWithoutSecGroups------------");
+        System.out.println("BUG FIX: https://savannah.cern.ch/bugs/?83317");
+        String group= "lte-dteam";
+        List<String> groups= Arrays.asList("cms","LTE","dteam");
+        X500Principal principal= new X500Principal("CN=John-John Doe,DC=Test,DC=users");
+        System.out.println("Principal: " + principal);
+        System.out.println("Group: " + group);
+        System.out.println("Groups: " + groups);
+        gridmapPool.setUseSecondaryGroupNamesForMapping(false);
+        String leaseFilename= gridmapPool.buildSubjectIdentifier(principal, group, groups);
+        System.out.println("Lease filename: " + leaseFilename);
+        assertTrue("Wrong lease filename generated",leaseFilename.contains("lte-dteam"));
+        assertFalse("Wrong lease filename generated",leaseFilename.contains("cms"));
+        assertFalse("Wrong lease filename generated",leaseFilename.contains("LTE"));
+        assertFalse("Wrong lease filename generated",leaseFilename.contains("DTEAM"));
+        System.out.println("TEST PASSED");
+    }
+
     
     public void testSubjectIdentifierEncoding() throws URIException {
         System.out.println("------------testSubjectIdentifierEncoding------------");
+        System.out.println("BUG FIX: https://savannah.cern.ch/bugs/index.php?83419");
         X500Principal principal= new X500Principal("CN=John-John Doe,DC=Test,DC=users");
         System.out.println("Principal: " + principal);
         String openSSLPrincipal= PKIUtils.getOpenSSLFormatPrincipal(principal,
