@@ -130,7 +130,7 @@ public class PosixAccount implements Serializable {
     private void computeString() {
         StringBuilder string = new StringBuilder("PosixAccount");
         string.append("{");
-        string.append("username=").append(loginName);
+        string.append("user=").append(loginName);
         if (primaryGroup!=null) {
             string.append(" group=").append(primaryGroup);
         }
@@ -144,7 +144,6 @@ public class PosixAccount implements Serializable {
                 string.append(group);
                 first= false;
             }
-            string.append(secondaryGroups);
         }
         string.append("}");
         stringRepresentation = string.toString();
