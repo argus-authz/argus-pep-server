@@ -86,12 +86,6 @@ public class DFPMObligationHandlerConfigurationParser implements
     public static final String GRID_MAP_DIR_PROP= "gridMapDir";
 
     /**
-     * The name of the {@value} property which gives the lifetime, in minutes,
-     * of a mapping in to a POSIX account.
-     */
-    public static final String ACCOUNT_MAP_LIFETIME= "mappingLifetime";
-
-    /**
      * The default value of the {@value #PREFER_DN_FOR_LOGIN_NAME_PROP}
      * property: {@value} .
      */
@@ -113,19 +107,13 @@ public class DFPMObligationHandlerConfigurationParser implements
      * The default value of the
      * {@value IniOHConfigurationParser#PRECEDENCE_PROP} property: {@value}
      */
-    public static final int DEFAULT_PRECENDENCE= 0;
+    public static final int PRECENDENCE_DEFAULT= 0;
 
     /**
-     * The default value of the {@value #MAP_REFRESH_PERIOD_PROP} property:
-     * {@value}
+     * The default value (in minutes) of the {@value #MAP_REFRESH_PERIOD_PROP}
+     * property: * {@value}
      */
-    public static final int DEFAULT_MAP_REFRESH_PERIOD= 15;
-
-    /**
-     * The default value of the {@value #ACCOUNT_MAP_LIFETIME} property:
-     * {@value}
-     */
-    public static final int DEFAULT_ACCOUNT_MAP_LIFETIME= 43200;
+    public static final int MAP_REFRESH_PERIOD_DEFAULT= 15;
 
     /**
      * The name of the {@value} property that indicate that the OH will be only
@@ -135,9 +123,21 @@ public class DFPMObligationHandlerConfigurationParser implements
 
     /**
      * The default value of the {@value #REQUIRE_SUBJECT_KEYINFO_PROP} property:
-     * {@value}
+     * * {@value}
      */
-    public static final boolean DEFAULT_REQUIRE_SUBJECT_KEYINFO= true;
+    public static final boolean REQUIRE_SUBJECT_KEYINFO_DEFAULT= true;
+
+    /**
+     * The name of the {@value} property that determine if the lease filename in
+     * the {@value #GRID_MAP_DIR_PROP} contains or not the secondary groups.
+     */
+    public static final String USE_SECONDARY_GROUP_NAMES_FOR_MAPPING_PROP= "useSecondaryGroupNamesForMapping";
+
+    /**
+     * The default value of the
+     * {@value #USE_SECONDARY_GROUP_NAMES_FOR_MAPPING_PROP} property: {@value}
+     */
+    public static final boolean USE_SECONDARY_GROUP_NAMES_FOR_MAPPING_DEFAULT= true;
 
     /** Class logger. */
     private final Logger log= LoggerFactory.getLogger(DFPMObligationHandlerConfigurationParser.class);
@@ -150,7 +150,7 @@ public class DFPMObligationHandlerConfigurationParser implements
         String name= iniConfig.getName();
         int precendence= IniConfigUtil.getInt(iniConfig,
                                               PRECEDENCE_PROP,
-                                              DEFAULT_PRECENDENCE,
+                                              PRECENDENCE_DEFAULT,
                                               0,
                                               Integer.MAX_VALUE);
         log.debug("handler precendence: {}", precendence);
@@ -179,7 +179,7 @@ public class DFPMObligationHandlerConfigurationParser implements
 
         int mapRefreshPeriod= IniConfigUtil.getInt(iniConfig,
                                                    MAP_REFRESH_PERIOD_PROP,
-                                                   DEFAULT_MAP_REFRESH_PERIOD,
+                                                   MAP_REFRESH_PERIOD_DEFAULT,
                                                    1,
                                                    Integer.MAX_VALUE);
         log.info("{}: mapping file(s) refresh period: {} mins",
@@ -196,19 +196,29 @@ public class DFPMObligationHandlerConfigurationParser implements
                  name,
                  noPrimaryGroupNameIsError);
 
+        // BUG FIX: https://savannah.cern.ch/bugs/?83317
+        boolean useSecondaryGroupNamesForMapping= IniConfigUtil.getBoolean(iniConfig,
+                                                                           USE_SECONDARY_GROUP_NAMES_FOR_MAPPING_PROP,
+                                                                           USE_SECONDARY_GROUP_NAMES_FOR_MAPPING_DEFAULT);
+        log.info("{}: use secondary group names for mapping (lease filename): {}",
+                 name,
+                 useSecondaryGroupNamesForMapping);
+
         AccountMapper accountMapper= buildAccountMapper(accountMapFile,
                                                         preferDNForLoginName,
                                                         groupMapFile,
                                                         preferDNForPrimaryGroupName,
                                                         mapRefreshPeriod * 60 * 1000,
                                                         gridMapDir,
-                                                        noPrimaryGroupNameIsError);
+                                                        noPrimaryGroupNameIsError,
+                                                        useSecondaryGroupNamesForMapping);
 
-        DFPMObligationHandler obligationHandler= new DFPMObligationHandler(name,accountMapper);
+        DFPMObligationHandler obligationHandler= new DFPMObligationHandler(name,
+                                                                           accountMapper);
 
         boolean requireSubjectKeyInfo= IniConfigUtil.getBoolean(iniConfig,
                                                                 REQUIRE_SUBJECT_KEYINFO_PROP,
-                                                                DEFAULT_REQUIRE_SUBJECT_KEYINFO);
+                                                                REQUIRE_SUBJECT_KEYINFO_DEFAULT);
         log.info("{}: requires subject key-info attribute to apply: {}",
                  name,
                  requireSubjectKeyInfo);
@@ -237,6 +247,9 @@ public class DFPMObligationHandlerConfigurationParser implements
      * @param noPrimaryGroupNameIsError
      *            whether the failure to map a primary group name cause an error
      *            or not
+     * @param useSecondaryGroupNamesForMapping
+     *            if the lease filename should contain secondary group names or
+     *            not
      * @return the constructed account mapper
      * 
      * @throws ConfigurationException
@@ -246,14 +259,16 @@ public class DFPMObligationHandlerConfigurationParser implements
     private AccountMapper buildAccountMapper(String accountMapFile,
             boolean preferDNMappingForAccountIndicator, String groupMapFile,
             boolean preferDNMappingForPrimaryGroupName, int mapRefreshPeriod,
-            String gridMapDir, boolean noPrimaryGroupNameIsError)
+            String gridMapDir, boolean noPrimaryGroupNameIsError,
+            boolean useSecondaryGroupNamesForMapping)
             throws ConfigurationException {
         DFPMMatchStrategy<X500Principal> dnMatchStrategy= new X509MatchStrategy();
         DFPMMatchStrategy<FQAN> fqanMatchStrategy= new FQANMatchStrategy();
 
         DFPM accountIndicatorMap= buildMapping(accountMapFile, mapRefreshPeriod);
         DFPM groupMap= buildMapping(groupMapFile, mapRefreshPeriod);
-        PoolAccountManager poolAccountManager= buildPoolAccountManager(gridMapDir);
+        PoolAccountManager poolAccountManager= buildPoolAccountManager(gridMapDir,
+                                                                       useSecondaryGroupNamesForMapping);
 
         // account indicator mapping
         AccountIndicatorMappingStrategy aimStrategy= new DNPrimaryFQANAccountIndicatorMappingStrategy(accountIndicatorMap,
@@ -303,6 +318,9 @@ public class DFPMObligationHandlerConfigurationParser implements
      * 
      * @param gridMapDirPath
      *            path used to persist pool account mappings on the filesystem
+     * @param useSecondaryGroupNamesForMapping
+     *            if the lease filename in the gridmapDir should contains
+     *            secondary group names or not
      * 
      * @return the pool account manager
      * 
@@ -310,7 +328,8 @@ public class DFPMObligationHandlerConfigurationParser implements
      *             thrown if the given grid map directory is not a directory,
      *             can not be read, or can not be written to
      */
-    private PoolAccountManager buildPoolAccountManager(String gridMapDirPath)
+    private PoolAccountManager buildPoolAccountManager(String gridMapDirPath,
+            boolean useSecondaryGroupNamesForMapping)
             throws ConfigurationException {
         File gridMapDir= new File(gridMapDirPath);
         if (!gridMapDir.exists()) {
@@ -333,6 +352,9 @@ public class DFPMObligationHandlerConfigurationParser implements
             log.error(errMsg);
             throw new ConfigurationException(errMsg);
         }
-        return new GridMapDirPoolAccountManager(gridMapDir);
+
+        GridMapDirPoolAccountManager poolAccountManager= new GridMapDirPoolAccountManager(gridMapDir,
+                                                                                          useSecondaryGroupNamesForMapping);
+        return poolAccountManager;
     }
 }
