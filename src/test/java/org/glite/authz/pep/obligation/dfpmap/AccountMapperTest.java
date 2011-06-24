@@ -120,7 +120,7 @@ public class AccountMapperTest extends TestCase {
     protected void setUp() throws Exception {
         super.setUp();
         gridMapDir = createTempGridMapDir();
-        poolAccountManager = new GridMapDirPoolAccountManager(gridMapDir);
+        poolAccountManager = new GridMapDirPoolAccountManager(gridMapDir, true);
     }
 
     /** {@inheritDoc} */
