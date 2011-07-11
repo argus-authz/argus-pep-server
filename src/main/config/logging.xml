@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-
     Copyright (c) Members of the EGEE Collaboration. 2006-2010.
     See http://www.eu-egee.org/partners/ for details on the copyright holders.
 
@@ -15,11 +14,8 @@
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the License for the specific language governing permissions and
     limitations under the License.
-
 -->
-
-
-<configuration>
+<configuration debug="false">
     
     <!--
         Loggers define indicate which packages/categories are logged, at which level, and to which appender.
@@ -44,46 +40,57 @@
         Logging appenders define where and how logging messages are logged.
      -->
     <appender name="ACCESS" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <File>${org.glite.authz.pep.logdir}/access.log</File>
-        <ImmediateFlush>true</ImmediateFlush>
-
+        <file>${org.glite.authz.pep.logdir}/access.log</file>
+        <immediateFlush>true</immediateFlush>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <FileNamePattern>${org.glite.authz.pep.logdir}/access-%d{yyyy-MM-dd}.log</FileNamePattern>
+            <!-- daily rolling policy: %d == yyyy-MM-dd -->
+            <fileNamePattern>${org.glite.authz.pep.logdir}/access-%d.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <!-- or whenever the file size reaches 10MB: %i == [0..n] -->
+                <maxFileSize>10MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <!-- keeps 90 days of logging -->
+            <maxHistory>90</maxHistory>
         </rollingPolicy>
-
         <layout class="ch.qos.logback.classic.PatternLayout">
-            <Pattern>%date{yyyy-MM-dd'T'HH:mm:ss.SSS'Z',UTC}|%msg%n</Pattern>
+            <pattern>%date{yyyy-MM-dd'T'HH:mm:ss.SSS'Z',UTC}|%msg%n</pattern>
         </layout>
     </appender>
 
     <appender name="AUDIT" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <File>${org.glite.authz.pep.logdir}/audit.log</File>
-        <ImmediateFlush>true</ImmediateFlush>
-
+        <file>${org.glite.authz.pep.logdir}/audit.log</file>
+        <immediateFlush>true</immediateFlush>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <FileNamePattern>${org.glite.authz.pep.logdir}/audit-%d{yyyy-MM-dd}.log</FileNamePattern>
+            <!-- daily rolling policy: %d == yyyy-MM-dd -->
+            <fileNamePattern>${org.glite.authz.pep.logdir}/audit-%d.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <!-- or whenever the file size reaches 10MB: %i == [0..n] -->
+                <maxFileSize>10MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <!-- keeps 90 days of logging -->
+            <maxHistory>90</maxHistory>
         </rollingPolicy>
-
         <layout class="ch.qos.logback.classic.PatternLayout">
-            <Pattern>%date{yyyy-MM-dd'T'HH:mm:ss.SSS'Z',UTC}|%msg%n</Pattern>
+            <pattern>%date{yyyy-MM-dd'T'HH:mm:ss.SSS'Z',UTC}|%msg%n</pattern>
         </layout>
     </appender>
 
     <appender name="PROCESS" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <File>${org.glite.authz.pep.logdir}/process.log</File>
-        <!-- Uncomment this if application is terminating in such as way that the last few log messages are not written to disk -->
-        <!--
-        <ImmediateFlush>true</ImmediateFlush>
-        -->
-        
+        <file>${org.glite.authz.pep.logdir}/process.log</file>
+        <immediateFlush>true</immediateFlush>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <FileNamePattern>${org.glite.authz.pep.logdir}/process-%d{yyyy-MM-dd}.log</FileNamePattern>
+            <!-- daily rolling policy: %d == yyyy-MM-dd -->
+            <fileNamePattern>${org.glite.authz.pep.logdir}/process-%d.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <!-- or whenever the file size reaches 10MB: %i == [0..n] -->
+                <maxFileSize>10MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <!-- keeps 90 days of logging -->
+            <maxHistory>90</maxHistory>
         </rollingPolicy>
-
         <layout class="ch.qos.logback.classic.PatternLayout">
             <!-- General logging pattern, date time in UTC (Zulu) -->
-            <Pattern>%date{yyyy-MM-dd HH:mm:ss.SSS'Z',UTC} - %level [%logger{0}] - %msg%n</Pattern>
-
+            <pattern>%date{yyyy-MM-dd HH:mm:ss.SSS'Z',UTC} - %level [%logger{0}] - %msg%n</pattern>
         </layout>
     </appender>
   
