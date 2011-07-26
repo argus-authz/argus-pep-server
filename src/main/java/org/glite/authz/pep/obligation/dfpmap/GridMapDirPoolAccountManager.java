@@ -151,13 +151,20 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
         return null;
     }
 
-    /** {@inheritDoc} */
+    /** 
+     * {@inheritDoc} 
+     * <ul>
+     * <li>BUG FIX: https://savannah.cern.ch/bugs/index.php?83281
+     * <li>BUG FIX: https://savannah.cern.ch/bugs/index.php?84846
+     * </ul>
+     * */
     public String mapToAccount(String accountNamePrefix,
             X500Principal subjectDN, String primaryGroup,
             List<String> secondaryGroups) throws ObligationProcessingException {
         String subjectIdentifier= buildSubjectIdentifier(subjectDN,
                                                          primaryGroup,
                                                          secondaryGroups);
+        File subjectIdentifierFile= new File(buildSubjectIdentifierFilePath(subjectIdentifier));
 
         log.debug("Checking if there is an existing account mapping for subject {} with primary group {} and secondary groups {}",
                   new Object[] { subjectDN.getName(), primaryGroup,
@@ -165,6 +172,10 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
         String accountName= getAccountNameByKey(accountNamePrefix,
                                                 subjectIdentifier);
         if (accountName != null) {
+            // BUG FIX: https://savannah.cern.ch/bugs/index.php?83281
+            // touch the subjectIdentifierFile every time a mapping is re-done.
+            PosixUtil.touchFile(subjectIdentifierFile);
+
             log.debug("An existing account mapping has mapped subject {} with primary group {} and secondary groups {} to pool account {}",
                       new Object[] { subjectDN.getName(), primaryGroup,
                                     secondaryGroups, accountName });
@@ -173,6 +184,9 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 
         accountName= createMapping(accountNamePrefix, subjectIdentifier);
         if (accountName != null) {
+            // BUG FIX: https://savannah.cern.ch/bugs/index.php?84846
+            // touch the subjectIdentifierFile the first time a mapping is done.
+            PosixUtil.touchFile(subjectIdentifierFile);
             log.debug("A new account mapping has mapped subject {} with primary group {} and secondary groups {} to pool account {}",
                       new Object[] { subjectDN.getName(), primaryGroup,
                                     secondaryGroups, accountName });
@@ -188,9 +202,6 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
     /**
      * Gets the user account to which a given subject had previously been
      * mapped.
-     * <ul>
-     * <li>BUG FIX: https://savannah.cern.ch/bugs/index.php?83281
-     * </ul>
      * 
      * @param accountNamePrefix
      *            prefix of the account to which the subject should be mapped
@@ -207,6 +218,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
     private String getAccountNameByKey(String accountNamePrefix,
             String subjectIdentifier) throws ObligationProcessingException {
         File subjectIdentifierFile= new File(buildSubjectIdentifierFilePath(subjectIdentifier));
+        // the file doesn't exit yet!!!
         if (!subjectIdentifierFile.exists()) {
             return null;
         }
@@ -228,10 +240,6 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
                             + accountFile.getAbsolutePath()
                             + " has a link count greater than 2.  This mapping is corrupted and can not be used.");
                 }
-
-                // BUG FIX: https://savannah.cern.ch/bugs/index.php?83281
-                // touch the subjectIdentifierFile every time a mapping is done.
-                PosixUtil.touchFile(subjectIdentifierFile);
 
                 return accountFile.getName();
             }
