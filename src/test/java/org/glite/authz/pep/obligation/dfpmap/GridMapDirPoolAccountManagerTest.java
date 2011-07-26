@@ -214,12 +214,13 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
     public void testSubjectIdentifierFileTimestampUpdate() throws Exception {
         System.out.println("------------testSubjectIdentifierFileTimestampUpdate------------");
         System.out.println("BUG FIX: https://savannah.cern.ch/bugs/index.php?83281");
+        System.out.println("BUG FIX: https://savannah.cern.ch/bugs/index.php?84846");
         String prefix= "dteam";
-        List<String> subjects= Arrays.asList("CN=John-John Doe", "CN=John-John Doe", "CN=John-John Doe","CN=John-John Doe","CN=John-John Doe");
-        // force a first mapping
-        gridmapPool.mapToAccount(prefix, new X500Principal("CN=Batman"), prefix, null);
-        long lastmodified= 0;
+        List<String> subjects= Arrays.asList("CN=Batman","CN=Batman","CN=Batman","CN=Robin","CN=Robin","CN=Robin","CN=John-John Doe", "CN=John-John Doe", "CN=John-John Doe","CN=John-John Doe","CN=John-John Doe");
+        long lastmodified= System.currentTimeMillis();
         for (String subject : subjects) {
+            // touch granularity in 1 sec!!!
+            Thread.sleep(1000);
             X500Principal principal= new X500Principal(subject);
             String accountName= gridmapPool.mapToAccount(prefix,
                                                          principal,
@@ -236,8 +237,6 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
             System.out.println("Lastmodified: " + lastmodified + " < " + subjectIdentifierFile.lastModified());
             assertTrue("Timestamp not updated", lastmodified < subjectIdentifierFile.lastModified());
             lastmodified= subjectIdentifierFile.lastModified();
-            
-            Thread.sleep(1000);
         }
 
         System.out.println("TEST PASSED");
