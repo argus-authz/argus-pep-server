@@ -46,8 +46,8 @@
             <!-- daily rolling policy: %d == yyyy-MM-dd -->
             <fileNamePattern>${org.glite.authz.pep.logdir}/access-%d.%i.log.gz</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <!-- or whenever the file size reaches 10MB: %i == [0..n] -->
-                <maxFileSize>10MB</maxFileSize>
+                <!-- or whenever the file size reaches 100MB: %i == [0..n] -->
+                <maxFileSize>100MB</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
             <!-- keeps 90 days of logging -->
             <maxHistory>90</maxHistory>
@@ -64,8 +64,8 @@
             <!-- daily rolling policy: %d == yyyy-MM-dd -->
             <fileNamePattern>${org.glite.authz.pep.logdir}/audit-%d.%i.log.gz</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <!-- or whenever the file size reaches 10MB: %i == [0..n] -->
-                <maxFileSize>10MB</maxFileSize>
+                <!-- or whenever the file size reaches 100MB: %i == [0..n] -->
+                <maxFileSize>100MB</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
             <!-- keeps 90 days of logging -->
             <maxHistory>90</maxHistory>
@@ -82,8 +82,8 @@
             <!-- daily rolling policy: %d == yyyy-MM-dd -->
             <fileNamePattern>${org.glite.authz.pep.logdir}/process-%d.%i.log.gz</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <!-- or whenever the file size reaches 10MB: %i == [0..n] -->
-                <maxFileSize>10MB</maxFileSize>
+                <!-- or whenever the file size reaches 100MB: %i == [0..n] -->
+                <maxFileSize>100MB</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
             <!-- keeps 90 days of logging -->
             <maxHistory>90</maxHistory>
