@@ -110,8 +110,15 @@ public class PosixUtil {
     public static void touchFile(File file) {
         try {
             log.debug("touch {}", file.getAbsolutePath());
-            OutputStream out= new FileOutputStream(file);
-            out.close();
+            if (!file.exists()) {
+                OutputStream out= new FileOutputStream(file);
+                out.close();
+            }
+            boolean success= file.setLastModified(System.currentTimeMillis());
+            if (!success) {
+                throw new IOException("Unable to set the last modification time for "
+                        + file);
+            }
         } catch (IOException e) {
             log.warn("touch {} failed: {}",
                      file.getAbsolutePath(),
