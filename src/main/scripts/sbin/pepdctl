@@ -81,7 +81,7 @@ PEPD_JOPTS="-Dorg.glite.authz.pep.home=$PEPD_HOME -Dorg.glite.authz.pep.confdir=
 function executeAdminCommand {
     ADMIN_HOST=`sed 's/ //g' $PEPD_CONF | grep "^adminHost" | awk 'BEGIN {FS="="}{print $2}'`
     if [ -z "$ADMIN_HOST" ] ; then
-       ADMIN_HOST="127.0.0.1"
+       ADMIN_HOST="localhost"
     fi
 
     ADMIN_PORT=`sed 's/ //g' $PEPD_CONF | grep "^adminPort" | awk 'BEGIN {FS="="}{print $2}'`
