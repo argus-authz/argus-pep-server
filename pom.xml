@@ -13,7 +13,7 @@
     <name>Argus PEP Server</name>
     <groupId>org.glite.authz</groupId>
     <artifactId>pepd</artifactId>
-    <version>1.3.1</version>
+    <version>1.3.2</version>
     <packaging>jar</packaging>
 
     <description>XACML based authorization service developed within the gLite project.</description>
@@ -274,6 +274,9 @@
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
+                                    <!-- MAVEN 3
+                                    <workingDirectory>${project.build.directory}/pepd-fakeroot</workingDirectory>
+                                    -->
                                     <workingDirectory>${project.build.directory}/pepd-fakeroot.dir</workingDirectory>
                                     <executable>/bin/sh</executable>
                                     <arguments>
@@ -288,6 +291,9 @@
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
+                                    <!-- MAVEN 3
+                                    <workingDirectory>${project.build.directory}/pepd-fakeroot</workingDirectory>
+                                    -->
                                     <workingDirectory>${project.build.directory}/pepd-fakeroot.dir</workingDirectory>
                                     <executable>/bin/rm</executable>
                                     <arguments>
