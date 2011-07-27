@@ -36,6 +36,7 @@ Installed in a fakeroot directory structure.
                 <exclude>emi:trustmanager</exclude>
                 <exclude>org.glite.voms:voms-api-java</exclude>
             </excludes>
+            <fileMode>0644</fileMode>
         </dependencySet>
         <dependencySet>
             <scope>runtime</scope>
@@ -44,6 +45,7 @@ Installed in a fakeroot directory structure.
                 <include>org.apache.xerces:*</include>
                 <include>org.apache.xalan:*</include>
             </includes>
+            <fileMode>0644</fileMode>
         </dependencySet>
     </dependencySets>
     
