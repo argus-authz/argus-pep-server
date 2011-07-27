@@ -82,7 +82,7 @@ public final class PEPDaemon {
     public static int DEFAULT_ADMIN_PORT= 8155;
 
     /** Default admin host: {@value} */
-    public static String DEFAULT_ADMIN_HOST= "127.0.0.1";
+    public static String DEFAULT_ADMIN_HOST= "localhost";
 
     /** Default service port: {@value} */
     public static int DEFAULT_SERVICE_PORT= 8154;
