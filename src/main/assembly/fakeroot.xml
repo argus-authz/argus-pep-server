@@ -31,11 +31,10 @@ Installed in a fakeroot directory structure.
         <dependencySet>
             <scope>compile</scope>
             <outputDirectory>/var/lib/argus/pepd/lib</outputDirectory>
-            <includes>
-                <include>*:jar:*</include>
-            </includes>
             <excludes>
                 <exclude>net.jcip:*</exclude>
+                <exclude>emi:trustmanager</exclude>
+                <exclude>org.glite.voms:voms-api-java</exclude>
             </excludes>
         </dependencySet>
         <dependencySet>
