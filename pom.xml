@@ -168,6 +168,7 @@
                         <descriptor>src/main/assembly/bin.xml</descriptor>
                     </descriptors>
                     <tarLongFileMode>gnu</tarLongFileMode>
+                    <ignoreDirFormatExtensions>false</ignoreDirFormatExtensions>
                 </configuration>
             </plugin>
             <plugin>
@@ -274,9 +275,6 @@
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <!-- MAVEN 3
-                                    <workingDirectory>${project.build.directory}/pepd-fakeroot</workingDirectory>
-                                    -->
                                     <workingDirectory>${project.build.directory}/pepd-fakeroot.dir</workingDirectory>
                                     <executable>/bin/sh</executable>
                                     <arguments>
@@ -291,9 +289,6 @@
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <!-- MAVEN 3
-                                    <workingDirectory>${project.build.directory}/pepd-fakeroot</workingDirectory>
-                                    -->
                                     <workingDirectory>${project.build.directory}/pepd-fakeroot.dir</workingDirectory>
                                     <executable>/bin/rm</executable>
                                     <arguments>
