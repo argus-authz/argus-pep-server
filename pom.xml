@@ -167,6 +167,7 @@
                     <descriptors>
                         <descriptor>src/main/assembly/bin.xml</descriptor>
                     </descriptors>
+                    <attach>false</attach>
                     <tarLongFileMode>gnu</tarLongFileMode>
                     <ignoreDirFormatExtensions>false</ignoreDirFormatExtensions>
                 </configuration>
