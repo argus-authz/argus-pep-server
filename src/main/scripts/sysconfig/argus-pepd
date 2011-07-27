@@ -5,7 +5,7 @@
 # IPv4 instead of IPv6
 #PEPD_JOPTS="-Djava.net.preferIPv4Stack=true"
 # Max memory: 512MB
-PEPD_JOPTS="-Xmx512M"
+PEPD_JOPTS="-Xmx128M"
 #PEPD_HOME="/usr/share/argus/pepd"
 #PEPD_CONF="/etc/argus/pepd/pepd.ini"
 #PEPD_CONFDIR="/etc/argus/pepd"
