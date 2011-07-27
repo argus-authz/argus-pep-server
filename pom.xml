@@ -167,9 +167,7 @@
                     <descriptors>
                         <descriptor>src/main/assembly/bin.xml</descriptor>
                     </descriptors>
-                    <attach>false</attach>
                     <tarLongFileMode>gnu</tarLongFileMode>
-                    <ignoreDirFormatExtensions>false</ignoreDirFormatExtensions>
                 </configuration>
             </plugin>
             <plugin>
@@ -262,6 +260,8 @@
                             <descriptors>
                                 <descriptor>src/main/assembly/fakeroot.xml</descriptor>
                             </descriptors>
+                            <attach>false</attach>
+                            <ignoreDirFormatExtensions>false</ignoreDirFormatExtensions>
                         </configuration>
                     </plugin>
                     <plugin>
