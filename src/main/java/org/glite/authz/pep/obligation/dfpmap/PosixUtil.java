@@ -18,7 +18,10 @@
 package org.glite.authz.pep.obligation.dfpmap;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PrintStream;
 
 import org.jruby.ext.posix.FileStat;
@@ -33,15 +36,17 @@ import org.slf4j.LoggerFactory;
 public class PosixUtil {
 
     /** POSIX bridge implementation. */
-    private static POSIX posix = POSIXFactory.getPOSIX(new BasicPOSIXHandler(), true);
+    private static POSIX posix= POSIXFactory.getPOSIX(new BasicPOSIXHandler(),
+                                                      true);
 
     /** Class logger. */
-    private static Logger log = LoggerFactory.getLogger(PosixUtil.class);
+    private static Logger log= LoggerFactory.getLogger(PosixUtil.class);
 
     /**
      * Gets the stats about the given file.
      * 
-     * @param file the file to stat
+     * @param file
+     *            the file to stat
      * 
      * @return the stats on the file
      */
@@ -50,18 +55,76 @@ public class PosixUtil {
     }
 
     /**
-     * Creates a link such that the new path points to the same thing as the old path.
+     * Creates a link such that the new path points to the same thing as the
+     * current path.
      * 
-     * @param currenPath current path
-     * @param newPath new path that will point to the current path
-     * @param symbolic true if the link should be a symbolic or false if it should be a hard link
+     * @param currenPath
+     *            current path
+     * @param newPath
+     *            new path that will point to the current path
+     * @param symbolic
+     *            true if the link should be a symbolic or false if it should be
+     *            a hard link
      */
-    public static void createLink(String currenPath, String newPath, boolean symbolic) {
+    public static void createLink(String currenPath, String newPath,
+            boolean symbolic) {
         if (symbolic) {
             posix.symlink(currenPath, newPath);
-        } else {
+        }
+        else {
             posix.link(currenPath, newPath);
         }
+    }
+
+    /**
+     * Creates a symbolic link, where targetPath point to sourcePath.
+     * 
+     * @param sourcePath
+     *            absolute source path
+     * @param targetPath
+     *            absolute target path
+     */
+    public static void createSymlink(String sourcePath, String targetPath) {
+        createLink(sourcePath, targetPath, true);
+    }
+
+    /**
+     * Creates a hard link, where targetPath point to sourcePath.
+     * 
+     * @param sourcePath
+     *            absolute source path
+     * @param targetPath
+     *            absolute target path
+     */
+    public static void createHardlink(String sourcePath, String targetPath) {
+        createLink(sourcePath, targetPath, false);
+    }
+
+    /**
+     * Tries to "touch" a file, like the UNIX touch command, and update the last
+     * modified timestamp.
+     * 
+     * @param file
+     *            the file to "touch"
+     */
+    public static void touchFile(File file) {
+        try {
+            log.debug("touch {}", file.getAbsolutePath());
+            if (!file.exists()) {
+                OutputStream out= new FileOutputStream(file);
+                out.close();
+            }
+            boolean success= file.setLastModified(System.currentTimeMillis());
+            if (!success) {
+                throw new IOException("Unable to set the last modification time for "
+                        + file);
+            }
+        } catch (IOException e) {
+            log.warn("touch {} failed: {}",
+                     file.getAbsolutePath(),
+                     e.getMessage());
+        }
+
     }
 
     /** A basic handler for logging and stream handling. */
@@ -69,13 +132,14 @@ public class PosixUtil {
 
         /** {@inheritDoc} */
         public void error(ERRORS error, String extraData) {
-            log.error("Error performing POSIX operation. Error: " + error.toString() + ", additional data: "
-                    + extraData);
+            log.error("Error performing POSIX operation. Error: "
+                    + error.toString() + ", additional data: " + extraData);
         }
 
         /** {@inheritDoc} */
         public void unimplementedError(String methodName) {
-            log.error("Error performing POSIX operation.  Operation " + methodName + " is not supported");
+            log.error("Error performing POSIX operation.  Operation "
+                    + methodName + " is not supported");
         }
 
         /** {@inheritDoc} */

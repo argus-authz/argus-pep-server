@@ -27,6 +27,7 @@ import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.store.MemoryStoreEvictionPolicy;
 
+import org.glite.authz.common.AuthzServiceConstants;
 import org.glite.authz.common.logging.LoggingConstants;
 import org.glite.authz.common.model.Request;
 import org.glite.authz.common.model.Response;
@@ -38,7 +39,6 @@ import org.glite.authz.pep.obligation.ObligationProcessingException;
 import org.glite.authz.pep.pip.PIPProcessingException;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
 import org.glite.authz.pep.server.config.PEPDaemonConfiguration;
-
 import org.joda.time.DateTime;
 import org.opensaml.Configuration;
 import org.opensaml.common.IdentifierGenerator;
@@ -47,7 +47,9 @@ import org.opensaml.common.impl.SecureRandomIdentifierGenerator;
 import org.opensaml.saml2.core.Assertion;
 import org.opensaml.saml2.core.Issuer;
 import org.opensaml.saml2.core.Statement;
+import org.opensaml.ws.soap.client.BasicSOAPMessageContext;
 import org.opensaml.ws.soap.client.SOAPFaultException;
+import org.opensaml.ws.soap.client.http.HttpSOAPRequestParameters;
 import org.opensaml.ws.soap.common.SOAPException;
 import org.opensaml.ws.soap.common.SOAPObjectBuilder;
 import org.opensaml.ws.soap.soap11.Body;
@@ -157,7 +159,7 @@ public class PEPDaemonRequestHandler {
     public Response handle(Request request) throws IOException {
         daemonConfig.getServiceMetrics().incrementTotalServiceRequests();
 
-        AuthzRequestContext messageContext = AuthzRequestContext.buildMessageContext(daemonConfig.getEntityId());
+        AuthzRequestContext messageContext = buildMessageContext();
 
         Response response = null;
         try {
@@ -237,16 +239,16 @@ public class PEPDaemonRequestHandler {
      * 
      * @return the constructed message context.
      */
-//    private AuthzRequestContext buildMessageContext() {
-//        AuthzRequestContext messageContext = new AuthzRequestContext();
-//        messageContext.setCommunicationProfileId(AuthzServiceConstants.XACML_SAML_PROFILE_URI);
-//        messageContext.setOutboundMessageIssuer(daemonConfig.getEntityId());
-//        messageContext.setSOAPRequestParameters(new HttpSOAPRequestParameters(
-//                "http://www.oasis-open.org/committees/security"));
-//
-//        // TODO fill in security policy resolver
-//        return messageContext;
-//    }
+    private AuthzRequestContext buildMessageContext() {
+        AuthzRequestContext messageContext = new AuthzRequestContext();
+        messageContext.setCommunicationProfileId(AuthzServiceConstants.XACML_SAML_PROFILE_URI);
+        messageContext.setOutboundMessageIssuer(daemonConfig.getEntityId());
+        messageContext.setSOAPRequestParameters(new HttpSOAPRequestParameters(
+                "http://www.oasis-open.org/committees/security"));
+
+        // TODO fill in security policy resolver
+        return messageContext;
+    }
 
     /**
      * Attempts to send the SOAP request. This method attempts to send the request to each registered PDP endpoint until
@@ -310,7 +312,7 @@ public class PEPDaemonRequestHandler {
     private Envelope buildSOAPMessage(AuthzRequestContext messageContext, RequestType authzRequest) {
         Issuer issuer = issuerBuilder.buildObject();
         issuer.setFormat(Issuer.ENTITY);
-        issuer.setValue(messageContext.getOutboundMessageIssuer());
+        issuer.setValue(daemonConfig.getEntityId());
 
         XACMLAuthzDecisionQueryType samlRequest = authzDecisionQueryBuilder
                 .buildObject(XACMLAuthzDecisionQueryType.DEFAULT_ELEMENT_NAME_XACML20,
@@ -439,5 +441,93 @@ public class PEPDaemonRequestHandler {
         AuditLogEntry entry = new AuditLogEntry(messageContext.getOutboundMessageId(), messageContext
                 .getRespondingPDP(), messageContext.getInboundMessageId(), messageContext.getAuthorizationDecision());
         auditLog.info(entry.toString());
+    }
+
+    /** An authorization request message context. */
+    private class AuthzRequestContext extends BasicSOAPMessageContext {
+
+        /** ID of the outbound authorization request. */
+        private String outboundMessageId;
+
+        /** URL to the PDP that responded to the authorization response. */
+        private String respondingPDP;
+
+        /** ID of the inbound authorization response. */
+        private String inboundMessageId;
+
+        /** The result of the authorization request. */
+        private String authzDecision;
+
+        /**
+         * Gets the ID of the outbound authorization request.
+         * 
+         * @return ID of the outbound authorization request
+         */
+        public String getOutboundMessageId() {
+            return outboundMessageId;
+        }
+
+        /**
+         * Sets the ID of the outbound authorization request.
+         * 
+         * @param id ID of the outbound authorization request
+         */
+        public void setOutboundMessageId(String id) {
+            outboundMessageId = id;
+        }
+
+        /**
+         * Gets the URL to the PDP that responded to the authorization request.
+         * 
+         * @return URL to the PDP that responded the authorization request
+         */
+        public String getRespondingPDP() {
+            return respondingPDP;
+        }
+
+        /**
+         * Sets the URL to the PDP that responded the authorization request.
+         * 
+         * @param pdp URL to the PDP that responded the authorization request
+         */
+        public void setRespondingPDP(String pdp) {
+            respondingPDP = pdp;
+        }
+
+        /**
+         * Gets the ID of the inbound authorization response.
+         * 
+         * @return ID of the inbound authorization response
+         */
+        public String getInboundMessageId() {
+            return inboundMessageId;
+        }
+
+        /**
+         * Sets the ID of the inbound authorization response.
+         * 
+         * @param id ID of the inbound authorization response
+         */
+        public void setInboundMessageId(String id) {
+            inboundMessageId = id;
+        }
+
+        /**
+         * Gets the result of the authorization request.
+         * 
+         * @return result of the authorization request
+         */
+        public String getAuthorizationDecision() {
+            return authzDecision;
+        }
+
+        /**
+         * Sets the result of the authorization request.
+         * 
+         * @param decision result of the authorization request
+         */
+        public void setAuthorizationDecision(String decision) {
+            authzDecision = decision;
+        }
     }
 }

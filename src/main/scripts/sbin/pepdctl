@@ -40,8 +40,19 @@ if [ ! -x "$JAVACMD" ] ; then
     exit 1
 fi
 
+# add voms-api-java and trustmanager from /usr/share/java in classpath
+USR_SHARE_JAVA="/usr/share/java"
+if [ ! -f "$USR_SHARE_JAVA/vomsjapi.jar" ] ; then
+    echo "$0: ERROR: $USR_SHARE_JAVA/vomsjapi.jar not found, VOMS Java API package not installed"
+    exit 1
+fi
+if [ ! -f "$USR_SHARE_JAVA/trustmanager.jar" ] ; then
+    echo "$0: ERROR: $USR_SHARE_JAVA/trustmanager.jar not found, EMI Trustmanager package not installed"
+    exit 1
+fi
+LOCALCLASSPATH="$USR_SHARE_JAVA/vomsjapi.jar:$USR_SHARE_JAVA/trustmanager.jar"
 
-# add in the dependency .jar files from the lib directory
+# add in the dependency .jar files from the pepd lib directory
 jarfiles="$PEPD_LIBDIR/*.jar"
 for jar in $jarfiles
 do
@@ -70,7 +81,7 @@ PEPD_JOPTS="-Dorg.glite.authz.pep.home=$PEPD_HOME -Dorg.glite.authz.pep.confdir=
 function executeAdminCommand {
     ADMIN_HOST=`sed 's/ //g' $PEPD_CONF | grep "^adminHost" | awk 'BEGIN {FS="="}{print $2}'`
     if [ -z "$ADMIN_HOST" ] ; then
-       ADMIN_HOST="127.0.0.1"
+       ADMIN_HOST="localhost"
     fi
 
     ADMIN_PORT=`sed 's/ //g' $PEPD_CONF | grep "^adminPort" | awk 'BEGIN {FS="="}{print $2}'`

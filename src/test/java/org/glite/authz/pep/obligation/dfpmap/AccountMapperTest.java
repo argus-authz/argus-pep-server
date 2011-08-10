@@ -49,7 +49,7 @@ public class AccountMapperTest extends TestCase {
 
     private String[] poolAccountNamePrefixes = { "atlas", "smscg", "switch" };
 
-    private String[] prodAccountNames = { "dteam", "robin", "batman" };
+    private String[] fixedAccountNames = { "dteam", "robin", "batman" };
 
     PoolAccountManager poolAccountManager = null;
 
@@ -75,7 +75,7 @@ public class AccountMapperTest extends TestCase {
             }
         }
         // populate with fix accounts
-        for (String name : prodAccountNames) {
+        for (String name : fixedAccountNames) {
             File f = new File(temp, name);
             log.trace("create " + name + " account");
             f.createNewFile();
@@ -120,7 +120,7 @@ public class AccountMapperTest extends TestCase {
     protected void setUp() throws Exception {
         super.setUp();
         gridMapDir = createTempGridMapDir();
-        poolAccountManager = new GridMapDirPoolAccountManager(gridMapDir);
+        poolAccountManager = new GridMapDirPoolAccountManager(gridMapDir, true);
     }
 
     /** {@inheritDoc} */

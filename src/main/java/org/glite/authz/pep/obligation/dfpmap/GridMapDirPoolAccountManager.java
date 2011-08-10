@@ -21,18 +21,19 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.List;
-import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.security.auth.x500.X500Principal;
 
-import org.apache.commons.httpclient.URIException;
-import org.apache.commons.httpclient.util.URIUtil;
 import org.glite.authz.common.util.Strings;
 import org.glite.authz.pep.obligation.ObligationProcessingException;
 import org.glite.voms.PKIUtils;
+
+import org.apache.commons.httpclient.URIException;
+import org.apache.commons.httpclient.util.URIUtil;
 import org.jruby.ext.posix.FileStat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +51,18 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
     private Logger log= LoggerFactory.getLogger(GridMapDirPoolAccountManager.class);
 
     /** Directory containing the grid mappings. */
-    private final File gridMapDirectory;
+    private final File gridMapDirectory_;
+
+    /**
+     * Determine the lease filename should contains the secondary group names or
+     * not.
+     * <p>
+     * Bug fix: https://savannah.cern.ch/bugs/?83317
+     * 
+     * @see GridMapDirPoolAccountManager#buildSubjectIdentifier(X500Principal,
+     *      String, List)
+     */
+    private boolean useSecondaryGroupNamesForMapping_= true;
 
     /**
      * Regexp pattern used to identify pool account names.
@@ -62,7 +74,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
      * <li>Bug fix: https://savannah.cern.ch/bugs/?80526
      * </ul>
      */
-    private final Pattern poolAccountNamePattern= Pattern.compile("^([a-zA-Z][a-zA-Z0-9._-]*?)[0-9]++$");
+    private final Pattern poolAccountNamePattern_= Pattern.compile("^([a-zA-Z][a-zA-Z0-9._-]*?)[0-9]++$");
 
     /**
      * Constructor.
@@ -70,8 +82,12 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
      * @param gridMapDir
      *            existing, readable, and writable directory where grid mappings
      *            will be recorded
+     * @param useSecondaryGroupNamesForMapping
+     *            if the lease filename in the gridmapDir should contains
+     *            secondary group names or not
      */
-    public GridMapDirPoolAccountManager(File gridMapDir) {
+    public GridMapDirPoolAccountManager(File gridMapDir,
+            boolean useSecondaryGroupNamesForMapping) {
         if (!gridMapDir.exists()) {
             throw new IllegalArgumentException("Grid map directory "
                     + gridMapDir.getAbsolutePath() + " does not exist");
@@ -89,7 +105,8 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
                     + " is not writable by this process");
         }
 
-        gridMapDirectory= gridMapDir;
+        gridMapDirectory_= gridMapDir;
+        useSecondaryGroupNamesForMapping_= useSecondaryGroupNamesForMapping;
     }
 
     /** {@inheritDoc} */
@@ -97,12 +114,10 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
         ArrayList<String> poolAccountNames= new ArrayList<String>();
 
         Matcher nameMatcher;
-        File[] files= gridMapDirectory.listFiles();
+        File[] files= gridMapDirectory_.listFiles();
         for (File file : files) {
             if (file.isFile()) {
-                nameMatcher= poolAccountNamePattern.matcher(file.getName());
-                // XXX System.out.println("XXX: nameMatcher.matches(): " +
-                // file.getName() + ": " + nameMatcher.matches());
+                nameMatcher= poolAccountNamePattern_.matcher(file.getName());
                 if (nameMatcher.matches()
                         && !poolAccountNames.contains(nameMatcher.group(1))) {
                     poolAccountNames.add(nameMatcher.group(1));
@@ -136,13 +151,20 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
         return null;
     }
 
-    /** {@inheritDoc} */
+    /** 
+     * {@inheritDoc} 
+     * <ul>
+     * <li>BUG FIX: https://savannah.cern.ch/bugs/index.php?83281
+     * <li>BUG FIX: https://savannah.cern.ch/bugs/index.php?84846
+     * </ul>
+     * */
     public String mapToAccount(String accountNamePrefix,
             X500Principal subjectDN, String primaryGroup,
             List<String> secondaryGroups) throws ObligationProcessingException {
         String subjectIdentifier= buildSubjectIdentifier(subjectDN,
                                                          primaryGroup,
                                                          secondaryGroups);
+        File subjectIdentifierFile= new File(buildSubjectIdentifierFilePath(subjectIdentifier));
 
         log.debug("Checking if there is an existing account mapping for subject {} with primary group {} and secondary groups {}",
                   new Object[] { subjectDN.getName(), primaryGroup,
@@ -150,6 +172,10 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
         String accountName= getAccountNameByKey(accountNamePrefix,
                                                 subjectIdentifier);
         if (accountName != null) {
+            // BUG FIX: https://savannah.cern.ch/bugs/index.php?83281
+            // touch the subjectIdentifierFile every time a mapping is re-done.
+            PosixUtil.touchFile(subjectIdentifierFile);
+
             log.debug("An existing account mapping has mapped subject {} with primary group {} and secondary groups {} to pool account {}",
                       new Object[] { subjectDN.getName(), primaryGroup,
                                     secondaryGroups, accountName });
@@ -158,6 +184,9 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 
         accountName= createMapping(accountNamePrefix, subjectIdentifier);
         if (accountName != null) {
+            // BUG FIX: https://savannah.cern.ch/bugs/index.php?84846
+            // touch the subjectIdentifierFile the first time a mapping is done.
+            PosixUtil.touchFile(subjectIdentifierFile);
             log.debug("A new account mapping has mapped subject {} with primary group {} and secondary groups {} to pool account {}",
                       new Object[] { subjectDN.getName(), primaryGroup,
                                     secondaryGroups, accountName });
@@ -189,6 +218,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
     private String getAccountNameByKey(String accountNamePrefix,
             String subjectIdentifier) throws ObligationProcessingException {
         File subjectIdentifierFile= new File(buildSubjectIdentifierFilePath(subjectIdentifier));
+        // the file doesn't exit yet!!!
         if (!subjectIdentifierFile.exists()) {
             return null;
         }
@@ -210,6 +240,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
                             + accountFile.getAbsolutePath()
                             + " has a link count greater than 2.  This mapping is corrupted and can not be used.");
                 }
+
                 return accountFile.getName();
             }
         }
@@ -229,7 +260,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
      * @return the account to which the subject was mapped or null if not
      *         account was available
      */
-    public String createMapping(String accountNamePrefix,
+    protected String createMapping(String accountNamePrefix,
             String subjectIdentifier) {
         FileStat accountFileStat;
         for (File accountFile : getAccountFiles(accountNamePrefix)) {
@@ -239,9 +270,8 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
             String subjectIdentifierFilePath= buildSubjectIdentifierFilePath(subjectIdentifier);
             accountFileStat= PosixUtil.getFileStat(accountFile.getAbsolutePath());
             if (accountFileStat.nlink() == 1) {
-                PosixUtil.createLink(accountFile.getAbsolutePath(),
-                                     subjectIdentifierFilePath,
-                                     false);
+                PosixUtil.createHardlink(accountFile.getAbsolutePath(),
+                                         subjectIdentifierFilePath);
                 accountFileStat= PosixUtil.getFileStat(accountFile.getAbsolutePath());
                 if (accountFileStat.nlink() == 2) {
                     log.debug("Linked subject identifier {} to pool account file {}",
@@ -258,42 +288,95 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
     }
 
     /**
-     * Creates an identifier for the subject that is based on the subject's DN
-     * and primary and secondary groups.
+     * Creates an identifier (lease filename) for the subject that is based on
+     * the subject's DN and primary and secondary groups. The secondary groups
+     * are only included in the identifier if the
+     * {@link #useSecondaryGroupNamesForMapping_} is <code>true</code>.
+     * <p>
+     * Implements the legacy gLExec LCAS/LCMAP lease filename encoding.
+     * <ul>
+     * <li>BUG FIX: https://savannah.cern.ch/bugs/index.php?83419
+     * <li>Bug fix: https://savannah.cern.ch/bugs/?83317
+     * </ul>
      * 
      * @param subjectDN
      *            DN of the subject
      * @param primaryGroupName
      *            primary group to which the subject was assigned, may be null
      * @param secondaryGroupNames
-     *            secondary groups to which the subject assigned, may be null
+     *            ordered list of secondary groups to which the subject
+     *            assigned, may be null
      * 
      * @return the identifier for the subject
      */
-    private String buildSubjectIdentifier(X500Principal subjectDN,
+    protected String buildSubjectIdentifier(X500Principal subjectDN,
             String primaryGroupName, List<String> secondaryGroupNames) {
         StringBuilder identifier= new StringBuilder();
 
         try {
-            String opensslId= PKIUtils.getOpenSSLFormatPrincipal(subjectDN,true);
-            String encodedId= URIUtil.encodeWithinPath(opensslId);
-            identifier.append(encodedId.toLowerCase());
+            String openSSLPrincipal= PKIUtils.getOpenSSLFormatPrincipal(subjectDN,
+                                                                        true);
+            // BUG FIX: https://savannah.cern.ch/bugs/index.php?83419
+            // encode using the legacy gLExec LCAS/LCMAP algorithm
+            String encodedId= encodeSubjectIdentifier(openSSLPrincipal);
+            identifier.append(encodedId);
         } catch (URIException e) {
-            throw new RuntimeException("US-ASCII charset required to be supported by JVM but is not available");
+            throw new RuntimeException("Charset required to be supported by JVM but is not available",
+                                       e);
         }
 
         if (primaryGroupName != null) {
             identifier.append(":").append(primaryGroupName);
         }
 
-        if (secondaryGroupNames != null && !secondaryGroupNames.isEmpty()) {
-            TreeSet<String> sortedNames= new TreeSet<String>(secondaryGroupNames);
-            for (String name : sortedNames) {
-                identifier.append(":").append(name);
+        // BUG FIX: https://savannah.cern.ch/bugs/?83317
+        // use or not secondary groups in lease filename
+        if (useSecondaryGroupNamesForMapping_ && secondaryGroupNames != null
+                && !secondaryGroupNames.isEmpty()) {
+            for (String secondaryGroupName : secondaryGroupNames) {
+                identifier.append(":").append(secondaryGroupName);
             }
         }
 
         return identifier.toString();
+    }
+
+    /**
+     * Alpha numeric characters set: <code>[0-9a-zA-Z]</code>
+     */
+    protected static final BitSet ALPHANUM= new BitSet(256);
+    // Static initializer for alphanum
+    static {
+        for (int i= 'a'; i <= 'z'; i++) {
+            ALPHANUM.set(i);
+        }
+        for (int i= 'A'; i <= 'Z'; i++) {
+            ALPHANUM.set(i);
+        }
+        for (int i= '0'; i <= '9'; i++) {
+            ALPHANUM.set(i);
+        }
+    }
+
+    /**
+     * Encodes the unescaped subject identifier, typically the user DN.
+     * <p>
+     * Implements the legacy string encoding used by gLExec LCAS/LCMAP for the
+     * lease file names:
+     * <ul>
+     * <li>URL encode all no alpha-numeric characters <code>[0-9a-zA-Z]</code>
+     * <li>apply lower case
+     * </ul>
+     * 
+     * @param unescaped
+     *            The unescaped user DN
+     * @return encoded, escaped, user DN, compatible with gLExec
+     * @throws URIException
+     */
+    protected String encodeSubjectIdentifier(String unescaped)
+            throws URIException {
+        String encoded= URIUtil.encode(unescaped, ALPHANUM);
+        return encoded.toLowerCase();
     }
 
     /**
@@ -304,14 +387,17 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
      * 
      * @return the absolute path to the subject identifier file
      */
-    private String buildSubjectIdentifierFilePath(String subjectIdentifier) {
-        return gridMapDirectory.getAbsolutePath() + File.separator
+    protected String buildSubjectIdentifierFilePath(String subjectIdentifier) {
+        return gridMapDirectory_.getAbsolutePath() + File.separator
                 + subjectIdentifier;
     }
 
     /**
      * Gets a list of account files where the file names begin with the given
      * prefix.
+     * <ul>
+     * <li>BUG FIX: https://savannah.cern.ch/bugs/?66574
+     * </ul>
      * 
      * @param prefix
      *            prefix with which the file names should begin, may be null to
@@ -320,9 +406,9 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
      * @return the selected account files
      */
     private File[] getAccountFiles(final String prefix) {
-        return gridMapDirectory.listFiles(new FilenameFilter() {
+        return gridMapDirectory_.listFiles(new FilenameFilter() {
             public boolean accept(File dir, String name) {
-                Matcher nameMatcher= poolAccountNamePattern.matcher(name);
+                Matcher nameMatcher= poolAccountNamePattern_.matcher(name);
                 if (nameMatcher.matches()) {
                     // BUG FIX: https://savannah.cern.ch/bugs/?66574
                     if (prefix == null || prefix.equals(nameMatcher.group(1))) {
@@ -337,6 +423,9 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
     /**
      * Gets a list of account file names where the names begin with the given
      * prefix.
+     * <ul>
+     * <li>BUG FIX: https://savannah.cern.ch/bugs/?66574
+     * </ul>
      * 
      * @param prefix
      *            prefix with which the file names should begin, may be null to
@@ -345,9 +434,9 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
      * @return the selected account file names
      */
     private String[] getAccountFileNames(final String prefix) {
-        return gridMapDirectory.list(new FilenameFilter() {
+        return gridMapDirectory_.list(new FilenameFilter() {
             public boolean accept(File dir, String name) {
-                Matcher nameMatcher= poolAccountNamePattern.matcher(name);
+                Matcher nameMatcher= poolAccountNamePattern_.matcher(name);
                 if (nameMatcher.matches()) {
                     // BUG FIX: https://savannah.cern.ch/bugs/?66574
                     if (prefix == null || prefix.equals(nameMatcher.group(1))) {
@@ -358,4 +447,14 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
             }
         });
     }
+
+    /**
+     * @param useSecondaryGroupNamesForMapping
+     *            the useSecondaryGroupNamesForMapping_ to set
+     */
+    protected void setUseSecondaryGroupNamesForMapping(
+            boolean useSecondaryGroupNamesForMapping) {
+        this.useSecondaryGroupNamesForMapping_= useSecondaryGroupNamesForMapping;
+    }
+
 }

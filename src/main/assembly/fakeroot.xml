@@ -31,12 +31,12 @@ Installed in a fakeroot directory structure.
         <dependencySet>
             <scope>compile</scope>
             <outputDirectory>/var/lib/argus/pepd/lib</outputDirectory>
-            <includes>
-                <include>*:jar:*</include>
-            </includes>
             <excludes>
                 <exclude>net.jcip:*</exclude>
+                <exclude>emi:trustmanager</exclude>
+                <exclude>org.glite.voms:voms-api-java</exclude>
             </excludes>
+            <fileMode>0644</fileMode>
         </dependencySet>
         <dependencySet>
             <scope>runtime</scope>
@@ -45,6 +45,7 @@ Installed in a fakeroot directory structure.
                 <include>org.apache.xerces:*</include>
                 <include>org.apache.xalan:*</include>
             </includes>
+            <fileMode>0644</fileMode>
         </dependencySet>
     </dependencySets>
     
