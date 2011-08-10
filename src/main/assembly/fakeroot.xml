@@ -35,6 +35,8 @@ Installed in a fakeroot directory structure.
                 <exclude>net.jcip:*</exclude>
                 <exclude>emi:trustmanager</exclude>
                 <exclude>org.glite.voms:voms-api-java</exclude>
+                <exclude>org.glite.authz:pep-common</exclude>
+                <exclude>org.glite.authz:pdp-pep-common</exclude>
             </excludes>
             <fileMode>0644</fileMode>
         </dependencySet>

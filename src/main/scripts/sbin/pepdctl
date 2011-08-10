@@ -52,7 +52,18 @@ if [ ! -f "$USR_SHARE_JAVA/trustmanager.jar" ] ; then
 fi
 LOCALCLASSPATH="$USR_SHARE_JAVA/vomsjapi.jar:$USR_SHARE_JAVA/trustmanager.jar"
 
-# add in the dependency .jar files from the pepd lib directory
+# add argus-pep-common and argus-pdp-pep-common from /usr/share/java in classpath
+if [ ! -f "$USR_SHARE_JAVA/argus-pep-common.jar" ] ; then
+    echo "$0: ERROR: $USR_SHARE_JAVA/argus-pep-common.jar not found, Argus PEP common package not installed"
+    exit 1
+fi
+if [ ! -f "$USR_SHARE_JAVA/argus-pdp-pep-common.jar" ] ; then
+    echo "$0: ERROR: $USR_SHARE_JAVA/argus-pdp-pep-common.jar not found, Argus PDP/PEP common package not installed"
+    exit 1
+fi
+LOCALCLASSPATH="$USR_SHARE_JAVA/argus-pep-common.jar:$USR_SHARE_JAVA/argus-pdp-pep-common.jar:$LOCALCLASSPATH"
+
+# add the other bundled .jar files from the pepd lib directory
 jarfiles="$PEPD_LIBDIR/*.jar"
 for jar in $jarfiles
 do
