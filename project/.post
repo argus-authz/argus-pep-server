@@ -1,0 +1,1 @@
+build-jar-repository -s -p /var/lib/argus/pepd/lib vomsjapi bcprov trustmanager 
