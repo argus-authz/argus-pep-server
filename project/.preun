@@ -1,1 +1,3 @@
 /etc/init.d/argus-pepd stop 2>&1 /dev/null || :
+rm -f /var/lib/argus/pepd/lib/endorsed/*.jar 
+rm -f /var/lib/argus/pepd/lib/*.jar
