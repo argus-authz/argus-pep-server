@@ -40,8 +40,8 @@ if [ ! -x "$JAVACMD" ] ; then
     exit 1
 fi
 
-# uses pdp-pep-common, voms-api-java, trustmanager and bouncycastle from
-# the install RPM packages (see .postinstall script and build-jar-repository)
+# uses pep-common, pdp-pep-common, voms-api-java, trustmanager and bouncycastle from
+# the installed RPM packages (see .postinstall script and build-jar-repository)
 LOCALCLASSPATH=""
 jarfiles="$PEPD_LIBDIR/*.jar"
 for jar in $jarfiles
