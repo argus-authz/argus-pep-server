@@ -40,30 +40,9 @@ if [ ! -x "$JAVACMD" ] ; then
     exit 1
 fi
 
-# add voms-api-java and trustmanager from /usr/share/java in classpath
-USR_SHARE_JAVA="/usr/share/java"
-if [ ! -f "$USR_SHARE_JAVA/vomsjapi.jar" ] ; then
-    echo "$0: ERROR: $USR_SHARE_JAVA/vomsjapi.jar not found, VOMS Java API package not installed"
-    exit 1
-fi
-if [ ! -f "$USR_SHARE_JAVA/trustmanager.jar" ] ; then
-    echo "$0: ERROR: $USR_SHARE_JAVA/trustmanager.jar not found, EMI Trustmanager package not installed"
-    exit 1
-fi
-LOCALCLASSPATH="$USR_SHARE_JAVA/vomsjapi.jar:$USR_SHARE_JAVA/trustmanager.jar"
-
-# add argus-pep-common and argus-pdp-pep-common from /usr/share/java in classpath
-if [ ! -f "$USR_SHARE_JAVA/argus-pep-common.jar" ] ; then
-    echo "$0: ERROR: $USR_SHARE_JAVA/argus-pep-common.jar not found, Argus PEP common package not installed"
-    exit 1
-fi
-if [ ! -f "$USR_SHARE_JAVA/argus-pdp-pep-common.jar" ] ; then
-    echo "$0: ERROR: $USR_SHARE_JAVA/argus-pdp-pep-common.jar not found, Argus PDP/PEP common package not installed"
-    exit 1
-fi
-LOCALCLASSPATH="$USR_SHARE_JAVA/argus-pep-common.jar:$USR_SHARE_JAVA/argus-pdp-pep-common.jar:$LOCALCLASSPATH"
-
-# add the other bundled .jar files from the pepd lib directory
+# uses pdp-pep-common, voms-api-java, trustmanager and bouncycastle from
+# the install RPM packages (see .postinstall script and build-jar-repository)
+LOCALCLASSPATH=""
 jarfiles="$PEPD_LIBDIR/*.jar"
 for jar in $jarfiles
 do

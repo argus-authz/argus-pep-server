@@ -33,6 +33,8 @@ Installed in a fakeroot directory structure.
             <outputDirectory>/var/lib/argus/pepd/lib</outputDirectory>
             <excludes>
                 <exclude>net.jcip:*</exclude>
+                <!-- use jars from /usr/share/java directory -->
+                <exclude>org.bouncycastle:*</exclude>
                 <exclude>emi:trustmanager</exclude>
                 <exclude>org.glite.voms:voms-api-java</exclude>
                 <exclude>org.glite.authz:pep-common</exclude>
