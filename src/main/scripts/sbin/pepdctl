@@ -49,9 +49,10 @@ do
     # if the directory is empty, then it will return the input string
     # this is stupid, so case for it
     if [ -f "$jar" ] ; then
-        LOCALCLASSPATH="$LOCALCLASSPATH":"$jar"
+        LOCALCLASSPATH="$LOCALCLASSPATH:$jar"
     fi
 done
+LOCALCLASSPATH="$(echo $LOCALCLASSPATH | sed 's/^://g')"
 # check classpath
 if [ -z "$LOCALCLASSPATH" ]; then
     echo "$0: ERROR: LOCALCLASSPATH empty, check the $PEPD_LIBDIR directory"
