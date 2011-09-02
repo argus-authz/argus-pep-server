@@ -63,6 +63,10 @@ if [ ! -d "$PEPD_ENDORSEDDIR" ]; then
     echo "$0: ERROR: $PEPD_ENDORSEDDIR does not exist"
     exit 1
 fi
+# set default max memory
+if [ -z "$PEPD_JOPTS" ]; then
+    PEPD_JOPTS="-Xmx128M"
+fi
 # set the mandatory endorsed dir and the classpath
 PEPD_JOPTS="-Djava.endorsed.dirs=$PEPD_ENDORSEDDIR -classpath $LOCALCLASSPATH $PEPD_JOPTS"
 
