@@ -5,7 +5,7 @@ This release is a update for EMI-1
 
 New features:
 - Production log files (rotation, file size, ...)
-- Service memory limit (256MB)
+- Service memory limit (128MB)
 - Dependencies on vomsjapi, bouncycastle, trustmanager, argus-pep-common and
   argus-pdp-pep-common taken from the corresponding packages (in /usr/share/java)
 
