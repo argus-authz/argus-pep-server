@@ -16,6 +16,7 @@
     <version>1.4.X</version>
     <packaging>jar</packaging>
 
+
     <description>XACML based authorization service developed within the gLite project.</description>
     <url>http://glite.web.cern.ch/glite/</url>
     <inceptionYear>2008</inceptionYear>
