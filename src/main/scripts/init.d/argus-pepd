@@ -17,6 +17,10 @@
 #
 # Startup script for PEP daemon server
 #
+# chkconfig: 2345 97 97
+#
+# description: PEPd Server starting script
+#
 ### BEGIN INIT INFO
 # Provides:          argus-pepd
 # Required-Start:    $network $remote_fs argus-pap argus-pdp
