@@ -12,5 +12,4 @@ PEPD_JOPTS="-Xmx128M"
 #PEPD_LOGDIR="/var/log/argus/pepd"
 #PEPD_LIBDIR="/var/lib/argus/pepd/lib"
 #PEPD_ENDORSEDDIR="/var/lib/argus/pepd/lib/endorsed"
-
-
+#PEPD_PID="/var/run/argus-pepd.pid"
