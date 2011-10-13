@@ -27,7 +27,7 @@ PEPD_LIBDIR=${PEPD_LIBDIR-"$PEPD_HOME/lib"}
 PEPD_ENDORSEDDIR=${PEPD_ENDORSEDDIR-"$PEPD_LIBDIR/endorsed"}
 
 # PID file location
-PEPD_PID="/var/run/argus-pepd.pid"
+PEPD_PID=${PEPD_PID-"/var/run/argus-pepd.pid"}
 
 # configuration file and check
 PEPD_CONF=${PEPD_CONF-"$PEPD_CONFDIR/pepd.ini"}
