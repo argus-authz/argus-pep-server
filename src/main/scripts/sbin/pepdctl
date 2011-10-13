@@ -26,6 +26,9 @@ PEPD_LOGDIR=${PEPD_LOGDIR-"$PEPD_HOME/logs"}
 PEPD_LIBDIR=${PEPD_LIBDIR-"$PEPD_HOME/lib"}
 PEPD_ENDORSEDDIR=${PEPD_ENDORSEDDIR-"$PEPD_LIBDIR/endorsed"}
 
+# PID file location
+PEPD_PID="/var/run/argus-pepd.pid"
+
 # configuration file and check
 PEPD_CONF=${PEPD_CONF-"$PEPD_CONFDIR/pepd.ini"}
 if [ ! -r "$PEPD_CONF" ]; then
@@ -92,7 +95,16 @@ function executeAdminCommand {
 function start {
     # Run the PDP
     $JAVACMD $PEPD_JOPTS 'org.glite.authz.pep.server.PEPDaemon' $PEPD_CONF &
+    if [ -n "$PEPD_PID" ]; then
+      echo $! > $PEPD_PID
+    fi
 }
+
+function version {
+    # Print currently used Version of the PEPd
+    $JAVACMD $PEPD_JOPTS 'org.glite.authz.pep.server.Version'
+}
+    
 
 
 function print_help {
@@ -101,6 +113,7 @@ function print_help {
    echo "  $0 start   - to start the service"
    echo "  $0 stop    - to stop the service" 
    echo "  $0 status  - print PEP daemon status"
+   echo "  $0 version - print PEP daemon version"
    echo "  $0 clearResponseCache - clears the PEP daemon PDP response cache"
 }
 
@@ -114,6 +127,9 @@ case "$1" in
     status) 
         executeAdminCommand 'status'
         ;;
+    version)
+        version
+        ;;
     clearResponseCache) 
         executeAdminCommand 'clearResponseCache'
         ;;
@@ -123,4 +139,3 @@ case "$1" in
         ;;
 esac
 exit $? 
-
