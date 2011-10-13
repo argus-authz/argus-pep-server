@@ -17,20 +17,57 @@
 #
 # Startup script for PEP daemon server
 #
-# chkconfig: 345 97 97
-#
-# description:  PEP daemon server startup script
-#
-# processname: pepd
+### BEGIN INIT INFO
+# Provides:          argus-pepd
+# Required-Start:    $network $remote_fs argus-pap argus-pdp
+# Required-Stop:     $network $remote_fs argus-pap argus-pdp
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start pep-daemon at boot time
+# Description:       Provides the PEP-server function of the Argus-service
+### END INIT INFO
 #
 # Author(s): Maria Alandes Pradillo <yaim-contact@cern.ch>
 #            Valery Tschopp <argus-support@cern.ch>
+#            Joel Casutt <argus-support@cern.ch>
 #
-# Version: V1.3
+# Version: V2.0
 #
-# Date: 11/02/2011
+# Date: 10/10/2011
 ###############################################################################
 # set -x
+
+# Source functions Library
+if [ -r /lib/lsb/init-functions ]; then
+    . /lib/lsb/init-functions
+else
+    echo "/lib/lsb/init-functions must be present to run this script"
+    exit 1
+fi
+
+# A check-variable for the state of the lock and pid-file
+RETURN_CODE="0"
+
+NAME="$(basename $0)"
+PEPD_PROG="${NAME}"
+SHUTDOWN_WAIT=10
+HAS_LOCK=0
+PEPD_LOCK=
+
+# See if there is an appropriate location for the lock-file, if not, do not use a lock-file
+if [ -d /var/lock/subsys ]; then
+    PEPD_LOCK="/var/lock/subsys/${NAME}"
+    HAS_LOCK=1
+elif [ -d /var/lock ]; then
+    PEPD_LOCK="/var/lock/${NAME}"
+    HAS_LOCK=1
+fi
+
+PEPD_PID="/var/run/${NAME}.pid"
+
+
+# Preparation for multios-support
+# DISTRIB_ID=`lsb_release -i -s 2>/dev/null`
 
 # PEP server control script
 PEPDCTL=/usr/sbin/pepdctl
@@ -42,42 +79,171 @@ fi
 
 # source optional system configuration
 if [ -r /etc/sysconfig/argus-pepd ]; then
-   . /etc/sysconfig/argus-pepd
+    # Auto-export variables to subsequent scripts
+    set -a
+    source /etc/sysconfig/argus-pepd
 fi
 
-# export the variable for the $PEPDCTL script
-[ -n "$JAVACMD" ] && export JAVACMD="$JAVACMD"
-[ -n "$PEPD_JOPTS" ] && export PEPD_JOPTS="$PEPD_JOPTS"
-[ -n "$PEPD_HOME" ] && export PEPD_HOME="$PEPD_HOME"
-[ -n "$PEPD_CONF" ] && export PEPD_CONF="$PEPD_CONF"
-[ -n "$PEPD_CONFDIR" ] && export PEPD_CONFDIR="$PEPD_CONFDIR"
-[ -n "$PEPD_LOGDIR" ] && export PEPD_LOGDIR="$PEPD_LOGDIR"
-[ -n "$PEPD_LIBDIR" ] && export PEPD_LIBDIR="$PEPD_LIBDIR"
-[ -n "$PEPD_ENDORSEDDIR" ] && export PEPD_ENDORSEDDIR="$PEPD_ENDORSEDDIR"
+
+# Use functions to add lock and pid files 
+# Function to start the PEPd daemon
+function start() {
+echo -n "Starting ${PEPD_PROG}... "
+    if [ "$RETURN_CODE" != "0" ]; then 
+        log_failure_msg
+        return
+    fi
+    _current_state
+    if [ "$HAS_LOCK" -eq 1 ]; then
+        if [ -f "$PEPD_LOCK" ]; then
+            if [ -f "$PEPD_PID" ]; then
+                read kpid < $PEPD_PID
+                if [ -d "/proc/${kpid}" ]; then
+                    log_success_msg
+                    return 0
+                fi
+            fi
+        fi
+    else
+        if [ -f "$PEPD_PID" ]; then
+            read kpid < $PEPD_PID
+            if [ -d "/proc/${kpid}" ]; then
+                log_success_msg
+                return 0
+            fi
+        fi
+    fi
+    touch $PEPD_PID 2>&1 || RETURN_CODE="4"
+    if [ "$RETURN_CODE" -eq "0" ]; then
+        $PEPDCTL start || RETURN_CODE="4"
+    fi
+    if [ "$RETURN_CODE" -eq "0" ]; then 
+        log_success_msg
+        if [ -n "$PEPD_LOCK" -a "$HAS_LOCK" -eq 1 ]; then
+            touch $PEPD_LOCK
+        fi
+    else
+        log_failure_msg "Error code ${RETURN_CODE}"
+    fi
+}
+
+# Function to stop the PEPd daemon
+function stop() {
+echo -n "Stopping ${PEPD_PROG}... "
+    if [ -f "$PEPD_PID" ]; then
+        if [ "$RETURN_CODE" -eq "0" ]; then
+            if [ "$HAS_LOCK" -eq 1 ]; then
+                touch $PEPD_LOCK 2>&1 || RETURN_CODE="4"
+            fi
+            [ "$RETURN_CODE" -eq "0" ] && $PEPDCTL stop || RETURN_CODE="4"
+        fi
+        if [ "$RETURN_CODE" -eq "0" ]; then
+            count="0"
+            if [ -f "$PEPD_PID" ]; then
+                read kpid < $PEPD_PID
+                until [ "$(ps --pid $kpid | grep -c $kpid)" -eq "0" ] || [ "$count" -gt "$SHUTDOWN_WAIT" ]; do
+                    sleep 1
+                    let count="${count}+1"
+                done
+                if [ "$count" -gt "$SHUTDOWN_WAIT" ]; then
+                    log_warning_msg "killing processes which did not stop after ${SHUTDOWN_WAIT} seconds"
+                    kill -9 $kpid
+                fi
+                log_success_msg
+            fi
+            rm -f $PEPD_PID
+            if [ "$HAS_LOCK" -eq 1 ]; then
+                rm -f $PEPD_LOCK
+            fi
+        else
+            log_failure_msg
+            RETURN_CODE="4"
+        fi
+    else
+        log_success_msg
+        RETURN_CODE="0"
+    fi
+}
+
+# Function to read the status of the PEPD
+function status() {
+    _current_state
+    if [ $? -eq 5 ]; then
+        echo "${PEPD_PROG} is not running..."
+    else
+        $PEPDCTL status
+    fi
+}
+
+# tests if the current process exists and if it has an associated pid and lock file. Return codes are as followed:
+# 0 = process is running correctly (and has both, a pid and a lock file)
+# 1 = the function exited unexpected (fatal error)
+# 2 = process is running and has a lock file, but no pid file, The pid-file is created
+# 3 = process is running and has a pid file, but no lock file. The lock-file is created
+# 4 = process is running and has no pid and no lock file. Both files are created
+# 5 = process is not running. Possible stale files are removed
+function _current_state() {
+    local pid=`pgrep -f org.glite.authz.pep.server.PEPDaemon`
+    
+    if [ -z $pid ]; then
+        rm -f $PEPD_PID
+        if [ "$HAS_LOCK" -eq 1 ]; then
+            rm -f $PEPD_LOCK
+        fi
+        return 5
+    fi
+    if [ "$HAS_LOCK" -eq 1 ]; then
+        if [ -f "$PEPD_LOCK" -a ! -f "$PEPD_PID" ]; then
+            touch $PEPD_PID 2>&1
+            echo $pid > $PEPD_PID
+            return 2
+        elif [ -f "$PEPD_PID" -a ! -f "$PEPD_LOCK" ]; then
+            touch $PEPD_LOCK
+            return 3
+        elif [ -f "$PEPD_PID" -a -f "$PEPD_LOCK" ]; then
+            return 0
+        else
+            touch $PEPD_PID 2>&1
+            echo $pid > $PEPD_PID
+            touch $PEPD_LOCK
+            return 4
+        fi
+    else
+        if [! -f "$PEPD_PID" ]; then
+            touch $PEPD_PID 2>&1
+            echo $pid > $PEPD_PID
+            return 2
+        else
+            return 0
+        fi
+    fi
+}
+
 
 case "$1" in
     start)
-        $PEPDCTL start
+        start
         ;; 
     stop)
-        $PEPDCTL stop
+        stop
         ;;
     restart)
-        $PEPDCTL stop
-        sleep 5
-        $PEPDCTL start
+        stop
+        start
         ;;
     status)
-        $PEPDCTL status
+        status
+        ;;
+    version)
+        $PEPDCTL version
         ;;
     clearcache)
         $PEPDCTL clearResponseCache
         ;;
     *)
-        echo "Usage: $0 {start|stop|restart|status|clearcache}"
+        echo "Usage: $0 {start|stop|restart|status|version|clearcache}"
         exit 1
         ;;
 esac
 
-exit $?
-
+exit $RETURN_CODE
