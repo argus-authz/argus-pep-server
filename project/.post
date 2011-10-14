@@ -1,4 +1,4 @@
 # create links to /usr/share/java jar files
 build-jar-repository -s -p /var/lib/argus/pepd/lib argus-pep-common argus-pdp-pep-common vomsjapi trustmanager bcprov
 # register the service in init.d
-chkconfig --add argus-pepd
+/sbin/chkconfig --add argus-pepd
