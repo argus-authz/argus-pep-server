@@ -41,6 +41,15 @@
 ###############################################################################
 # set -x
 
+# PEP server control script and name of the script
+PEPDCTL="/usr/sbin/pepdctl"
+NAME="$(basename $0)"
+
+if [ `id -u` -ne 0 ]; then
+    echo "You need root privileges to run this script"
+    exit 1
+fi 
+
 # Source functions Library
 if [ -r "/lib/lsb/init-functions" ]; then
     source /lib/lsb/init-functions
@@ -49,14 +58,12 @@ else
     exit 1
 fi
 
-RETURN_CODE=0
-
-NAME="$(basename $0)"
 PEPD_PROG="${NAME}"
 SHUTDOWN_WAIT=10
 HAS_LOCK=0
 PEPD_LOCK=
-PEPD_PID=${PEPD_PID-"/var/run/${NAME}.pid"}
+PEPD_PID=${PEPD_PID:-"/var/run/${NAME}.pid"}
+RETURN_CODE=0
 
 # See if there is an appropriate location for the lock-file, if not, do not use a lock-file
 if [ -d "/var/lock/subsys" ]; then
@@ -66,14 +73,6 @@ elif [ -d "/var/lock" ]; then
     PEPD_LOCK="/var/lock/${NAME}"
     HAS_LOCK=1
 fi
-
-# PEP server control script
-PEPDCTL="/usr/sbin/pepdctl"
-
-if [ `id -u` -ne 0 ]; then
-    echo "You need root privileges to run this script"
-    exit 1
-fi 
 
 # source optional system configuration
 if [ -r "/etc/sysconfig/argus-pepd" ]; then
