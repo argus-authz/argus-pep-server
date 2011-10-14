@@ -168,6 +168,7 @@ function status() {
     _current_state
     if [ $? -eq 5 ]; then
         echo "${PEPD_PROG} is not running..."
+        RETURN_CODE="4"
     else
         $PEPDCTL status
     fi
