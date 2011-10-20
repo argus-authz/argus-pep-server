@@ -18,22 +18,18 @@
 #set -x
 
 # PEP server home
-if [ -d "/usr/share/argus/pepd" ]; then
-    PEPD_HOME=${PEPD_HOME:-"/usr/share/argus/pepd"}
-else
-    PRG="$0"
-    while [ -h "$PRG" ]; do
-        ls=`ls -ld "$PRG"`
-        link=`expr "$ls" : '.*-> \(.*\)$'`
-        if expr "$link" : '/.*' > /dev/null; then
-            PRG="$link"
-        else
-        PRG=`dirname "$PRG"`/"$link"
-        fi
-    done
-    PRGDIR=`dirname "$PRG"`
-    [ -z "$PEPD_HOME" ] && PEPD_HOME=`cd "$PRGDIR/.." ; pwd`    
-fi
+PRG="$0"
+while [ -h "$PRG" ]; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+        PRG="$link"
+    else
+    PRG=`dirname "$PRG"`/"$link"
+    fi
+done
+PRGDIR=`dirname "$PRG"`
+[ -z "$PEPD_HOME" ] && PEPD_HOME=`cd "$PRGDIR/.." ; pwd`    
 
 # config, log and lib directories
 PEPD_CONFDIR=${PEPD_CONFDIR:-"$PEPD_HOME/conf"}
