@@ -283,7 +283,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
             }
             log.debug("Could not map to account {}", accountFile.getName());
         }
-        log.warning("{} pool account is full. Impossible to map {}", accountNamePrefix,subjectIdentifier);
+        log.warn("{} pool account is full. Impossible to map {}", accountNamePrefix,subjectIdentifier);
         return null;
     }
 
