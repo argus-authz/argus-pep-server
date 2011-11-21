@@ -43,7 +43,7 @@
 
 # PEP server control script and name of the script
 PEPDCTL="/usr/sbin/pepdctl"
-NAME="$(basename $0)"
+NAME="argus-pepd"
 
 if [ `id -u` -ne 0 ]; then
     echo "You need root privileges to run this script"
