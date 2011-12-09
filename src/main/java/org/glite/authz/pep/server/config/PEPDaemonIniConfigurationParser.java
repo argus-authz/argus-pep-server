@@ -155,10 +155,10 @@ public class PEPDaemonIniConfigurationParser extends AbstractIniServiceConfigura
         
         PEPDaemonConfigurationBuilder configBuilder = new PEPDaemonConfigurationBuilder();
 
-        log.info("Processing PEP Daemon {} configuration section", SECURITY_SECTION_HEADER);
+        log.info("Processing PEP Server {} configuration section", SECURITY_SECTION_HEADER);
         processSecuritySection(iniFile, configBuilder);
         
-        log.info("Processing PEP Daemon {} configuration section", SERVICE_SECTION_HEADER);
+        log.info("Processing PEP Server {} configuration section", SERVICE_SECTION_HEADER);
         processServiceSection(iniFile, configBuilder);
         
         Section configSection = iniFile.get(SERVICE_SECTION_HEADER);
@@ -172,7 +172,7 @@ public class PEPDaemonIniConfigurationParser extends AbstractIniServiceConfigura
         log.info("Total obligation handlers: {}", service.getObligationHandlers().size());
         configBuilder.setObligationService(service);
 
-        log.info("Processing PEP Daemon {} configuration section", PDP_SECTION_HEADER);
+        log.info("Processing PEP Server {} configuration section", PDP_SECTION_HEADER);
         processPDPConfiguration(iniFile, configBuilder);
 
         return configBuilder.build();
