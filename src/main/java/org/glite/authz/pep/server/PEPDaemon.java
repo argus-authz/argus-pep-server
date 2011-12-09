@@ -37,6 +37,7 @@ import org.glite.authz.common.http.JettyAdminService;
 import org.glite.authz.common.http.JettyRunThread;
 import org.glite.authz.common.http.JettyShutdownTask;
 import org.glite.authz.common.http.JettySslSelectChannelConnector;
+import org.glite.authz.common.http.ServiceMetricsServlet;
 import org.glite.authz.common.http.StatusCommand;
 import org.glite.authz.common.http.TimerShutdownTask;
 import org.glite.authz.common.logging.AccessLoggingFilter;
@@ -139,7 +140,7 @@ public final class PEPDaemon {
 
         Server pepDaemonService= createPEPDaemonService(daemonConfig);
         JettyRunThread pepDaemonServiceThread= new JettyRunThread(pepDaemonService);
-        pepDaemonServiceThread.setName("PEP Deamon Service");
+        pepDaemonServiceThread.setName("PEP Server Service");
         pepDaemonServiceThread.start();
 
         JettyAdminService adminService= createAdminService(daemonConfig,
@@ -184,17 +185,21 @@ public final class PEPDaemon {
         httpServer.setConnectors(new Connector[] { connector });
 
         Context servletContext= new Context(httpServer, "/", false, false);
-        servletContext.setDisplayName("PEP Daemon");
+        servletContext.setDisplayName("PEP Server");
         servletContext.setAttribute(PEPDaemonConfiguration.BINDING_NAME,
                                     daemonConfig);
 
         FilterHolder accessLoggingFilter= new FilterHolder(new AccessLoggingFilter());
         servletContext.addFilter(accessLoggingFilter, "/*", Context.REQUEST);
 
-        ServletHolder daemonRequestServlet= new ServletHolder(new PEPDaemonServlet());
-        daemonRequestServlet.setName("PEP Daemon Servlet");
-        servletContext.addServlet(daemonRequestServlet, "/authz");
+        ServletHolder authzRequestServlet= new ServletHolder(new PEPDaemonServlet());
+        authzRequestServlet.setName("Authorization Servlet");
+        servletContext.addServlet(authzRequestServlet, "/authz");
 
+        ServletHolder statusRequestServlet= new ServletHolder(new ServiceMetricsServlet(daemonConfig.getServiceMetrics()));
+        statusRequestServlet.setName("Status Servlet");
+        servletContext.addServlet(statusRequestServlet, "/status");
+        
         return httpServer;
     }
 
