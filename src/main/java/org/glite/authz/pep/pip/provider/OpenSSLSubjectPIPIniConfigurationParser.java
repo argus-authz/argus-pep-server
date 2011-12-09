@@ -23,7 +23,7 @@ import java.util.List;
 import org.glite.authz.common.config.AbstractConfigurationBuilder;
 import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.common.config.IniConfigUtil;
-import org.glite.authz.pep.pip.IniPIPConfigurationParser;
+import org.glite.authz.common.config.IniSectionConfigurationParser;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
 
 import org.ini4j.Ini.Section;
@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 /** Configuration parser for an {@link OpenSSLSubjectPIP}. */
 public class OpenSSLSubjectPIPIniConfigurationParser implements
-        IniPIPConfigurationParser {
+        IniSectionConfigurationParser<PolicyInformationPoint> {
 
     /** Class logger. */
     private Logger log= LoggerFactory.getLogger(OpenSSLSubjectPIPIniConfigurationParser.class);

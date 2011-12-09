@@ -21,52 +21,70 @@ import java.util.List;
 import java.util.StringTokenizer;
 
 import org.glite.authz.common.config.AbstractConfigurationBuilder;
-import org.glite.authz.common.config.AbstractIniConfigurationParser;
 import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.common.config.IniConfigUtil;
+import org.glite.authz.common.config.IniSectionConfigurationParser;
 import org.glite.authz.common.util.LazyList;
 import org.glite.authz.common.util.Strings;
+
 import org.ini4j.Ini;
 import org.ini4j.Ini.Section;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Helper for parsing configuration files which contain {@link PolicyInformationPoint} declarations. */
+/**
+ * Helper for parsing configuration files which contain
+ * {@link PolicyInformationPoint} declarations.
+ */
 public class IniPIPConfigurationParserHelper {
 
-    /** The name of the {@value} which gives the space-delimited lists of to-be-configured PIPs. */
-    public static final String PIP_PROP = "pips";
+    /**
+     * The name of the {@value} which gives the space-delimited lists of
+     * to-be-configured PIPs.
+     */
+    public static final String PIP_PROP= "pips";
 
     /** Class logger. */
-    private static final Logger LOG = LoggerFactory.getLogger(IniPIPConfigurationParserHelper.class);
+    private static final Logger LOG= LoggerFactory.getLogger(IniPIPConfigurationParserHelper.class);
 
     /**
-     * Processing the {@value #PIP_PROP} configuration property, if there is one.
+     * Processing the {@value #PIP_PROP} configuration property, if there is
+     * one.
      * 
-     * @param iniFile INI configuration file being processed
-     * @param configSection current configuration section being processed
-     * @param configBuilder current builder being constructed from the parser
+     * @param iniFile
+     *            INI configuration file being processed
+     * @param configSection
+     *            current configuration section being processed
+     * @param configBuilder
+     *            current builder being constructed from the parser
      * 
      * @return policy information points loaded based on the given configuration
      * 
-     * @throws ConfigurationException thrown if there is a problem building the policy information points
+     * @throws ConfigurationException
+     *             thrown if there is a problem building the policy information
+     *             points
      */
-    public static List<PolicyInformationPoint> processPolicyInformationPoints(Ini iniFile, Section configSection,
-            AbstractConfigurationBuilder<?> configBuilder) throws ConfigurationException {
-        List<PolicyInformationPoint> pips = new LazyList<PolicyInformationPoint>();
+    public static List<PolicyInformationPoint> processPolicyInformationPoints(
+            Ini iniFile, Section configSection,
+            AbstractConfigurationBuilder<?> configBuilder)
+            throws ConfigurationException {
+        List<PolicyInformationPoint> pips= new LazyList<PolicyInformationPoint>();
         if (configSection.containsKey(PIP_PROP)) {
             String pipName;
-            StringTokenizer pipNames = new StringTokenizer(configSection.get(PIP_PROP), " ");
+            StringTokenizer pipNames= new StringTokenizer(configSection.get(PIP_PROP),
+                                                          " ");
             while (pipNames.hasMoreTokens()) {
-                pipName = Strings.safeTrimOrNullString(pipNames.nextToken());
+                pipName= Strings.safeTrimOrNullString(pipNames.nextToken());
                 if (pipName != null) {
                     if (!iniFile.containsKey(pipName)) {
-                        String errorMsg = "INI configuration file does not contain a configuration section for policy information point "
+                        String errorMsg= "INI configuration file does not contain a configuration section for policy information point "
                                 + pipName;
                         LOG.error(errorMsg);
                         throw new ConfigurationException(errorMsg);
                     }
-                    pips.add(buildPolicyInformationPoint(iniFile.get(pipName), configBuilder));
+                    PolicyInformationPoint pip= buildPolicyInformationPoint(iniFile.get(pipName),
+                                                                            configBuilder);
+                    pips.add(pip);
                     LOG.debug("loadded policy information point: {}", pipName);
                 }
             }
@@ -77,27 +95,36 @@ public class IniPIPConfigurationParserHelper {
     /**
      * Processes each individual PIP configuration section.
      * 
-     * @param pipConfig the PIP configuration section
-     * @param configBuilder configuration builder currently being populated
+     * @param pipConfig
+     *            the PIP configuration section
+     * @param configBuilder
+     *            configuration builder currently being populated
      * 
-     * @return the PIP configured with the information provided in the configuration section
+     * @return the PIP configured with the information provided in the
+     *         configuration section
      * 
-     * @throws ConfigurationException throw if a PIP can not be instantiated
+     * @throws ConfigurationException
+     *             throw if a PIP can not be instantiated
      */
     @SuppressWarnings("unchecked")
-    private static PolicyInformationPoint buildPolicyInformationPoint(Section pipConfig,
-            AbstractConfigurationBuilder<?> configBuilder) throws ConfigurationException {
-        LOG.info("Loading Policy Information Point {}", pipConfig.getName());
-        String parserClassName = IniConfigUtil.getString(pipConfig, IniPIPConfigurationParser.PARSER_CLASS_PROP);
+    private static PolicyInformationPoint buildPolicyInformationPoint(
+            Section pipConfig, AbstractConfigurationBuilder<?> configBuilder)
+            throws ConfigurationException {
+        String name= pipConfig.getName();
+        LOG.info("Loading Policy Information Point {}", name);
+        String parserClassName= IniConfigUtil.getString(pipConfig,
+                                                        IniSectionConfigurationParser.PARSER_CLASS_PROP);
 
         try {
-            Class<IniPIPConfigurationParser> parserClass = (Class<IniPIPConfigurationParser>) AbstractIniConfigurationParser.class
-                    .getClassLoader().loadClass(parserClassName);
-            IniPIPConfigurationParser parser = parserClass.getConstructor().newInstance();
+            Class<IniSectionConfigurationParser<PolicyInformationPoint>> parserClass= (Class<IniSectionConfigurationParser<PolicyInformationPoint>>) IniPIPConfigurationParserHelper.class.getClassLoader().loadClass(parserClassName);
+            IniSectionConfigurationParser<PolicyInformationPoint> parser= parserClass.getConstructor().newInstance();
             return parser.parse(pipConfig, configBuilder);
         } catch (Exception e) {
-            throw new ConfigurationException("Unable to configure PIP " + pipConfig.getName()
-                    + ". The following error was reported: " + e.getMessage(), e);
+            throw new ConfigurationException("Unable to configure PIP "
+                                                     + name
+                                                     + ". The following error was reported: "
+                                                     + e.getMessage(),
+                                             e);
         }
     }
 }

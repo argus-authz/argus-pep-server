@@ -67,7 +67,7 @@ public final class RequestValidatorPIP extends AbstractPolicyInformationPoint {
             applied= true;
             Set<Subject> subjects= request.getSubjects();
             if (subjects.size() < 1) {
-                throw new PIPProcessingException("AuthZ request does not contain any Subject");
+                throw new PIPProcessingException("Decision request does not contain any Subject");
             }
             for (Subject subject : subjects) {
                 validateAttributes(subject.getAttributes(), "Subject");
@@ -77,7 +77,7 @@ public final class RequestValidatorPIP extends AbstractPolicyInformationPoint {
             applied= true;
             Set<Resource> resources= request.getResources();
             if (resources.size() < 1) {
-                throw new PIPProcessingException("AuthZ request does not contain any Resource");
+                throw new PIPProcessingException("Decision request does not contain any Resource");
             }
             for (Resource resource : resources) {
                 validateAttributes(resource.getAttributes(), "Resource");
@@ -87,7 +87,7 @@ public final class RequestValidatorPIP extends AbstractPolicyInformationPoint {
             applied= true;
             Action action= request.getAction();
             if (action == null) {
-                throw new PIPProcessingException("AuthZ request does not contain an Action");
+                throw new PIPProcessingException("Decision request does not contain an Action");
             }
             validateAttributes(action.getAttributes(), "Action");
         }
@@ -95,7 +95,7 @@ public final class RequestValidatorPIP extends AbstractPolicyInformationPoint {
             applied= true;
             Environment environment= request.getEnvironment();
             if (environment == null) {
-                throw new PIPProcessingException("AuthZ request does not contain an Environment");
+                throw new PIPProcessingException("Decision request does not contain an Environment");
             }
             validateAttributes(environment.getAttributes(), "Environment");
         }
@@ -156,26 +156,27 @@ public final class RequestValidatorPIP extends AbstractPolicyInformationPoint {
     private void validateAttributes(Set<Attribute> attributes, String element)
             throws PIPProcessingException {
         if (attributes.size() < 1) {
-            throw new PIPProcessingException("AuthZ request " + element
+            throw new PIPProcessingException("Decision request " + element
                     + " without any attribute");
         }
         for (Attribute attribute : attributes) {
             Set<Object> attributeValues= attribute.getValues();
             if (attributeValues.size() < 1) {
-                throw new PIPProcessingException("AuthZ request " + element
+                throw new PIPProcessingException("Decision request " + element
                         + " contains the attribute " + attribute.getId()
                         + " without any value");
             }
             for (Object attributeValue : attributeValues) {
                 if (attributeValue == null) {
-                    throw new PIPProcessingException("AuthZ request " + element
-                            + " contains the attribute " + attribute.getId()
-                            + " with a null value");
+                    throw new PIPProcessingException("Decision request "
+                            + element + " contains the attribute "
+                            + attribute.getId() + " with a null value");
                 }
                 String value= Strings.safeTrimOrNullString(attributeValue.toString());
                 if (value == null) {
-                    throw new PIPProcessingException("AuthZ request " + element
-                            + " contains the attribute " + attribute.getId()
+                    throw new PIPProcessingException("Decision request "
+                            + element + " contains the attribute "
+                            + attribute.getId()
                             + " with an empty (stripped) value");
                 }
             }

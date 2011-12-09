@@ -20,8 +20,8 @@ package org.glite.authz.pep.pip.provider;
 import org.glite.authz.common.config.AbstractConfigurationBuilder;
 import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.common.config.IniConfigUtil;
+import org.glite.authz.common.config.IniSectionConfigurationParser;
 import org.glite.authz.common.util.Strings;
-import org.glite.authz.pep.pip.IniPIPConfigurationParser;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
 
 import org.ini4j.Ini.Section;
@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 /** Configuration parser for an {@link RequestValidatorPIP}. */
 public class RequestValidatorPIPIniConfigurationParser implements
-        IniPIPConfigurationParser {
+        IniSectionConfigurationParser<PolicyInformationPoint> {
 
     /** Class logger. */
     private Logger log= LoggerFactory.getLogger(RequestValidatorPIPIniConfigurationParser.class);
@@ -61,18 +61,18 @@ public class RequestValidatorPIPIniConfigurationParser implements
 
     /**
      * Default value for the {@value #VALIDATE_REQUEST_SUBJECTS_PROP} property:
-     * {@value}
+     * * {@value}
      */
     public static boolean DEFAULT_VALIDATE_REQUEST_SUBJECTS= true;
 
     /**
      * Default value for the {@value #VALIDATE_REQUEST_RESOURCES_PROP} property:
-     * {@value}
+     * * {@value}
      */
     public static boolean DEFAULT_VALIDATE_REQUEST_RESOURCES= true;
 
     /**
-     * Default value for the {@value #VALIDATE_REQUEST_ACTION_PROP} property:
+     * Default value for the {@value #VALIDATE_REQUEST_ACTION_PROP} property: *
      * {@value}
      */
     public static boolean DEFAULT_VALIDATE_REQUEST_ACTION= true;

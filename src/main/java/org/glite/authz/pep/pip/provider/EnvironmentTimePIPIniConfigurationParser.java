@@ -19,13 +19,14 @@ package org.glite.authz.pep.pip.provider;
 
 import org.glite.authz.common.config.AbstractConfigurationBuilder;
 import org.glite.authz.common.config.ConfigurationException;
-import org.glite.authz.pep.pip.IniPIPConfigurationParser;
-import org.glite.authz.pep.pip.PolicyInformationPoint;
+import org.glite.authz.common.config.IniSectionConfigurationParser;
 import org.glite.authz.common.util.Strings;
+import org.glite.authz.pep.pip.PolicyInformationPoint;
+
 import org.ini4j.Ini.Section;
 
 /** Configuration parser for an {@link EnvironmentTimePIP}. */
-public class EnvironmentTimePIPIniConfigurationParser implements IniPIPConfigurationParser {
+public class EnvironmentTimePIPIniConfigurationParser implements IniSectionConfigurationParser<PolicyInformationPoint> {
 
     /** {@inheritDoc} */
     public PolicyInformationPoint parse(Section iniConfig, AbstractConfigurationBuilder<?> configBuilder)

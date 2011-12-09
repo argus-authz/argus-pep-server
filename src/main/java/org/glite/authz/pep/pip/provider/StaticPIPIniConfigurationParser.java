@@ -28,11 +28,12 @@ import net.jcip.annotations.ThreadSafe;
 import org.glite.authz.common.config.AbstractConfigurationBuilder;
 import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.common.config.IniConfigUtil;
+import org.glite.authz.common.config.IniSectionConfigurationParser;
 import org.glite.authz.common.model.Attribute;
-import org.glite.authz.pep.pip.IniPIPConfigurationParser;
-import org.glite.authz.pep.pip.PolicyInformationPoint;
 import org.glite.authz.common.util.Files;
 import org.glite.authz.common.util.Strings;
+import org.glite.authz.pep.pip.PolicyInformationPoint;
+
 import org.ini4j.Ini;
 import org.ini4j.Ini.Section;
 import org.slf4j.Logger;
@@ -40,7 +41,7 @@ import org.slf4j.LoggerFactory;
 
 /** Configuration parser for {@link StaticPIP}. */
 @ThreadSafe
-public class StaticPIPIniConfigurationParser implements IniPIPConfigurationParser {
+public class StaticPIPIniConfigurationParser implements IniSectionConfigurationParser<PolicyInformationPoint> {
 
     /**
      * The name of the {@value} property which gives the absolute path the file containing the definition for the static

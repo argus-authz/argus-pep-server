@@ -24,16 +24,17 @@ import net.jcip.annotations.ThreadSafe;
 
 import org.glite.authz.common.config.AbstractConfigurationBuilder;
 import org.glite.authz.common.config.ConfigurationException;
-import org.glite.authz.pep.pip.IniPIPConfigurationParser;
-import org.glite.authz.pep.pip.PolicyInformationPoint;
+import org.glite.authz.common.config.IniSectionConfigurationParser;
 import org.glite.authz.common.util.Strings;
+import org.glite.authz.pep.pip.PolicyInformationPoint;
+
 import org.ini4j.Ini.Section;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Configuration parser for {@link AttributeWhitelistPIP}. */
 @ThreadSafe
-public class AttributeWhitelistPIPIniConfigurationParser implements IniPIPConfigurationParser {
+public class AttributeWhitelistPIPIniConfigurationParser implements IniSectionConfigurationParser<PolicyInformationPoint> {
 
     /** The name of the {@value} property which gives the IDs of the action attributes allowed to appear in the request. */
     public static final String ACT_ATTRIBS_PROP = "acceptedActionAttributes";

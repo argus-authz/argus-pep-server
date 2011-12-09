@@ -20,22 +20,26 @@ package org.glite.authz.pep.pip.provider;
 import org.glite.authz.common.config.AbstractConfigurationBuilder;
 import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.common.config.IniConfigUtil;
-import org.glite.authz.pep.pip.IniPIPConfigurationParser;
-import org.glite.authz.pep.pip.PolicyInformationPoint;
+import org.glite.authz.common.config.IniSectionConfigurationParser;
 import org.glite.authz.common.util.Files;
+import org.glite.authz.pep.pip.PolicyInformationPoint;
 import org.glite.voms.PKIStore;
+
 import org.ini4j.Ini.Section;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Configuration parser for {@link AbstractX509PIP} PIPs. */
-public abstract class AbstractX509PIPIniConfigurationParser implements IniPIPConfigurationParser {
+public abstract class AbstractX509PIPIniConfigurationParser implements IniSectionConfigurationParser<PolicyInformationPoint> {
 
     /**
      * The name of the {@value} property which determines whether a subject's certificate chain must contain a proxy
      * certificate.
      */
     public static final String REQ_PROXY_PROP = "requireProxy";
+    /** Default value of {@value #REQ_PROXY_PROP}, {@value} . */
+    public static final boolean DEFAULT_REQ_PROXY = false;
+    
 
     /**
      * The name of the {@value} property the indicates whether PKIX validation will be performed on the certificate
@@ -64,7 +68,7 @@ public abstract class AbstractX509PIPIniConfigurationParser implements IniPIPCon
         
         String pipId = iniConfig.getName();
         
-        boolean requireProxy = IniConfigUtil.getBoolean(iniConfig, REQ_PROXY_PROP, false);
+        boolean requireProxy = IniConfigUtil.getBoolean(iniConfig, REQ_PROXY_PROP, DEFAULT_REQ_PROXY);
         log.info("{}: subject proxy certificate required: {}", pipId, requireProxy);
 
         PKIStore acTrustMaterial = null;
