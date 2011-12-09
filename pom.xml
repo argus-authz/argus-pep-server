@@ -6,23 +6,23 @@
     <parent>
         <groupId>org.glite.authz</groupId>
         <artifactId>argus-parent</artifactId>
-        <version>1.4</version>
+        <version>1.5</version>
         <relativePath>../emi.argus.parent</relativePath>
     </parent>
 
     <name>Argus PEP Server</name>
     <groupId>org.glite.authz</groupId>
     <artifactId>pepd</artifactId>
-    <version>1.4.X</version>
+    <version>1.5.0</version>
     <packaging>jar</packaging>
 
 
     <description>XACML based authorization service developed within the gLite project.</description>
     <url>http://glite.web.cern.ch/glite/</url>
     <inceptionYear>2008</inceptionYear>
-    
+
     <dependencies>
-        <!-- Compile Dependencies-->
+        <!-- Compile Dependencies -->
         <dependency>
             <groupId>org.glite.authz</groupId>
             <artifactId>pep-common</artifactId>
@@ -75,7 +75,7 @@
             <groupId>org.slf4j</groupId>
             <artifactId>log4j-over-slf4j</artifactId>
         </dependency>
-        
+
         <!-- Provided Dependencies -->
         <dependency>
             <groupId>net.jcip</groupId>
@@ -186,7 +186,8 @@
                                 <manifestEntries>
                                     <Implementation-Title>${project.name}</Implementation-Title>
                                     <Implementation-Version>${project.version}</Implementation-Version>
-                                    <Implementation-Vendor>EGEE Collaboration</Implementation-Vendor>
+                                    <Implementation-Vendor>EGEE
+                                        Collaboration</Implementation-Vendor>
                                 </manifestEntries>
                             </manifestSection>
                         </manifestSections>
@@ -209,8 +210,10 @@
                     <aggregate>true</aggregate>
                     <author>false</author>
                     <version>true</version>
-                    <doctitle>${project.name} ${project.version} Java API.</doctitle>
-                    <windowtitle>${project.name} ${project.version} Java API.
+                    <doctitle>${project.name} ${project.version} Java
+                        API.</doctitle>
+                    <windowtitle>${project.name} ${project.version} Java
+                        API.
                     </windowtitle>
                     <overview>src/main/java/overview.html</overview>
                 </configuration>
@@ -221,9 +224,11 @@
                     <aggregate>true</aggregate>
                     <outputDirectory>${project.reporting.outputDirectory}/xref
                     </outputDirectory>
-                    <doctitle>${project.name} ${project.version} Code Cross-Reference
+                    <doctitle>${project.name} ${project.version} Code
+                        Cross-Reference
                     </doctitle>
-                    <windowtitle>${project.name} ${project.version} Java API.
+                    <windowtitle>${project.name} ${project.version} Java
+                        API.
                     </windowtitle>
                     <javadocDir>${project.reporting.outputDirectory}/apidocs
                     </javadocDir>
@@ -241,16 +246,95 @@
             </plugin>
         </plugins>
     </reporting>
-    
+
     <profiles>
         <profile>
-            <id>etics</id>
+            <id>gLite</id>
             <build>
                 <finalName>pepd</finalName>
             </build>
         </profile>
         <profile>
+            <id>standalone</id>
+            <build>
+                <finalName>pepd</finalName>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <!-- overwrite default descriptor to use -->
+                        <configuration>
+                            <descriptors>
+                                <descriptor>src/main/assembly/standalone.xml</descriptor>
+                            </descriptors>
+                            <attach>false</attach>
+                            <ignoreDirFormatExtensions>false</ignoreDirFormatExtensions>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>create-emi-symlinks</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <workingDirectory>${project.build.directory}/pepd-standalone.dir</workingDirectory>
+                                    <executable>/bin/sh</executable>
+                                    <arguments>
+                                        <argument>${basedir}/src/script/package/emi-symlinks.sh</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>tar-gz-standalone</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <workingDirectory>${project.build.directory}</workingDirectory>
+                                    <executable>tar</executable>
+                                    <arguments>
+                                        <argument>-C</argument>
+                                        <argument>pepd-standalone.dir</argument>
+                                        <argument>-cvzf</argument>
+                                        <argument>${project.artifactId}-${project.version}-standalone.tar.gz</argument>
+                                        <argument>.</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>delete-emi-symlinks</id>
+                                <phase>pre-clean</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <workingDirectory>${project.build.directory}/pepd-standalone.dir</workingDirectory>
+                                    <executable>/bin/rm</executable>
+                                    <arguments>
+                                        <argument>-f</argument>
+                                        <argument>usr/sbin/pepdctl</argument>
+                                        <argument>usr/share/argus/pepd/conf</argument>
+                                        <argument>usr/share/argus/pepd/doc</argument>
+                                        <argument>usr/share/argus/pepd/lib</argument>
+                                        <argument>usr/share/argus/pepd/logs</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
             <id>EMI</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
             <build>
                 <finalName>pepd</finalName>
                 <plugins>
@@ -293,7 +377,8 @@
                                     <workingDirectory>${project.build.directory}/pepd-fakeroot.dir</workingDirectory>
                                     <executable>/bin/rm</executable>
                                     <arguments>
-                                        <argument>-vf</argument>
+                                        <argument>-f</argument>
+                                        <argument>usr/sbin/pepdctl</argument>
                                         <argument>usr/share/argus/pepd/conf</argument>
                                         <argument>usr/share/argus/pepd/doc</argument>
                                         <argument>usr/share/argus/pepd/lib</argument>
@@ -301,13 +386,13 @@
                                     </arguments>
                                 </configuration>
                             </execution>
-                         </executions>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
         </profile>
     </profiles>
-    
+
     <developers>
         <developer>
             <id>vtschopp</id>
@@ -341,7 +426,7 @@
     </licenses>
 
     <organization>
-        <name>EGEE Collaboration</name>
-        <url>http://www.eu-egee.org/</url>
+        <name>EMI - European Middleware Initiative</name>
+        <url>http://www.eu-emi.eu/</url>
     </organization>
 </project>
