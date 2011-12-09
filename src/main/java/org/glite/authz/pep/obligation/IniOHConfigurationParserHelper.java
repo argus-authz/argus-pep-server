@@ -20,53 +20,69 @@ package org.glite.authz.pep.obligation;
 import java.util.StringTokenizer;
 
 import org.glite.authz.common.config.AbstractConfigurationBuilder;
-import org.glite.authz.common.config.AbstractIniServiceConfigurationParser;
 import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.common.config.IniConfigUtil;
+import org.glite.authz.common.config.IniSectionConfigurationParser;
 import org.glite.authz.common.util.Strings;
+
 import org.ini4j.Ini;
 import org.ini4j.Ini.Section;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Helper for parsing configuration files which contain {@link AbstractObligationHandler} declarations. */
+/**
+ * Helper for parsing configuration files which contain
+ * {@link AbstractObligationHandler} declarations.
+ */
 public class IniOHConfigurationParserHelper {
 
-    /** The name of the {@value} which gives the space-delimited lists of to-be-configured obligation handlers. */
-    public static final String OH_PROP = "obligationHandlers";
+    /**
+     * The name of the {@value} which gives the space-delimited lists of
+     * to-be-configured obligation handlers.
+     */
+    public static final String OH_PROP= "obligationHandlers";
 
     /** Class logger. */
-    private static final Logger LOG = LoggerFactory.getLogger(IniOHConfigurationParserHelper.class);
+    private static final Logger LOG= LoggerFactory.getLogger(IniOHConfigurationParserHelper.class);
 
     /**
      * Processing the {@value #OH_PROP} configuration property, if there is one.
      * 
-     * @param iniFile INI configuration file being processed
-     * @param configSection current configuration section being processed
-     * @param configBuilder current builder being constructed from the parser
+     * @param iniFile
+     *            INI configuration file being processed
+     * @param configSection
+     *            current configuration section being processed
+     * @param configBuilder
+     *            current builder being constructed from the parser
      * 
      * @return obligation processing service
      * 
-     * @throws ConfigurationException thrown if there is a problem building the obligations handlers
+     * @throws ConfigurationException
+     *             thrown if there is a problem building the obligations
+     *             handlers
      */
-    public static ObligationService processObligationHandlers(Ini iniFile, Section configSection,
-            AbstractConfigurationBuilder<?> configBuilder) throws ConfigurationException {
-        ObligationService service = new ObligationService();
+    public static ObligationService processObligationHandlers(Ini iniFile,
+            Section configSection, AbstractConfigurationBuilder<?> configBuilder)
+            throws ConfigurationException {
+        ObligationService service= new ObligationService();
         if (configSection.containsKey(OH_PROP)) {
-            StringTokenizer obligationHandlers = new StringTokenizer(configSection.get(OH_PROP), " ");
+            StringTokenizer obligationHandlers= new StringTokenizer(configSection.get(OH_PROP),
+                                                                    " ");
             String obligationHandlerName;
             while (obligationHandlers.hasMoreTokens()) {
-                obligationHandlerName = Strings.safeTrimOrNullString(obligationHandlers.nextToken());
-                if (!iniFile.containsKey(obligationHandlerName)) {
-                    String errorMsg = "INI configuration file does not contain a configuration section for obligation handler "
-                            + obligationHandlerName;
-                    LOG.error(errorMsg);
-                    throw new ConfigurationException(errorMsg);
-                }
+                obligationHandlerName= Strings.safeTrimOrNullString(obligationHandlers.nextToken());
                 if (obligationHandlerName != null) {
-                    service.addObligationhandler(buildObligationHandler(iniFile.get(obligationHandlerName),
-                            configBuilder));
-                    LOG.info("Added obligation handler: {}", obligationHandlerName);
+                    if (!iniFile.containsKey(obligationHandlerName)) {
+                        String errorMsg= "INI configuration file does not contain a configuration section for obligation handler "
+                                + obligationHandlerName;
+                        LOG.error(errorMsg);
+                        throw new ConfigurationException(errorMsg);
+                    }
+                    ObligationHandler oh= buildObligationHandler(iniFile.get(obligationHandlerName),
+                                                                 configBuilder);
+                    service.addObligationhandler(oh);
+                    LOG.info("Added obligation handler: {}",
+                             obligationHandlerName);
                 }
             }
         }
@@ -76,27 +92,36 @@ public class IniOHConfigurationParserHelper {
     /**
      * Processes each individual Obligation Handler configuration section.
      * 
-     * @param ohConfig the obligation handler configuration section
-     * @param configBuilder configuration builder currently being populated
+     * @param ohConfig
+     *            the obligation handler configuration section
+     * @param configBuilder
+     *            configuration builder currently being populated
      * 
-     * @return the obligation handler configured with the information provided in the configuration section
+     * @return the obligation handler configured with the information provided
+     *         in the configuration section
      * 
-     * @throws ConfigurationException throw if a obligation handler can not be instantiated
+     * @throws ConfigurationException
+     *             throw if a obligation handler can not be instantiated
      */
     @SuppressWarnings("unchecked")
     private static ObligationHandler buildObligationHandler(Section ohConfig,
-            AbstractConfigurationBuilder<?> configBuilder) throws ConfigurationException {
+            AbstractConfigurationBuilder<?> configBuilder)
+            throws ConfigurationException {
         LOG.info("Loading Obligation Handler {}", ohConfig.getName());
-        String parserClassName = IniConfigUtil.getString(ohConfig, IniOHConfigurationParser.PARSER_CLASS_PROP);
+        String parserClassName= IniConfigUtil.getString(ohConfig,
+                                                        IniSectionConfigurationParser.PARSER_CLASS_PROP);
 
         try {
-            Class<IniOHConfigurationParser> parserClass = (Class<IniOHConfigurationParser>) AbstractIniServiceConfigurationParser.class
-                    .getClassLoader().loadClass(parserClassName);
-            IniOHConfigurationParser parser = parserClass.getConstructor().newInstance();
+
+            Class<IniSectionConfigurationParser<ObligationHandler>> parserClass= (Class<IniSectionConfigurationParser<ObligationHandler>>) IniOHConfigurationParserHelper.class.getClassLoader().loadClass(parserClassName);
+            IniSectionConfigurationParser<ObligationHandler> parser= parserClass.getConstructor().newInstance();
             return parser.parse(ohConfig, configBuilder);
         } catch (Exception e) {
-            throw new ConfigurationException("Unable to configure Obligation Handler " + ohConfig.getName()
-                    + ". The following error was reported: " + e.getMessage(), e);
+            throw new ConfigurationException("Unable to configure Obligation Handler "
+                                                     + ohConfig.getName()
+                                                     + ". The following error was reported: "
+                                                     + e.getMessage(),
+                                             e);
         }
     }
 }

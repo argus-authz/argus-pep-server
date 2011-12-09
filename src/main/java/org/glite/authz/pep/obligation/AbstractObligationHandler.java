@@ -33,7 +33,7 @@ import org.glite.authz.common.util.Strings;
 @ThreadSafe
 public abstract class AbstractObligationHandler implements ObligationHandler {
 
-    /** ID of the obligation handler */
+    /** ID of the obligation handler (name) */
     private String id_;
 
     /** ID of the handled obligation. */
@@ -108,6 +108,14 @@ public abstract class AbstractObligationHandler implements ObligationHandler {
         return precedence_;
     }
 
+    /**
+     * Sets the precedence of the handler.
+     * @param precedence of the handler
+     */
+    protected void setHanderPrecedence(int precedence) {
+        precedence_= precedence;
+    }
+    
     /**
      * Gets a unique identifier (name) for this obligation handle.
      * 
