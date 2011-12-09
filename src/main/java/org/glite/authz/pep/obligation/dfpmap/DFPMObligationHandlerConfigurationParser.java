@@ -24,8 +24,9 @@ import javax.security.auth.x500.X500Principal;
 import org.glite.authz.common.config.AbstractConfigurationBuilder;
 import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.common.config.IniConfigUtil;
+import org.glite.authz.common.config.IniSectionConfigurationParser;
 import org.glite.authz.common.fqan.FQAN;
-import org.glite.authz.pep.obligation.IniOHConfigurationParser;
+import org.glite.authz.common.profile.AuthorizationProfileConstants;
 import org.glite.authz.pep.obligation.ObligationHandler;
 import org.glite.authz.pep.obligation.dfpmap.UpdatingDFPM.DFPMFactory;
 
@@ -38,7 +39,20 @@ import org.slf4j.helpers.MessageFormatter;
  * INI configuration parser that constructs {@link DFPMObligationHandler}s.
  */
 public class DFPMObligationHandlerConfigurationParser implements
-        IniOHConfigurationParser {
+        IniSectionConfigurationParser<ObligationHandler> {
+
+    /**
+     * The name of the {@value} property which gives ID of the obligation
+     * handled by this obligation handler
+     */
+    public static final String HANDLED_OBLIGATION_ID_PROP= "handledObligationId";
+
+    
+    /**
+     * The default value of the {@value #HANDLED_OBLIGATION_ID_PROP}
+     * property: {@value} .
+     */
+    public static final String HANDLED_OBLIGATION_ID_DEFAULT= AuthorizationProfileConstants.ID_OBLIGATION_LOCAL_ENV_MAP;
 
     /**
      * The name of the {@value} property which gives the absolute path to the
@@ -148,35 +162,24 @@ public class DFPMObligationHandlerConfigurationParser implements
             throws ConfigurationException {
 
         String name= iniConfig.getName();
-        int precendence= IniConfigUtil.getInt(iniConfig,
-                                              PRECEDENCE_PROP,
-                                              PRECENDENCE_DEFAULT,
-                                              0,
-                                              Integer.MAX_VALUE);
-        log.debug("handler precendence: {}", precendence);
 
+        // get handled obligation ID
+        String obligationId= IniConfigUtil.getString(iniConfig,
+                                                     HANDLED_OBLIGATION_ID_PROP,
+                                                     HANDLED_OBLIGATION_ID_DEFAULT);
+        log.info("{}: handled obligationID: {}", name, obligationId);
+
+        /* grid-mapfile */
         String accountMapFile= IniConfigUtil.getString(iniConfig,
                                                        ACCOUNT_MAP_FILE_PROP);
-        log.info("{}: login name mapping file: {}", name, accountMapFile);
+        log.info("{}: user mapping file: {}", name, accountMapFile);
 
-        boolean preferDNForLoginName= IniConfigUtil.getBoolean(iniConfig,
-                                                               PREFER_DN_FOR_LOGIN_NAME_PROP,
-                                                               PREFER_DN_FOR_LOGIN_NAME_DEFAULT);
-        log.info("{}: prefer DN login name mappings: {}",
-                 name,
-                 preferDNForLoginName);
-
+        /* group-mapfile */
         String groupMapFile= IniConfigUtil.getString(iniConfig,
                                                      GROUP_MAP_FILE_PROP);
-        log.info("{}: group name mapping file: {}", name, groupMapFile);
+        log.info("{}: group mapping file: {}", name, groupMapFile);
 
-        boolean preferDNForPrimaryGroupName= IniConfigUtil.getBoolean(iniConfig,
-                                                                      PREFER_DN_FOR_PRIMARY_GROUP_NAME_PROP,
-                                                                      PREFER_DN_FOR_PRIMARY_GOURP_NAME_DEFAULT);
-        log.info("{}: prefer DN primary group mappings: {}",
-                 name,
-                 preferDNForPrimaryGroupName);
-
+        /* grid-mapfile and group-mapfile refresh timer */
         int mapRefreshPeriod= IniConfigUtil.getInt(iniConfig,
                                                    MAP_REFRESH_PERIOD_PROP,
                                                    MAP_REFRESH_PERIOD_DEFAULT,
@@ -186,6 +189,22 @@ public class DFPMObligationHandlerConfigurationParser implements
                  name,
                  mapRefreshPeriod);
 
+        /* mapping options: DN have precedence over FQAN ? */
+        boolean preferDNForLoginName= IniConfigUtil.getBoolean(iniConfig,
+                                                               PREFER_DN_FOR_LOGIN_NAME_PROP,
+                                                               PREFER_DN_FOR_LOGIN_NAME_DEFAULT);
+        log.info("{}: prefer DN login name mappings: {}",
+                 name,
+                 preferDNForLoginName);
+
+        boolean preferDNForPrimaryGroupName= IniConfigUtil.getBoolean(iniConfig,
+                                                                      PREFER_DN_FOR_PRIMARY_GROUP_NAME_PROP,
+                                                                      PREFER_DN_FOR_PRIMARY_GOURP_NAME_DEFAULT);
+        log.info("{}: prefer DN primary group mappings: {}",
+                 name,
+                 preferDNForPrimaryGroupName);
+
+        /* gridmapdir */
         String gridMapDir= IniConfigUtil.getString(iniConfig, GRID_MAP_DIR_PROP);
         log.info("{}: grid mapping directory: {}", name, gridMapDir);
 
@@ -214,8 +233,10 @@ public class DFPMObligationHandlerConfigurationParser implements
                                                         useSecondaryGroupNamesForMapping);
 
         DFPMObligationHandler obligationHandler= new DFPMObligationHandler(name,
+                                                                           obligationId,
                                                                            accountMapper);
 
+        /* apply OH only if subject key-info attribute is present in request ? */
         boolean requireSubjectKeyInfo= IniConfigUtil.getBoolean(iniConfig,
                                                                 REQUIRE_SUBJECT_KEYINFO_PROP,
                                                                 REQUIRE_SUBJECT_KEYINFO_DEFAULT);

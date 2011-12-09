@@ -66,13 +66,16 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
     /**
      * Constructor.
      * 
-     * @param id
-     *            the obligation handler ID
+     * @param name
+     *            The obligation handler unique id (name)
+     * @param obligationId
+     *            The handled obligation ID
      * @param mapper
-     *            mapper used to map a subject to a POSIX account
+     *            used to map a subject to a POSIX account
      */
-    public DFPMObligationHandler(String id, AccountMapper mapper) {
-        super(id, AuthorizationProfileConstants.ID_OBLIGATION_LOCAL_ENV_MAP);
+    public DFPMObligationHandler(String name, String obligationId,
+            AccountMapper mapper) {
+        super(name, obligationId);
 
         if (mapper == null) {
             throw new IllegalArgumentException("Account mapper may not be null");
@@ -81,24 +84,36 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
     }
 
     /**
+     * Constructor. Default handled obligation ID:
+     * {@value AuthorizationProfileConstants#ID_OBLIGATION_LOCAL_ENV_MAP}
+     * 
+     * @param name
+     *            the obligation handler name
+     * @param mapper
+     *            mapper used to map a subject to a POSIX account
+     */
+    public DFPMObligationHandler(String name, AccountMapper mapper) {
+        this(name,
+             AuthorizationProfileConstants.ID_OBLIGATION_LOCAL_ENV_MAP,
+             mapper);
+    }
+
+    /**
      * Constructor.
      * 
-     * @param id
-     *            the obligation handler id
+     * @param name
+     *            the obligation handler name
      * @param precedence
      *            precendence of this obligation handler
      * @param mapper
      *            mapper used to map a subject to a POSIX account
      */
-    public DFPMObligationHandler(String id, int precedence, AccountMapper mapper) {
-        super(id,
-              AuthorizationProfileConstants.ID_OBLIGATION_LOCAL_ENV_MAP,
-              precedence);
-
-        if (mapper == null) {
-            throw new IllegalArgumentException("Account mapper may not be null");
-        }
-        accountMapper= mapper;
+    public DFPMObligationHandler(String name, int precedence,
+            AccountMapper mapper) {
+        this(name,
+             AuthorizationProfileConstants.ID_OBLIGATION_LOCAL_ENV_MAP,
+             mapper);
+        setHanderPrecedence(precedence);
     }
 
     /** {@inheritDoc} */
@@ -137,7 +152,7 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
             List<Obligation> removedObligations= new ArrayList<Obligation>();
             while (obligationItr.hasNext()) {
                 obligation= obligationItr.next();
-                if (AuthorizationProfileConstants.ID_OBLIGATION_LOCAL_ENV_MAP.equals(obligation.getId())) {
+                if (getObligationId().equals(obligation.getId())) {
                     removedObligations.add(obligation);
                 }
             }
