@@ -20,9 +20,9 @@ set -e
 
 NAME=pepd
 HOME="usr/share/argus/${NAME}"
+NAMECTL="${NAME}ctl"
 
-prefix=
-bin_prefix="$prefix/.."
+root_prefix="../../../.."
 
 function create_symlink(){
 	if [ -e $2 ]; then
@@ -30,16 +30,18 @@ function create_symlink(){
 	fi
 	ln -vs $1 $2
 }
+# pepdctl: /usr/sbin/pepdctl -> /usr/share/argus/pepd/sbin/pepdctl
+create_symlink ../../usr/share/argus/$NAME/sbin/$NAMECTL usr/sbin/$NAMECTL
 
 # conf: /usr/share/argus/pepd/conf -> /etc/argus/pepd
-create_symlink /etc/argus/$NAME $HOME/conf
+create_symlink $root_prefix/etc/argus/$NAME $HOME/conf
 
 # lib: /usr/share/argus/pepd/lib -> /var/lib/argus/pepd/lib
-create_symlink /var/lib/argus/$NAME/lib $HOME/lib
+create_symlink $root_prefix/var/lib/argus/$NAME/lib $HOME/lib
 
 # logs: /usr/share/argus/pepd/logs -> /var/log/argus/pepd
-create_symlink /var/log/argus/$NAME $HOME/logs
+create_symlink $root_prefix/var/log/argus/$NAME $HOME/logs
 
 # doc: /usr/share/argus/pepd/doc -> /usr/share/doc/argus/pepd
-create_symlink /usr/share/doc/argus/$NAME $HOME/doc
+create_symlink $root_prefix/usr/share/doc/argus/$NAME $HOME/doc
 
