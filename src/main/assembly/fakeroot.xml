@@ -22,7 +22,6 @@ Installed in a fakeroot directory structure.
 <assembly>
     <id>fakeroot</id>
     <formats>
-        <format>tar.gz</format>
         <format>dir</format>
     </formats>
     <includeBaseDirectory>false</includeBaseDirectory>
