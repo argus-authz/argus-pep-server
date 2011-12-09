@@ -49,7 +49,7 @@ public class PEPDaemonConfiguration extends AbstractServiceConfiguration {
 
     /** Constructor. */
     public PEPDaemonConfiguration() {
-        super(new ServiceMetrics(Version.getServiceIdentifier()));
+        super(new ServiceMetrics(Version.getServiceName(),Version.getServiceVersion()));
         pdpEndpoints = null;
         maxCachedResponses = 0;
         cachedResponseTTL = 0;
