@@ -119,7 +119,7 @@ function version {
 
 
 function print_help {
-   echo "PEP Daemon control script"
+   echo "PEP Server control script"
    echo "Usage:"
    echo "  $0 start   - to start the service"
    echo "  $0 stop    - to stop the service" 
