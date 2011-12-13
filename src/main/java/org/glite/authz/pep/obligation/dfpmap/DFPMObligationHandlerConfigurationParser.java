@@ -26,7 +26,7 @@ import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.common.config.IniConfigUtil;
 import org.glite.authz.common.config.IniSectionConfigurationParser;
 import org.glite.authz.common.fqan.FQAN;
-import org.glite.authz.common.profile.AuthorizationProfileConstants;
+import org.glite.authz.common.profile.GLiteAuthorizationProfileConstants;
 import org.glite.authz.pep.obligation.ObligationHandler;
 import org.glite.authz.pep.obligation.dfpmap.UpdatingDFPM.DFPMFactory;
 
@@ -52,7 +52,7 @@ public class DFPMObligationHandlerConfigurationParser implements
      * The default value of the {@value #HANDLED_OBLIGATION_ID_PROP}
      * property: {@value} .
      */
-    public static final String HANDLED_OBLIGATION_ID_DEFAULT= AuthorizationProfileConstants.ID_OBLIGATION_LOCAL_ENV_MAP;
+    public static final String HANDLED_OBLIGATION_ID_DEFAULT= GLiteAuthorizationProfileConstants.ID_OBLIGATION_LOCAL_ENV_MAP;
 
     /**
      * The name of the {@value} property which gives the absolute path to the

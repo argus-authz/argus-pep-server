@@ -25,7 +25,7 @@ import junit.framework.TestCase;
 
 import org.glite.authz.common.model.Attribute;
 import org.glite.authz.common.model.Subject;
-import org.glite.authz.common.profile.AuthorizationProfileConstants;
+import org.glite.authz.common.profile.GLiteAuthorizationProfileConstants;
 
 /**
  * AuthorizationProfilePIPTest
@@ -60,7 +60,7 @@ public class AbstractX509PIPTest extends TestCase {
                                            Attribute.DT_X500_NAME);
         subjectId.getValues().add(wrongDN);
         subject.getAttributes().add(subjectId);
-        Attribute subjectIssuer= new Attribute(AuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ISSUER,
+        Attribute subjectIssuer= new Attribute(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ISSUER,
                                                Attribute.DT_X500_NAME);
         subjectIssuer.getValues().addAll(wrongIssuers);
         subject.getAttributes().add(subjectIssuer);
@@ -87,13 +87,13 @@ public class AbstractX509PIPTest extends TestCase {
                     assertEquals(correctDN, value);
                 }
             }
-            else if (attribute.getId().equals(AuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ISSUER)) {
+            else if (attribute.getId().equals(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ISSUER)) {
                 for (Object object : attribute.getValues()) {
                     assertTrue(correctIssuers.contains(object));
                 }
 
             }
-            else if (attribute.getId().equals(AuthorizationProfileConstants.ID_ATTRIBUTE_VIRTUAL_ORGANIZATION)) {
+            else if (attribute.getId().equals(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_VIRTUAL_ORGANIZATION)) {
                 for (Object object : attribute.getValues()) {
                     assertEquals(voName, object.toString());
                     voNamePresent= true;
@@ -111,11 +111,11 @@ public class AbstractX509PIPTest extends TestCase {
                                            Attribute.DT_X500_NAME);
         subjectId.getValues().add(correctDN);
         certAttributes.add(subjectId);
-        Attribute subjectIssuer= new Attribute(AuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ISSUER,
+        Attribute subjectIssuer= new Attribute(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ISSUER,
                                                Attribute.DT_X500_NAME);
         subjectIssuer.getValues().addAll(correctIssuers);
         certAttributes.add(subjectIssuer);
-        Attribute vo= new Attribute(AuthorizationProfileConstants.ID_ATTRIBUTE_VIRTUAL_ORGANIZATION,
+        Attribute vo= new Attribute(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_VIRTUAL_ORGANIZATION,
                                     Attribute.DT_STRING);
         vo.getValues().add(voName);
         certAttributes.add(vo);

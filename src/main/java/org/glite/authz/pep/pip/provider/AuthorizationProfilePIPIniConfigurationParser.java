@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.glite.authz.common.config.ConfigurationException;
-import org.glite.authz.common.profile.AuthorizationProfileConstants;
+import org.glite.authz.common.profile.GLiteAuthorizationProfileConstants;
 import org.glite.authz.common.util.Strings;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
 import org.glite.voms.PKIStore;
@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * The PIP applies to request which have a profile identifier
- * {@value AuthorizationProfileConstants#ID_ATTRIBUTE_PROFILE_ID} defined in the request environment. By default accept
+ * {@value GLiteAuthorizationProfileConstants#ID_ATTRIBUTE_PROFILE_ID} defined in the request environment. By default accept
  * all profile identifier values, but a list (space separated) of accepted profile identifier values can be specified in the ini config
  * file with the {@value #ACCEPTED_PROFILE_IDS_PROP} property.
  * <p>

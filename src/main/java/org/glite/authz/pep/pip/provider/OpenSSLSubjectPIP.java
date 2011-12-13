@@ -22,7 +22,7 @@ import java.util.List;
 import org.glite.authz.common.model.Attribute;
 import org.glite.authz.common.model.Request;
 import org.glite.authz.common.model.Subject;
-import org.glite.authz.common.profile.AuthorizationProfileConstants;
+import org.glite.authz.common.profile.GLiteAuthorizationProfileConstants;
 import org.glite.authz.common.util.LazyList;
 import org.glite.authz.pep.pip.PIPProcessingException;
 import org.glite.security.util.DN;
@@ -36,10 +36,10 @@ import org.slf4j.LoggerFactory;
  * RFC2253 format DN.
  * <p>
  * By default, all request subject attributes
- * {@value AuthorizationProfileConstants#ID_ATTRIBUTE_SUBJECT_ID} and
- * {@value AuthorizationProfileConstants#ID_ATTRIBUTE_SUBJECT_ISSUER} with the
- * data type of {@value AuthorizationProfileConstants#DATATYPE_STRING} will be
- * converted to their {@value AuthorizationProfileConstants#DATATYPE_X500_NAME}
+ * {@value GLiteAuthorizationProfileConstants#ID_ATTRIBUTE_SUBJECT_ID} and
+ * {@value GLiteAuthorizationProfileConstants#ID_ATTRIBUTE_SUBJECT_ISSUER} with the
+ * data type of {@value GLiteAuthorizationProfileConstants#DATATYPE_STRING} will be
+ * converted to their {@value GLiteAuthorizationProfileConstants#DATATYPE_X500_NAME}
  * data type.
  * 
  * @see DNHandler
@@ -51,14 +51,14 @@ public final class OpenSSLSubjectPIP extends AbstractPolicyInformationPoint {
     private final Logger log= LoggerFactory.getLogger(OpenSSLSubjectPIP.class);
 
     /** Default list of subject attribute IDs what must be converted: {@value} */
-    public final static List<String> DEFAULT_OPENSSL_SUBJECT_ATTRIBUTE_IDS= Arrays.asList(AuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ISSUER,
-                                                                                  AuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ID);
+    public final static List<String> DEFAULT_OPENSSL_SUBJECT_ATTRIBUTE_IDS= Arrays.asList(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ISSUER,
+                                                                                  GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ID);
 
     /**
      * Default list of subject attribute datatype what must be converted: *
      * {@value}
      */
-    public final static List<String> DEFAULT_OPENSSL_SUBJECT_ATTRIBUTE_DATATYPES= Arrays.asList(AuthorizationProfileConstants.DATATYPE_STRING);
+    public final static List<String> DEFAULT_OPENSSL_SUBJECT_ATTRIBUTE_DATATYPES= Arrays.asList(GLiteAuthorizationProfileConstants.DATATYPE_STRING);
 
     /** List of subject attribute IDs what must be converted */
     private List<String> subjectAttributeIDs_= null;
@@ -89,7 +89,7 @@ public final class OpenSSLSubjectPIP extends AbstractPolicyInformationPoint {
                         && subjectAttributeIDs_.contains(attribute.getId())) {
                     applied= true;
                     Attribute rfcAttribute= new Attribute(attribute.getId(),
-                                                          AuthorizationProfileConstants.DATATYPE_X500_NAME,
+                                                          GLiteAuthorizationProfileConstants.DATATYPE_X500_NAME,
                                                           attribute.getIssuer());
                     for (Object value : attribute.getValues()) {
                         String opensslDN= value.toString();

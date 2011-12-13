@@ -22,7 +22,7 @@ import org.glite.authz.common.model.Attribute;
 import org.glite.authz.common.model.Request;
 import org.glite.authz.common.model.Resource;
 import org.glite.authz.common.model.Subject;
-import org.glite.authz.common.profile.AuthorizationProfileConstants;
+import org.glite.authz.common.profile.GLiteAuthorizationProfileConstants;
 import org.glite.authz.pep.pip.PIPException;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
 
@@ -69,23 +69,23 @@ public class OpenSSLSubjectPIPTest extends TestCase {
     public void testOpenSSLSubjectPIP() throws PIPException {
         // Subject
         Subject openSSLSubject= new Subject();
-        Attribute subjectId= new Attribute(AuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ID,
-                                           AuthorizationProfileConstants.DATATYPE_STRING);
+        Attribute subjectId= new Attribute(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ID,
+                                           GLiteAuthorizationProfileConstants.DATATYPE_STRING);
         subjectId.getValues().add(opensslDN);
         openSSLSubject.getAttributes().add(subjectId);
-        Attribute subjectIssuer= new Attribute(AuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ISSUER,
-                                               AuthorizationProfileConstants.DATATYPE_STRING);
+        Attribute subjectIssuer= new Attribute(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ISSUER,
+                                               GLiteAuthorizationProfileConstants.DATATYPE_STRING);
         subjectIssuer.getValues().add(opensslIssuingCA);
         subjectIssuer.getValues().add(opensslRootCA);
         openSSLSubject.getAttributes().add(subjectIssuer);
         // Resource
         Resource resource= new Resource();
-        Attribute resourceId= new Attribute(AuthorizationProfileConstants.ID_ATTRIBUTE_RESOURCE_ID);
+        Attribute resourceId= new Attribute(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_RESOURCE_ID);
         resourceId.getValues().add(rid);
         resource.getAttributes().add(resourceId);
         // Action
         Action action= new Action();
-        Attribute actionId= new Attribute(AuthorizationProfileConstants.ID_ATTRIBUTE_ACTION_ID);
+        Attribute actionId= new Attribute(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_ACTION_ID);
         actionId.getValues().add(aid);
         action.getAttributes().add(actionId);
         // Request
@@ -104,11 +104,11 @@ public class OpenSSLSubjectPIPTest extends TestCase {
         // check for converted DN in the request
         for (Subject subject : request.getSubjects()) {
             for (Attribute attribute : subject.getAttributes()) {
-                if (AuthorizationProfileConstants.DATATYPE_X500_NAME.equals(attribute.getDataType())) {
-                    if (AuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ID.equals(attribute.getId())) {
+                if (GLiteAuthorizationProfileConstants.DATATYPE_X500_NAME.equals(attribute.getDataType())) {
+                    if (GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ID.equals(attribute.getId())) {
                         assertTrue("OpenSSL DN to RFC2253 convertion failed: " + attribute,attribute.getValues().contains(rfc2253DN));
                     }
-                    else if (AuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ISSUER.equals(attribute.getId())) {
+                    else if (GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ISSUER.equals(attribute.getId())) {
                         assertTrue("OpenSSL DN to RFC2253 convertion failed: " + attribute, attribute.getValues().contains(rfc2253RootCA) && attribute.getValues().contains(rfc2253IssuingCA));
                     }
                 }

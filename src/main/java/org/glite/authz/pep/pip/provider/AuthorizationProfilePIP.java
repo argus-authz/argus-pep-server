@@ -31,7 +31,7 @@ import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.common.model.Attribute;
 import org.glite.authz.common.model.Environment;
 import org.glite.authz.common.model.Request;
-import org.glite.authz.common.profile.AuthorizationProfileConstants;
+import org.glite.authz.common.profile.GLiteAuthorizationProfileConstants;
 import org.glite.authz.pep.pip.PIPProcessingException;
 import org.glite.voms.FQAN;
 import org.glite.voms.PKIStore;
@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * The PIP applies to request which have a profile identifier
- * {@value AuthorizationProfileConstants#ID_ATTRIBUTE_PROFILE_ID} defined in the request environment. By default accept
+ * {@value GLiteAuthorizationProfileConstants#ID_ATTRIBUTE_PROFILE_ID} defined in the request environment. By default accept
  * all profile identifier values, but a list of accepted profile identifier values can be specified.
  * <p>
  * The PIP extracts information from a X.509, version 3, certificate. The certificate may include VOMS attribute
@@ -83,7 +83,7 @@ public class AuthorizationProfilePIP extends AbstractX509PIP {
 
     /**
      * Constructor with a list of accepted profile IDs found in the request environment attribute
-     * {@value AuthorizationProfileConstants#ID_ATTRIBUTE_PROFILE_ID}
+     * {@value GLiteAuthorizationProfileConstants#ID_ATTRIBUTE_PROFILE_ID}
      * 
      * @param pipID ID of this PIP
      * @param requireProxy whether a subject's certificate chain must require a proxy in order to be valid
@@ -124,11 +124,11 @@ public class AuthorizationProfilePIP extends AbstractX509PIP {
         Environment env = request.getEnvironment();
         if (env != null) {
             for (Attribute attrib : env.getAttributes()) {
-                if (AuthorizationProfileConstants.ID_ATTRIBUTE_PROFILE_ID.equals(attrib.getId())) {
+                if (GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_PROFILE_ID.equals(attrib.getId())) {
                     if (acceptedProfileIds_ == null) {
                         // accept all profile IDs
                         log.trace("PIP '{}' accept all {} value", getId(),
-                                AuthorizationProfileConstants.ID_ATTRIBUTE_PROFILE_ID);
+                                GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_PROFILE_ID);
                         return true;
                     } else if (acceptedProfileIds_.isEmpty()) {
                         // accept none
@@ -190,7 +190,7 @@ public class AuthorizationProfilePIP extends AbstractX509PIP {
 
         // set the issuer DN attribute.
         attribute = new Attribute();
-        attribute.setId(AuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ISSUER);
+        attribute.setId(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ISSUER);
         attribute.setDataType(Attribute.DT_X500_NAME);
         for (int i = 1; i < certChain.length; i++) {
             attribute.getValues().add(certChain[i].getSubjectX500Principal().getName(X500Principal.RFC2253));
@@ -232,7 +232,7 @@ public class AuthorizationProfilePIP extends AbstractX509PIP {
         HashSet<Attribute> vomsAttributes = new HashSet<Attribute>();
 
         Attribute voAttribute = new Attribute();
-        voAttribute.setId(AuthorizationProfileConstants.ID_ATTRIBUTE_VIRTUAL_ORGANIZATION);
+        voAttribute.setId(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_VIRTUAL_ORGANIZATION);
         voAttribute.setDataType(Attribute.DT_STRING);
         voAttribute.getValues().add(attributeCertificate.getVO());
         log.debug("Extracted attribute: {}", voAttribute);
@@ -241,16 +241,16 @@ public class AuthorizationProfilePIP extends AbstractX509PIP {
         List<FQAN> fqans = attributeCertificate.getListOfFQAN();
         if (fqans != null && !fqans.isEmpty()) {
             Attribute primaryFqanAttribute = new Attribute();
-            primaryFqanAttribute.setId(AuthorizationProfileConstants.ID_ATTRIBUTE_PRIMARY_FQAN);
-            primaryFqanAttribute.setDataType(AuthorizationProfileConstants.DATATYPE_FQAN);
+            primaryFqanAttribute.setId(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_PRIMARY_FQAN);
+            primaryFqanAttribute.setDataType(GLiteAuthorizationProfileConstants.DATATYPE_FQAN);
             primaryFqanAttribute.getValues().add(fqans.get(0).getFQAN());
             log.debug("Extracted attribute: {}", primaryFqanAttribute);
             vomsAttributes.add(primaryFqanAttribute);
 
             // handle rest of the fqans
             Attribute fqanAttribute = new Attribute();
-            fqanAttribute.setId(AuthorizationProfileConstants.ID_ATTRIBUTE_FQAN);
-            fqanAttribute.setDataType(AuthorizationProfileConstants.DATATYPE_FQAN);
+            fqanAttribute.setId(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_FQAN);
+            fqanAttribute.setDataType(GLiteAuthorizationProfileConstants.DATATYPE_FQAN);
             for (FQAN fqan : fqans) {
                 fqanAttribute.getValues().add(fqan.getFQAN());
             }

@@ -32,7 +32,7 @@ import org.glite.authz.common.model.Obligation;
 import org.glite.authz.common.model.Request;
 import org.glite.authz.common.model.Result;
 import org.glite.authz.common.model.Subject;
-import org.glite.authz.common.profile.AuthorizationProfileConstants;
+import org.glite.authz.common.profile.GLiteAuthorizationProfileConstants;
 import org.glite.authz.pep.obligation.AbstractObligationHandler;
 import org.glite.authz.pep.obligation.ObligationProcessingException;
 
@@ -41,12 +41,12 @@ import org.slf4j.LoggerFactory;
 
 /**
  * An obligation handler that transforms an
- * {@value AuthorizationProfileConstants#ID_OBLIGATION_LOCAL_ENV_MAP} obligation
- * in to a {@value AuthorizationProfileConstants#ID_OBLIGATION_POSIX_ENV_MAP}
+ * {@value GLiteAuthorizationProfileConstants#ID_OBLIGATION_LOCAL_ENV_MAP} obligation
+ * in to a {@value GLiteAuthorizationProfileConstants#ID_OBLIGATION_POSIX_ENV_MAP}
  * obligation. The POSIX login name and primary and secondary group values are
  * determined by mapping the {@value Attribute#ID_SUB_ID},
- * {@value AuthorizationProfileConstants#ID_ATTRIBUTE_PRIMARY_FQAN} and
- * {@value AuthorizationProfileConstants#ID_ATTRIBUTE_FQAN} attributes found
+ * {@value GLiteAuthorizationProfileConstants#ID_ATTRIBUTE_PRIMARY_FQAN} and
+ * {@value GLiteAuthorizationProfileConstants#ID_ATTRIBUTE_FQAN} attributes found
  * within the {@link Subject} of the authorization request.
  */
 public class DFPMObligationHandler extends AbstractObligationHandler {
@@ -85,7 +85,7 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
 
     /**
      * Constructor. Default handled obligation ID:
-     * {@value AuthorizationProfileConstants#ID_OBLIGATION_LOCAL_ENV_MAP}
+     * {@value GLiteAuthorizationProfileConstants#ID_OBLIGATION_LOCAL_ENV_MAP}
      * 
      * @param name
      *            the obligation handler name
@@ -94,7 +94,7 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
      */
     public DFPMObligationHandler(String name, AccountMapper mapper) {
         this(name,
-             AuthorizationProfileConstants.ID_OBLIGATION_LOCAL_ENV_MAP,
+             GLiteAuthorizationProfileConstants.ID_OBLIGATION_LOCAL_ENV_MAP,
              mapper);
     }
 
@@ -111,7 +111,7 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
     public DFPMObligationHandler(String name, int precedence,
             AccountMapper mapper) {
         this(name,
-             AuthorizationProfileConstants.ID_OBLIGATION_LOCAL_ENV_MAP,
+             GLiteAuthorizationProfileConstants.ID_OBLIGATION_LOCAL_ENV_MAP,
              mapper);
         setHanderPrecedence(precedence);
     }
@@ -290,7 +290,7 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
         Attribute primaryFQANAttribute= null;
 
         for (Attribute attribute : subject.getAttributes()) {
-            if (AuthorizationProfileConstants.ID_ATTRIBUTE_PRIMARY_FQAN.equals(attribute.getId())) {
+            if (GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_PRIMARY_FQAN.equals(attribute.getId())) {
                 log.debug("Extracted primary FQAN attribute from request: {}",
                           attribute);
                 primaryFQANAttribute= attribute;
@@ -303,7 +303,7 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
             return null;
         }
 
-        if (!AuthorizationProfileConstants.DATATYPE_FQAN.equals(primaryFQANAttribute.getDataType())) {
+        if (!GLiteAuthorizationProfileConstants.DATATYPE_FQAN.equals(primaryFQANAttribute.getDataType())) {
             log.error("Subject primary FQAN attribute of the authorization request was of the incorrect data type: {}",
                       primaryFQANAttribute.getDataType());
             throw new ObligationProcessingException("Invalid request, subject attribute of invalid data type");
@@ -346,7 +346,7 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
         Attribute secondaryFQANsAttribute= null;
 
         for (Attribute attribute : subject.getAttributes()) {
-            if (AuthorizationProfileConstants.ID_ATTRIBUTE_FQAN.equals(attribute.getId())) {
+            if (GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_FQAN.equals(attribute.getId())) {
                 log.debug("Extracted secondary FQAN attribute from request: {}",
                           attribute);
                 secondaryFQANsAttribute= attribute;
@@ -359,7 +359,7 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
             return null;
         }
 
-        if (!AuthorizationProfileConstants.DATATYPE_FQAN.equals(secondaryFQANsAttribute.getDataType())) {
+        if (!GLiteAuthorizationProfileConstants.DATATYPE_FQAN.equals(secondaryFQANsAttribute.getDataType())) {
             log.error("Subject secondary FQAN attribute of the authorization request was of the incorrect data type: {}",
                       secondaryFQANsAttribute.getDataType());
             throw new ObligationProcessingException("Invalid request, subject attribute of invalid data type");
@@ -400,19 +400,19 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
      *            current result
      * @param account
      *            account whose information will be used to populate the
-     *            {@link AuthorizationProfileConstants#ID_ATTRIBUTE_USER_ID},
-     *            {@link AuthorizationProfileConstants#ID_ATTRIBUTE_PRIMARY_GROUP_ID}
+     *            {@link GLiteAuthorizationProfileConstants#ID_ATTRIBUTE_USER_ID},
+     *            {@link GLiteAuthorizationProfileConstants#ID_ATTRIBUTE_PRIMARY_GROUP_ID}
      *            , and
-     *            {@link AuthorizationProfileConstants#ID_ATTRIBUTE_GROUP_ID}
+     *            {@link GLiteAuthorizationProfileConstants#ID_ATTRIBUTE_GROUP_ID}
      *            attribute assignments of the obligation
      */
     protected void addPosixMappingObligation(Result result, PosixAccount account) {
         Obligation posixMapping= new Obligation();
-        posixMapping.setId(AuthorizationProfileConstants.ID_OBLIGATION_POSIX_ENV_MAP);
+        posixMapping.setId(GLiteAuthorizationProfileConstants.ID_OBLIGATION_POSIX_ENV_MAP);
         posixMapping.setFulfillOn(Result.DECISION_PERMIT);
 
         AttributeAssignment userid= new AttributeAssignment();
-        userid.setAttributeId(AuthorizationProfileConstants.ID_ATTRIBUTE_USER_ID);
+        userid.setAttributeId(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_USER_ID);
         userid.setDataType(Attribute.DT_STRING);
         userid.setValue(account.getLoginName());
         posixMapping.getAttributeAssignments().add(userid);
@@ -420,14 +420,14 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
         if (account.getPrimaryGroup() != null) {
             String groupId= account.getPrimaryGroup();
             AttributeAssignment primaryGroupId= new AttributeAssignment();
-            primaryGroupId.setAttributeId(AuthorizationProfileConstants.ID_ATTRIBUTE_PRIMARY_GROUP_ID);
+            primaryGroupId.setAttributeId(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_PRIMARY_GROUP_ID);
             primaryGroupId.setDataType(Attribute.DT_STRING);
             primaryGroupId.setValue(groupId);
             posixMapping.getAttributeAssignments().add(primaryGroupId);
             // BUG FIX: profile attribute/group-id doesn't contain primary group
             // see https://savannah.cern.ch/bugs/index.php?64340
             AttributeAssignment secondaryGroupId= new AttributeAssignment();
-            secondaryGroupId.setAttributeId(AuthorizationProfileConstants.ID_ATTRIBUTE_GROUP_ID);
+            secondaryGroupId.setAttributeId(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_GROUP_ID);
             secondaryGroupId.setDataType(Attribute.DT_STRING);
             secondaryGroupId.setValue(groupId);
             posixMapping.getAttributeAssignments().add(secondaryGroupId);
@@ -437,7 +437,7 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
                 && !account.getSecondaryGroups().isEmpty()) {
             for (String secondaryGroup : account.getSecondaryGroups()) {
                 AttributeAssignment secondaryGroupId= new AttributeAssignment();
-                secondaryGroupId.setAttributeId(AuthorizationProfileConstants.ID_ATTRIBUTE_GROUP_ID);
+                secondaryGroupId.setAttributeId(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_GROUP_ID);
                 secondaryGroupId.setDataType(Attribute.DT_STRING);
                 secondaryGroupId.setValue(secondaryGroup);
                 posixMapping.getAttributeAssignments().add(secondaryGroupId);

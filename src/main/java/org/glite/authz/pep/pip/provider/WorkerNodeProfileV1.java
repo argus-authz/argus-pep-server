@@ -19,12 +19,12 @@ package org.glite.authz.pep.pip.provider;
 
 import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.common.model.Attribute;
-import org.glite.authz.common.profile.AuthorizationProfileConstants;
+import org.glite.authz.common.profile.GLiteAuthorizationProfileConstants;
 import org.glite.voms.PKIStore;
 
 /**
- * The PIP applies to request which have the attribute {@value AuthorizationProfileConstants#ID_ATTRIBUTE_PROFILE_ID}
- * with the value {@value AuthorizationProfileConstants#GRID_WN_AUTHZ_V1_PROFILE_ID} defined in the request environment.
+ * The PIP applies to request which have the attribute {@value GLiteAuthorizationProfileConstants#ID_ATTRIBUTE_PROFILE_ID}
+ * with the value {@value GLiteAuthorizationProfileConstants#GRID_WN_AUTHZ_V1_PROFILE_ID} defined in the request environment.
  * <p>
  * The PIP extracts information from a X.509, version 3, certificate. The certificate may include VOMS attribute
  * certificates. All extract information is added to the subject(s) containing a valid certificate chain.
@@ -53,6 +53,6 @@ public class WorkerNodeProfileV1 extends AuthorizationProfilePIP {
     public WorkerNodeProfileV1(String pipID, boolean requireProxy, PKIStore eeTrustMaterial, PKIStore acTrustMaterial,
             boolean performPKIXValidation) throws ConfigurationException {
         super(pipID, requireProxy, eeTrustMaterial, acTrustMaterial, performPKIXValidation,
-                new String[] { AuthorizationProfileConstants.GRID_WN_AUTHZ_V1_PROFILE_ID });
+                new String[] { GLiteAuthorizationProfileConstants.GRID_WN_AUTHZ_V1_PROFILE_ID });
     }
 }
