@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
  * end-entity certificate.
  * 
  * @see <a href="https://twiki.cnaf.infn.it/cgi-bin/twiki/view/VOMS">VOMS website</a>
+ * @deprecated Legacy profile, do not use it.
  */
 public class SCASLegacyPIP extends AbstractX509PIP {
 
@@ -119,6 +120,11 @@ public class SCASLegacyPIP extends AbstractX509PIP {
     /** {@inheritDoc} */
     protected String getCertificateAttributeId() {
         return X509_CERT_CHAIN_ID;
+    }
+
+    /** {@inheritDoc} */
+    protected String getCertificateAttributeDatatype() {
+        return Attribute.DT_BASE64_BINARY;
     }
 
     /** {@inheritDoc} */

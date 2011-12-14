@@ -182,7 +182,7 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
         X509Certificate endEntityCert;
         Collection<Attribute> certAttributes;
         for (Subject subject : request.getSubjects()) {
-            certChain= getCertificateChain(subject);
+            certChain= extractCertificateChain(subject);
             if (certChain == null) {
                 continue;
             }
@@ -218,8 +218,10 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
             }
         }
 
-        String errMsg= "Subject did not contain the required certificate chain in "
-                + getCertificateAttributeId();
+        String errMsg= "Subject did not contain the required certificate chain in attribute: "
+                + getCertificateAttributeId()
+                + " datatype: "
+                + getCertificateAttributeDatatype();
         log.error(errMsg);
         throw new PIPProcessingException(errMsg);
     }
@@ -245,8 +247,8 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
                         && subjectAttribute.getDataType().equals(certAttributeDataType)) {
                     alreadyExists= true;
                     log.debug("Subject {} already contains values, replace them with {}",
-                             subjectAttribute,
-                             certAttribute);
+                              subjectAttribute,
+                              certAttribute);
                     subjectAttribute.getValues().clear();
                     subjectAttribute.getValues().addAll(certAttribute.getValues());
                 }
@@ -269,26 +271,31 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
     protected abstract boolean appliesToRequest(Request request);
 
     /**
-     * Gets the certificate chain for the subject's {@value #X509_CERT_CHAIN_ID}
-     * attribute.
+     * Gets the certificate chain from the subject's attribute id and datatype
      * 
      * @param subject
      *            subject from which to extract the certificate chain
      * 
-     * @return the extracted certificate chain or null if the subject did not
-     *         contain a chain of X.509 version 3 certificates
+     * @return the extracted certificate chain or <code>null</code> if the
+     *         subject did not contain a chain of X.509 version 3 certificates
      * 
      * @throws PIPProcessingException
      *             thrown if the subject contained more than one certificate
      *             chain or if the chain was not properly PEM encoded
+     * 
+     * @see #getCertificateAttributeId()
+     * @see #getCertificateAttributeDatatype()
      */
-    private X509Certificate[] getCertificateChain(Subject subject)
+    protected X509Certificate[] extractCertificateChain(Subject subject)
             throws PIPProcessingException {
         String pemCertChain= null;
 
         for (Attribute attribute : subject.getAttributes()) {
+            // check attribute Id and datatype
             if (Strings.safeEquals(attribute.getId(),
-                                   getCertificateAttributeId())) {
+                                   getCertificateAttributeId())
+                    && Strings.safeEquals(attribute.getDataType(),
+                                          getCertificateAttributeDatatype())) {
                 if (pemCertChain != null || attribute.getValues().size() < 1) {
                     String errorMsg= "Subject contains more than one X509 certificate chain.";
                     log.error(errorMsg);
@@ -347,9 +354,18 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
      * user's certificate.
      * 
      * @return ID of the Subject attribute which is expected to carry the user's
-     *         certifica
+     *         certificate
      */
     protected abstract String getCertificateAttributeId();
+
+    /**
+     * Gets the datatype of the Subject attribute which is expected to carry the
+     * user's certificate.
+     * 
+     * @return datatype of the Subject attribute which is expected to carry the
+     *         user's certifica
+     */
+    protected abstract String getCertificateAttributeDatatype();
 
     /**
      * Processes one certificate chain and adds the information to the subjects

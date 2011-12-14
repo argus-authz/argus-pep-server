@@ -49,10 +49,10 @@ import org.slf4j.LoggerFactory;
  * 
  * @see <a href="https://twiki.cnaf.infn.it/cgi-bin/twiki/view/VOMS">VOMS website</a>
  */
-public class AuthorizationProfilePIPIniConfigurationParser extends AbstractX509PIPIniConfigurationParser {
+public class GLiteAuthorizationProfilePIPIniConfigurationParser extends AbstractX509PIPIniConfigurationParser {
 
     /** Class logger. */
-    private Logger log = LoggerFactory.getLogger(AuthorizationProfilePIPIniConfigurationParser.class);
+    private Logger log = LoggerFactory.getLogger(GLiteAuthorizationProfilePIPIniConfigurationParser.class);
 
     /**
      * The name of the {@value} property to define the accepted Grid Authorization Profile ID to process.
@@ -73,7 +73,7 @@ public class AuthorizationProfilePIPIniConfigurationParser extends AbstractX509P
             log.info("{}: accepted profile IDs: all", pipId);
         }
 
-        AuthorizationProfilePIP pip = new AuthorizationProfilePIP(pipId, requireProxy, trustMaterial, acTrustMaterial,
+        GLiteAuthorizationProfilePIP pip = new GLiteAuthorizationProfilePIP(pipId, requireProxy, trustMaterial, acTrustMaterial,
                 performPKIXValidation, acceptedProfileIds);
         return pip;
 

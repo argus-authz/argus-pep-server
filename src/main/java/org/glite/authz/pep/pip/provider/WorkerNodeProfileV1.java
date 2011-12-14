@@ -36,8 +36,9 @@ import org.glite.voms.PKIStore;
  * end-entity certificate.
  * 
  * @see <a href="https://twiki.cnaf.infn.it/cgi-bin/twiki/view/VOMS">VOMS website</a>
+ * @deprecated uses the {@link GLiteAuthorizationProfilePIP} instead.
  */
-public class WorkerNodeProfileV1 extends AuthorizationProfilePIP {
+public class WorkerNodeProfileV1 extends GLiteAuthorizationProfilePIP {
 
     /**
      * The constructor for this PIP. This constructor enables support for the VOMS attribute certificates.
