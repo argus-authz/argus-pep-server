@@ -19,6 +19,7 @@ package org.glite.authz.pep.pip.provider;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
+import java.security.Security;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -50,6 +51,7 @@ import org.glite.voms.VOMSAttribute;
 import org.glite.voms.VOMSValidator;
 import org.glite.voms.ac.ACValidator;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,11 +82,21 @@ import org.slf4j.LoggerFactory;
  */
 public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
 
+    static {
+        /* add BouncyCastle security provider if not already done */
+        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
+            Security.addProvider(new BouncyCastleProvider());
+        }
+    }
+
     /** List of accepted profile IDs, if <code>null</code> accept all profile Id */
     private List<String> acceptedProfileIds_= null;
 
     /** Class logger. */
     private Logger log= LoggerFactory.getLogger(CommonXACMLAuthorizationProfilePIP.class);
+
+    /** Certificate factory */
+    private CertificateFactory cf_;
 
     /**
      * The constructor for this PIP. This constructor enables support for the
@@ -113,6 +125,14 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
             throws ConfigurationException {
         super(pipID, requireProxy, eeTrustMaterial, acTrustMaterial);
         performPKIXValidation(performPKIXValidation);
+        try {
+            cf_= CertificateFactory.getInstance("X.509",
+                                                Security.getProvider(BouncyCastleProvider.PROVIDER_NAME));
+        } catch (CertificateException e) {
+            throw new ConfigurationException("Fail to get instance of the X.509 certificate factory",
+                                             e);
+        }
+
     }
 
     /**
@@ -237,7 +257,6 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
         return CommonXACMLAuthorizationProfileConstants.DATATYPE_BASE64_BINARY;
     }
 
- 
     /**
      * Processes one certificate chain and adds the information to the subjects
      * in the request.
@@ -422,13 +441,6 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
      */
     protected X509Certificate[] extractCertificateChain(Subject subject)
             throws PIPProcessingException {
-        CertificateFactory cf;
-        try {
-            cf= CertificateFactory.getInstance("X.509");
-        } catch (CertificateException e) {
-            e.printStackTrace();
-            return null;
-        }
         List<X509Certificate> certChain= new ArrayList<X509Certificate>();
         for (Attribute attribute : subject.getAttributes()) {
             // check attribute Id and datatype
@@ -441,7 +453,7 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
                     byte[] derBytes= Base64.decode((String) value);
                     BufferedInputStream bis= new BufferedInputStream(new ByteArrayInputStream(derBytes));
                     try {
-                        X509Certificate x509= (X509Certificate) cf.generateCertificate(bis);
+                        X509Certificate x509= (X509Certificate) cf_.generateCertificate(bis);
                         // log.trace("X.509 cert {} decoded ",
                         // x509.getSubjectX500Principal().getName());
                         certChain.add(x509);
