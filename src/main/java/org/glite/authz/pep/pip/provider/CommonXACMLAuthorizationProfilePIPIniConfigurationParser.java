@@ -27,7 +27,7 @@ import org.glite.authz.common.util.Strings;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
 import org.glite.voms.PKIStore;
 
-import org.ini4j.Ini.Section;
+import org.ini4j.Ini;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +72,7 @@ public class CommonXACMLAuthorizationProfilePIPIniConfigurationParser extends
     protected static String ACCEPTED_PROFILE_IDS_PROP= "acceptedProfileIDs";
 
     /** {@inheritDoc} */
-    protected PolicyInformationPoint buildInformationPoint(Section iniConfig,
+    protected PolicyInformationPoint buildInformationPoint(Ini.Section iniConfig,
             boolean requireProxy, PKIStore trustMaterial,
             PKIStore acTrustMaterial, boolean performPKIXValidation)
             throws ConfigurationException {

@@ -35,7 +35,6 @@ import org.glite.authz.pep.pip.IniPIPConfigurationParserHelper;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
 import org.glite.voms.VOMSTrustManager;
 import org.ini4j.Ini;
-import org.ini4j.Ini.Section;
 import org.opensaml.ws.soap.client.http.HttpClientBuilder;
 import org.opensaml.ws.soap.client.http.HttpSOAPClient;
 import org.opensaml.xml.parse.BasicParserPool;
@@ -96,7 +95,7 @@ public class PEPDaemonIniConfigurationParser extends AbstractIniServiceConfigura
      * 
      * @return the port value, or the default port {@value #DEFAULT_PORT} if it is not set
      */
-    protected int getPort(Section configSection) {
+    protected int getPort(Ini.Section configSection) {
         return IniConfigUtil.getInt(configSection, PORT_PROP, DEFAULT_PORT, 1, 65535);
     }
 
@@ -105,7 +104,7 @@ public class PEPDaemonIniConfigurationParser extends AbstractIniServiceConfigura
      * 
      * @return the admin port value, or the default admin port {@value #DEFAULT_ADMIN_PORT} if it is not set
      */
-    protected int getAdminPort(Section configSection) {
+    protected int getAdminPort(Ini.Section configSection) {
         return IniConfigUtil.getInt(configSection, ADMIN_PORT_PROP, DEFAULT_ADMIN_PORT, 1, 65535);
     }
 
@@ -117,7 +116,7 @@ public class PEPDaemonIniConfigurationParser extends AbstractIniServiceConfigura
      * 
      * @return the value
      */
-    protected int getCacheResponseTTL(Section configSection) {
+    protected int getCacheResponseTTL(Ini.Section configSection) {
         return IniConfigUtil.getInt(configSection, CACHED_RESP_TTL_PROP, DEFAULT_CACHED_RESP_TTL, 1, Integer.MAX_VALUE);
     }
 
@@ -129,7 +128,7 @@ public class PEPDaemonIniConfigurationParser extends AbstractIniServiceConfigura
      * 
      * @return the value
      */
-    protected int getMaxCachedResponses(Section configSection) {
+    protected int getMaxCachedResponses(Ini.Section configSection) {
         return IniConfigUtil.getInt(configSection, MAX_CACHED_RESP_PROP, DEFAULT_MAX_CACHED_RESP, 0, Integer.MAX_VALUE);
     }
 
@@ -161,7 +160,7 @@ public class PEPDaemonIniConfigurationParser extends AbstractIniServiceConfigura
         log.info("Processing PEP Server {} configuration section", SERVICE_SECTION_HEADER);
         processServiceSection(iniFile, configBuilder);
         
-        Section configSection = iniFile.get(SERVICE_SECTION_HEADER);
+        Ini.Section configSection = iniFile.get(SERVICE_SECTION_HEADER);
         List<PolicyInformationPoint> pips = IniPIPConfigurationParserHelper.processPolicyInformationPoints(iniFile,
                 configSection, configBuilder);
         log.info("Total policy information points: {}", pips.size());
@@ -188,7 +187,7 @@ public class PEPDaemonIniConfigurationParser extends AbstractIniServiceConfigura
      */
     private void processPDPConfiguration(Ini iniFile, PEPDaemonConfigurationBuilder configBuilder)
             throws ConfigurationException {
-        Section configSection = iniFile.get(PDP_SECTION_HEADER);
+        Ini.Section configSection = iniFile.get(PDP_SECTION_HEADER);
         if (configSection == null) {
             String errorMsg = "INI configuration does not contain the required '" + PDP_SECTION_HEADER + "' INI section";
             log.error(errorMsg);

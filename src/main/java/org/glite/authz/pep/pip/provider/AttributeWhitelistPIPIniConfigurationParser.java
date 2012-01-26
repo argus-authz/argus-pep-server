@@ -28,7 +28,7 @@ import org.glite.authz.common.config.IniSectionConfigurationParser;
 import org.glite.authz.common.util.Strings;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
 
-import org.ini4j.Ini.Section;
+import org.ini4j.Ini;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +60,7 @@ public class AttributeWhitelistPIPIniConfigurationParser implements IniSectionCo
     private final Logger log = LoggerFactory.getLogger(AttributeWhitelistPIPIniConfigurationParser.class);
 
     /** {@inheritDoc} */
-    public PolicyInformationPoint parse(Section iniConfig, AbstractConfigurationBuilder<?> configBuilder)
+    public PolicyInformationPoint parse(Ini.Section iniConfig, AbstractConfigurationBuilder<?> configBuilder)
             throws ConfigurationException {
         String pipId = iniConfig.getName();
         String[] actionAttributeIds = parseAcceptedAttributeIds(iniConfig.get(ACT_ATTRIBS_PROP));

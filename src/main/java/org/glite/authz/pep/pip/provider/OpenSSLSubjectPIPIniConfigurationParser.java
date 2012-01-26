@@ -26,7 +26,7 @@ import org.glite.authz.common.config.IniConfigUtil;
 import org.glite.authz.common.config.IniSectionConfigurationParser;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
 
-import org.ini4j.Ini.Section;
+import org.ini4j.Ini;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +50,7 @@ public class OpenSSLSubjectPIPIniConfigurationParser implements
     public static final String OPENSSL_SUBJECT_ATTIBUTE_DATATYPES_PROP= "opensslSubjectAttributeDatatypes";
 
     /** {@inheritDoc} */
-    public PolicyInformationPoint parse(Section iniConfig,
+    public PolicyInformationPoint parse(Ini.Section iniConfig,
             AbstractConfigurationBuilder<?> configBuilder)
             throws ConfigurationException {
 

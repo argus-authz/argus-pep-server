@@ -28,7 +28,6 @@ import org.glite.authz.common.util.LazyList;
 import org.glite.authz.common.util.Strings;
 
 import org.ini4j.Ini;
-import org.ini4j.Ini.Section;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +64,7 @@ public class IniPIPConfigurationParserHelper {
      *             points
      */
     public static List<PolicyInformationPoint> processPolicyInformationPoints(
-            Ini iniFile, Section configSection,
+            Ini iniFile, Ini.Section configSection,
             AbstractConfigurationBuilder<?> configBuilder)
             throws ConfigurationException {
         List<PolicyInformationPoint> pips= new LazyList<PolicyInformationPoint>();
@@ -108,7 +107,7 @@ public class IniPIPConfigurationParserHelper {
      */
     @SuppressWarnings("unchecked")
     private static PolicyInformationPoint buildPolicyInformationPoint(
-            Section pipConfig, AbstractConfigurationBuilder<?> configBuilder)
+            Ini.Section pipConfig, AbstractConfigurationBuilder<?> configBuilder)
             throws ConfigurationException {
         String name= pipConfig.getName();
         LOG.info("Loading Policy Information Point {}", name);

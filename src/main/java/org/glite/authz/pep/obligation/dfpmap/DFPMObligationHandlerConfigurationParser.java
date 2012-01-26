@@ -30,7 +30,7 @@ import org.glite.authz.common.profile.GLiteAuthorizationProfileConstants;
 import org.glite.authz.pep.obligation.ObligationHandler;
 import org.glite.authz.pep.obligation.dfpmap.UpdatingDFPM.DFPMFactory;
 
-import org.ini4j.Ini.Section;
+import org.ini4j.Ini;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.MessageFormatter;
@@ -157,7 +157,7 @@ public class DFPMObligationHandlerConfigurationParser implements
     private final Logger log= LoggerFactory.getLogger(DFPMObligationHandlerConfigurationParser.class);
 
     /** {@inheritDoc} */
-    public ObligationHandler parse(Section iniConfig,
+    public ObligationHandler parse(Ini.Section iniConfig,
             AbstractConfigurationBuilder<?> configBuilder)
             throws ConfigurationException {
 

@@ -21,7 +21,7 @@ import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
 import org.glite.voms.PKIStore;
 
-import org.ini4j.Ini.Section;
+import org.ini4j.Ini;
 
 /**
  * A policy information point that extracts information from a X.509, version 3, certificate. The certificate may
@@ -39,7 +39,7 @@ import org.ini4j.Ini.Section;
 public class WorkerNodeProfileV1IniConfigurationParser extends AbstractX509PIPIniConfigurationParser {
 
     /** {@inheritDoc} */
-    protected PolicyInformationPoint buildInformationPoint(Section iniConfig, boolean requireProxy,
+    protected PolicyInformationPoint buildInformationPoint(Ini.Section iniConfig, boolean requireProxy,
             PKIStore trustMaterial, PKIStore acTrustMaterial, boolean performPKIXValidation)
             throws ConfigurationException {
         String pipId = iniConfig.getName();

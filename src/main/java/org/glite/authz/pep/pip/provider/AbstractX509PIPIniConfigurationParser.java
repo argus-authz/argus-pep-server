@@ -25,7 +25,7 @@ import org.glite.authz.common.util.Files;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
 import org.glite.voms.PKIStore;
 
-import org.ini4j.Ini.Section;
+import org.ini4j.Ini;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +63,7 @@ public abstract class AbstractX509PIPIniConfigurationParser implements IniSectio
     private Logger log = LoggerFactory.getLogger(AbstractX509PIPIniConfigurationParser.class);
 
     /** {@inheritDoc} */
-    public PolicyInformationPoint parse(Section iniConfig, AbstractConfigurationBuilder<?> configurationBuilder)
+    public PolicyInformationPoint parse(Ini.Section iniConfig, AbstractConfigurationBuilder<?> configurationBuilder)
             throws ConfigurationException {
         
         String pipId = iniConfig.getName();
@@ -112,7 +112,7 @@ public abstract class AbstractX509PIPIniConfigurationParser implements IniSectio
      * @throws ConfigurationException thrown if there is a problem building the PIP with the given configuration
      *             parameters
      */
-    protected abstract PolicyInformationPoint buildInformationPoint(Section iniConfig, boolean requireProxy,
+    protected abstract PolicyInformationPoint buildInformationPoint(Ini.Section iniConfig, boolean requireProxy,
             PKIStore trustMaterial, PKIStore acTrustMaterial, boolean performPKIXValidation)
             throws ConfigurationException;
 }

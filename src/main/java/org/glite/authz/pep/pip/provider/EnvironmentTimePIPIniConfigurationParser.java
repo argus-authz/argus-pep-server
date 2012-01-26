@@ -23,13 +23,13 @@ import org.glite.authz.common.config.IniSectionConfigurationParser;
 import org.glite.authz.common.util.Strings;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
 
-import org.ini4j.Ini.Section;
+import org.ini4j.Ini;
 
 /** Configuration parser for an {@link EnvironmentTimePIP}. */
 public class EnvironmentTimePIPIniConfigurationParser implements IniSectionConfigurationParser<PolicyInformationPoint> {
 
     /** {@inheritDoc} */
-    public PolicyInformationPoint parse(Section iniConfig, AbstractConfigurationBuilder<?> configBuilder)
+    public PolicyInformationPoint parse(Ini.Section iniConfig, AbstractConfigurationBuilder<?> configBuilder)
             throws ConfigurationException {
         return new EnvironmentTimePIP(Strings.safeTrimOrNullString(iniConfig.getName()));
     }

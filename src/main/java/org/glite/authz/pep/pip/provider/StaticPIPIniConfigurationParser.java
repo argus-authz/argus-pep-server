@@ -35,7 +35,6 @@ import org.glite.authz.common.util.Strings;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
 
 import org.ini4j.Ini;
-import org.ini4j.Ini.Section;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,7 +109,7 @@ public class StaticPIPIniConfigurationParser implements IniSectionConfigurationP
     private Logger log = LoggerFactory.getLogger(StaticPIPIniConfigurationParser.class);
 
     /** {@inheritDoc} */
-    public PolicyInformationPoint parse(Section iniConfig, AbstractConfigurationBuilder<?> configBuilder)
+    public PolicyInformationPoint parse(Ini.Section iniConfig, AbstractConfigurationBuilder<?> configBuilder)
             throws ConfigurationException {
         Ini iniFile = readIniFile(iniConfig.get(CONFIG_FILE_PROP));
 
@@ -202,7 +201,7 @@ public class StaticPIPIniConfigurationParser implements IniSectionConfigurationP
         }
 
         List<Attribute> attributes = new ArrayList<Attribute>();
-        Section configSection = null;
+        Ini.Section configSection = null;
         for (String sectionName : sectionNames) {
             configSection = configFile.get(sectionName);
             if (configSection == null) {
@@ -239,7 +238,7 @@ public class StaticPIPIniConfigurationParser implements IniSectionConfigurationP
      * 
      * @throws ConfigurationException thrown if any required data is missing
      */
-    private Attribute parseAttributeDefinition(Section configSection, String defaultAttributeIssuer)
+    private Attribute parseAttributeDefinition(Ini.Section configSection, String defaultAttributeIssuer)
             throws ConfigurationException {
         if (configSection == null) {
             return null;

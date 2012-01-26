@@ -21,13 +21,13 @@ import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
 import org.glite.voms.PKIStore;
 
-import org.ini4j.Ini.Section;
+import org.ini4j.Ini;
 
 /** Configuration parser for {@link SCASLegacyPIP} PIPs. */
 public class SCASSLegacyPIPIniConfigurationParser extends AbstractX509PIPIniConfigurationParser {
 
     /** {@inheritDoc} */
-    protected PolicyInformationPoint buildInformationPoint(Section iniConfig, boolean requireProxy, PKIStore trustMaterial,
+    protected PolicyInformationPoint buildInformationPoint(Ini.Section iniConfig, boolean requireProxy, PKIStore trustMaterial,
             PKIStore acTrustMaterial, boolean performPKIXValidation) throws ConfigurationException {
         String pipId= iniConfig.getName();
         SCASLegacyPIP pip= new SCASLegacyPIP(pipId, requireProxy, trustMaterial, acTrustMaterial);
