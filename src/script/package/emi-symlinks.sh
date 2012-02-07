@@ -24,7 +24,7 @@ NAMECTL="${NAME}ctl"
 
 root_prefix="../../../.."
 
-function create_symlink(){
+create_symlink () {
 	if [ -e $2 ]; then
 		rm -rf $2
 	fi
