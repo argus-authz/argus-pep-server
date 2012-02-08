@@ -79,7 +79,7 @@ if [ ! -d "$PEPD_ENDORSEDDIR" ]; then
 fi
 # set default max memory
 if [ -z "$PEPD_JOPTS" ]; then
-    PEPD_JOPTS="-Xmx128M"
+    PEPD_JOPTS="-Xmx256M"
 fi
 # set the mandatory endorsed dir and the classpath
 PEPD_JOPTS="-Djava.endorsed.dirs=$PEPD_ENDORSEDDIR -classpath $LOCALCLASSPATH $PEPD_JOPTS"
