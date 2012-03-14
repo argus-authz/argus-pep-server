@@ -1,10 +1,6 @@
-# stop the PEP Server
-#/etc/init.d/argus-pepd stop 2>&1 /dev/null || :
-/sbin/service argus-pepd stop >/dev/null 2>&1
-# delete all bundled jar files
-rm -f /var/lib/argus/pepd/lib/endorsed/*.jar 
-rm -f /var/lib/argus/pepd/lib/*.jar
 # checks that this is the actual deinstallation of the package, and remove the /etc/rc*.d links.
 if [ $1 -eq 0 ] ; then
+    /sbin/service argus-pepd stop > /dev/null 2>&1 || :
     /sbin/chkconfig --del argus-pepd
 fi
+
