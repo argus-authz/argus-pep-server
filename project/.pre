@@ -1,0 +1,5 @@
+# stop the PEP Server
+/etc/init.d/argus-pepd stop > /dev/null 2>&1 || :
+# delete all old bundled jar files
+rm -f /var/lib/argus/pepd/lib/endorsed/*.jar 
+rm -f /var/lib/argus/pepd/lib/*.jar
