@@ -1,4 +1,5 @@
-# checks that this is the actual deinstallation of the package, and remove the /etc/rc*.d links.
+# pre-unistall scriptlet
+# on uninstall stop and deregister the service
 if [ $1 -eq 0 ] ; then
     /sbin/service argus-pepd stop > /dev/null 2>&1 || :
     /sbin/chkconfig --del argus-pepd

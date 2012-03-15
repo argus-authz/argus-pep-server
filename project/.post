@@ -1,6 +1,9 @@
+# post-install scriptlet
 # create links to /usr/share/java jar files
 for jarname in argus-pep-common argus-pdp-pep-common voms-api-java trustmanager bcprov ; do
     ln -fs /usr/share/java/$jarname.jar /var/lib/argus/pepd/lib
 done
-# register the service in init.d
-/sbin/chkconfig --add argus-pepd
+# on install register the service
+if [ $1 -eq 1 ]; then 
+    /sbin/chkconfig --add argus-pepd
+fi
