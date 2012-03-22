@@ -59,7 +59,8 @@ else
 fi
 
 PEPD_PROG="${NAME}"
-SHUTDOWN_WAIT=10
+SHUTDOWN_WAIT=15
+KILL_WAIT=30
 HAS_LOCK=0
 PEPD_LOCK=
 PEPD_PID=${PEPD_PID:-"/var/run/${NAME}.pid"}
@@ -140,11 +141,15 @@ echo -n "Stopping ${PEPD_PROG}... "
                 until [ $(ps --pid $kpid | grep -c $kpid) -eq 0 ] || [ $count -gt $SHUTDOWN_WAIT ]; do
                     sleep 1
                     let count=${count}+1
+                    if [ $count -ge $SHUTDOWN_WAIT ]; then
+                        log_warning_msg "waited ${SHUTDOWN_WAIT} s, now killing"
+                        kill -9 $kpid
+                    fi
+                    if [ $count -ge $KILL_WAIT ]; then
+                        log_failure_msg
+                        RETURN_CODE=4
+                    fi
                 done
-                if [ $count -gt $SHUTDOWN_WAIT ]; then
-                    log_warning_msg "killing processes which did not stop after ${SHUTDOWN_WAIT} seconds"
-                    kill -9 $kpid
-                fi
                 log_success_msg
             fi
             rm -f $PEPD_PID
