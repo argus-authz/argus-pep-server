@@ -39,6 +39,7 @@ import org.glite.authz.common.http.JettyShutdownTask;
 import org.glite.authz.common.http.JettySslSelectChannelConnector;
 import org.glite.authz.common.http.ServiceMetricsServlet;
 import org.glite.authz.common.http.StatusCommand;
+import org.glite.authz.common.http.SystemExitTask;
 import org.glite.authz.common.http.TimerShutdownTask;
 import org.glite.authz.common.logging.AccessLoggingFilter;
 import org.glite.authz.common.logging.LoggingReloadTask;
@@ -78,6 +79,9 @@ public final class PEPDaemon {
 
     /** System property name PEPD_LOGDIR path is bound to. */
     public static final String PEP_LOGDIR_PROP= "org.glite.authz.pep.logdir";
+
+    /** System property name PEP_GRACEFUL to set to force a graceful shutdown  */
+    public static final String PEP_GRACEFUL_PROP= "org.glite.authz.pep.server.graceful";
 
     /** Default admin port: {@value} */
     public static int DEFAULT_ADMIN_PORT= 8155;
@@ -165,7 +169,11 @@ public final class PEPDaemon {
         Server httpServer= new Server();
         httpServer.setSendServerVersion(false);
         httpServer.setSendDateHeader(false);
-        httpServer.setGracefulShutdown(5000);
+        if (System.getProperty(PEP_GRACEFUL_PROP)!=null) {
+            LOG.debug("Graceful shutdown enabled: " + PEP_GRACEFUL_PROP );
+            httpServer.setGracefulShutdown(1000); // 1 sec
+        }
+        httpServer.setStopAtShutdown(true);
 
         BlockingQueue<Runnable> requestQueue;
         if (daemonConfig.getMaxRequestQueueSize() < 1) {
@@ -248,6 +256,8 @@ public final class PEPDaemon {
         adminService.registerAdminCommand(new StatusCommand(daemonConfig.getServiceMetrics()));
         adminService.registerAdminCommand(new ClearResponseCacheCommand());
 
+        // first shutdown task will force a System.exit(0) after 60 sec.
+        adminService.registerShutdownTask(new SystemExitTask(60000));
         adminService.registerShutdownTask(new TimerShutdownTask(backgroundTimer));
         adminService.registerShutdownTask(new JettyShutdownTask(daemonService));
         adminService.registerShutdownTask(new Runnable() {
