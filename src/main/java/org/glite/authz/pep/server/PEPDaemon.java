@@ -170,7 +170,7 @@ public final class PEPDaemon {
         httpServer.setSendServerVersion(false);
         httpServer.setSendDateHeader(false);
         if (System.getProperty(PEP_GRACEFUL_PROP)!=null) {
-            LOG.debug("Graceful shutdown enabled: " + PEP_GRACEFUL_PROP );
+            LOG.info("Graceful shutdown enabled: " + PEP_GRACEFUL_PROP );
             httpServer.setGracefulShutdown(1000); // 1 sec
         }
         httpServer.setStopAtShutdown(true);
