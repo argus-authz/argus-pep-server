@@ -35,7 +35,8 @@
 #            Valery Tschopp <argus-support@cern.ch>
 #            Joel Casutt <argus-support@cern.ch>
 #
-# Version: V2.0
+# Version: V2.1
+# Date: 03/23/2011
 # $Id$
 ###############################################################################
 # set -x
@@ -63,7 +64,6 @@ KILL_WAIT=15
 HAS_LOCK=0
 PEPD_LOCK=
 PEPD_PID=${PEPD_PID:-"/var/run/${NAME}.pid"}
-RETURN_CODE=0
 
 # See if there is an appropriate location for the lock-file, if not, do not use a lock-file
 if [ -d "/var/lock/subsys" ]; then
@@ -82,99 +82,88 @@ if [ -r "/etc/sysconfig/argus-pepd" ]; then
 fi
 
 
-# Function to start the PEPd daemon
+# Function to start the PEPD daemon
 function start() {
-echo -n "Starting ${PEPD_PROG}... "
-    if [ $RETURN_CODE -ne 0 ]; then 
-        log_failure_msg
-        return 4
-    fi
+    echo -n "Starting ${PEPD_PROG}... "
+    # get the current state of the program, this also creates appropriate pid and lock files
+    # if the program is running but the files are missing.
     _current_state
-    if [ $HAS_LOCK -eq 1 ]; then
-        if [ -f "$PEPD_LOCK" ]; then
-            if [ -f "$PEPD_PID" ]; then
-                read kpid < $PEPD_PID
-                if [ -d "/proc/${kpid}" ]; then
-                    log_success_msg
-                    return 0
-                fi
-            fi
-        fi
-    else
-        if [ -f "$PEPD_PID" ]; then
-            read kpid < $PEPD_PID
-            if [ -d "/proc/${kpid}" ]; then
-                log_success_msg
-                return 0
-            fi
-        fi
-    fi
-    touch $PEPD_PID 2>&1 || RETURN_CODE=4
-    if [ $RETURN_CODE -eq 0 ]; then
-        $PEPDCTL start || RETURN_CODE=4
-    fi
-    if [ $RETURN_CODE -eq 0 ]; then 
-        log_success_msg
-        if [ -n "$PEPD_LOCK" -a $HAS_LOCK -eq 1 ]; then
+    state=$?
+    
+    if [ $state -eq 0 ] || [ $state -eq 2 ] || [ $state -eq 3 ] || [ $state -eq 4 ]; then
+        log_success_msg "process already running"
+        return 0
+    elif [ $state -eq 5 ]; then
+        $PEPDCTL start
+        if [ $HAS_LOCK -eq 1 ]; then
             touch $PEPD_LOCK
         fi
+        # test if the start command has worked
+        _current_state
+        new_state=$?
+        if [ $new_state -eq 0 ]; then
+            log_success_msg
+        elif [ $new_state -eq 2 ] || [ $new_state -eq 3 ] || [ $new_state -eq 4 ]; then
+            log_warning_msg "process started but no PID and/or LOCK file created"
+        else
+            log_failure_msg
+        fi
     else
-        log_failure_msg "Error code ${RETURN_CODE}"
+        log_failure_msg
     fi
 }
 
-# Function to stop the PEPd daemon
+# Function to stop the PEPD
 function stop() {
-echo -n "Stopping ${PEPD_PROG}... "
-    if [ -f "$PEPD_PID" ]; then
-        if [ $RETURN_CODE -eq 0 ]; then
-            if [ $HAS_LOCK -eq 1 ]; then
-                touch $PEPD_LOCK 2>&1 || RETURN_CODE=4
-            fi
-            [ $RETURN_CODE -eq 0 ] && $PEPDCTL stop || RETURN_CODE=4
-        fi
-        if [ $RETURN_CODE -eq 0 ]; then
-            count=0
-            killed=false
-            if [ -f "$PEPD_PID" ]; then
-                read kpid < $PEPD_PID
-                until [ $(ps --pid $kpid | grep -c $kpid) -eq 0 ]; do
-                    sleep 1
-                    let count=${count}+1
-                    if [ $count -ge $SHUTDOWN_WAIT ] || $killed; then
-                        log_warning_msg "waited ${SHUTDOWN_WAIT} s, now killing"
-                        kill -9 $kpid
-                        killed=true
-                    fi
-                    if [ $count -ge $(($KILL_WAIT+$SHUTDOWN_WAIT)) ]; then
-                        log_failure_msg
-                        RETURN_CODE=4
-                    fi
-                done
-                log_success_msg
-            fi
-            rm -f $PEPD_PID
-            if [ $HAS_LOCK -eq 1 ]; then
-                rm -f $PEPD_LOCK
-            fi
-        else
-            log_failure_msg
-            RETURN_CODE=4
-        fi
+    echo -n "Stopping ${PEPD_PROG}... "
+    _current_state
+    state=$?
+    
+    if [ $state -eq 5 ]; then
+        log_success_msg "no process found, nothing to do"
+        return 0
     else
+        count=0
+        killed=false
+        MAX_WAIT=$[$KILL_WAIT+$SHUTDOWN_WAIT]
+        $PEPDCTL stop
+        read kpid < $PEPD_PID
+        until [ $(ps --pid $kpid | grep -c $kpid) -eq 0 ]; do
+            sleep 1
+            let count=${count}+1
+            if [ $count -ge $SHUTDOWN_WAIT ] && ! $killed; then
+                echo -n "waited ${SHUTDOWN_WAIT} s, force kill"
+                kill -9 $kpid
+                killed=true
+            fi
+            if [ $count -ge $MAX_WAIT ]; then
+                log_failure_msg
+            fi
+        done
+        _current_state
         log_success_msg
-        RETURN_CODE=0
     fi
 }
 
 # Function to read the status of the PEPD
 function status() {
     _current_state
-    if [ $? -eq 5 ]; then
+    state=$?
+    if [ $state -eq 5 ]; then
         echo "${PEPD_PROG} is not running..."
-        RETURN_CODE=4
     else
         $PEPDCTL status
+    fi
+}
+
+# Function to clear the cache of the PEPD
+function clearcache() {
+    _current_state
+    state=$?
+    if [ $state -eq 5 ]; then
+        echo "${PEPD_PROG} is not running..."
+    else
+        $PEPDCTL clearResponseCache
     fi
 }
 
@@ -219,7 +208,7 @@ function _current_state() {
         else
             return 0
         fi
-    fi
+    fi  
 }
 
 
@@ -240,8 +229,8 @@ case "$1" in
     version)
         $PEPDCTL version
         ;;
-    clearcache)
-        $PEPDCTL clearResponseCache
+     clearcache)
+        clearcache
         ;;
     *)
         echo "Usage: $0 {start|stop|restart|status|version|clearcache}"
@@ -249,4 +238,4 @@ case "$1" in
         ;;
 esac
 
-exit $RETURN_CODE
+exit $?
