@@ -151,6 +151,19 @@ function status() {
     state=$?
     if [ $state -eq 5 ]; then
         echo "${PEPD_PROG} is not running..."
+        return $state
+    else
+        echo "${PEPD_PROG} is running..."
+    fi
+}
+
+# Function to read the info of the PEPD
+function info() {
+    _current_state
+    state=$?
+    if [ $state -eq 5 ]; then
+        echo "${PEPD_PROG} is not running..."
+        return $state
     else
         $PEPDCTL status
     fi
@@ -162,8 +175,21 @@ function clearcache() {
     state=$?
     if [ $state -eq 5 ]; then
         echo "${PEPD_PROG} is not running..."
+        return $state
     else
         $PEPDCTL clearResponseCache
+    fi
+}
+
+# Function to read the version of the PEPD
+function version() {
+     _current_state
+    state=$?
+    if [ $state -eq 5 ]; then
+        echo "${PEPD_PROG} is not running..."
+        return $state
+    else
+       $PEPDCTL version
     fi
 }
 
@@ -226,14 +252,17 @@ case "$1" in
     status)
         status
         ;;
+    info)
+        info
+        ;;
     version)
-        $PEPDCTL version
+        version
         ;;
      clearcache)
         clearcache
         ;;
     *)
-        echo "Usage: $0 {start|stop|restart|status|version|clearcache}"
+        echo "Usage: $0 {start|stop|restart|status|info|version|clearcache}"
         exit 1
         ;;
 esac
