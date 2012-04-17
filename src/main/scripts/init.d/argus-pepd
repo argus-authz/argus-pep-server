@@ -184,13 +184,7 @@ function clearcache() {
 # Function to read the version of the PEPD
 function version() {
      _current_state
-    state=$?
-    if [ $state -eq 5 ]; then
-        echo "${PEPD_PROG} is not running..."
-        return $state
-    else
-       $PEPDCTL version
-    fi
+    $PEPDCTL version
 }
 
 # tests if the current process exists and if it has an associated pid and lock file. Return codes are as followed:
