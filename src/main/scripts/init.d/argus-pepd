@@ -126,7 +126,7 @@ function stop() {
         count=0
         killed=false
         MAX_WAIT=$[$KILL_WAIT+$SHUTDOWN_WAIT]
-        $PEPDCTL stop
+        $PEPDCTL stop > /dev/null 2>&1
         read kpid < $PEPD_PID
         until [ $(ps --pid $kpid | grep -c $kpid) -eq 0 ]; do
             sleep 1
