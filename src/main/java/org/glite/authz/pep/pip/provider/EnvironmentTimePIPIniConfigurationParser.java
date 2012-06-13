@@ -19,18 +19,41 @@ package org.glite.authz.pep.pip.provider;
 
 import org.glite.authz.common.config.AbstractConfigurationBuilder;
 import org.glite.authz.common.config.ConfigurationException;
+import org.glite.authz.common.config.IniConfigUtil;
 import org.glite.authz.common.config.IniSectionConfigurationParser;
 import org.glite.authz.common.util.Strings;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
 
 import org.ini4j.Ini;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Configuration parser for an {@link EnvironmentTimePIP}. */
-public class EnvironmentTimePIPIniConfigurationParser implements IniSectionConfigurationParser<PolicyInformationPoint> {
+public class EnvironmentTimePIPIniConfigurationParser implements
+        IniSectionConfigurationParser<PolicyInformationPoint> {
+
+    /**
+     * The name of the {@value} property to use UTC timezone (#dateTime, #date
+     * and #time with the <code>Z</code> indicator) or to use local timezone
+     * (#dateTime, #date and #time with the <code>+/-HH:MM</code> indicator)
+     */
+    public static final String USE_UTC_TIMEZONE_PROP= "useUTCTimeZone";
+
+    /** Default value of the {@value #USE_UTC_TIMEZONE_PROP} property: {@value} */
+    public static final boolean DEFAULT_USE_UTC_TIMEZONE= true;
+
+    /** logger */
+    private Logger log= LoggerFactory.getLogger(EnvironmentTimePIP.class);
 
     /** {@inheritDoc} */
-    public PolicyInformationPoint parse(Ini.Section iniConfig, AbstractConfigurationBuilder<?> configBuilder)
+    public PolicyInformationPoint parse(Ini.Section iniConfig,
+                                        AbstractConfigurationBuilder<?> configBuilder)
             throws ConfigurationException {
-        return new EnvironmentTimePIP(Strings.safeTrimOrNullString(iniConfig.getName()));
+        String pipid= Strings.safeTrimOrNullString(iniConfig.getName());
+        EnvironmentTimePIP pip= new EnvironmentTimePIP(pipid);
+        boolean useUTC= IniConfigUtil.getBoolean(iniConfig, USE_UTC_TIMEZONE_PROP, DEFAULT_USE_UTC_TIMEZONE);
+        log.info("{}: uses UTC time zone: {}", pipid, useUTC);
+        pip.setUTC(useUTC);
+        return pip;
     }
 }
