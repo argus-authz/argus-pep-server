@@ -51,7 +51,7 @@ public class EnvironmentTimePIP extends AbstractPolicyInformationPoint {
     /** XML calendar data type factory. */
     private DatatypeFactory xmlCalendarFactory;
 
-    /** use UTC or local time */
+    /** use UTC or local time. Default: {@value} */
     private boolean useUTC= true;
 
     /**
@@ -79,7 +79,13 @@ public class EnvironmentTimePIP extends AbstractPolicyInformationPoint {
         this.useUTC= useUTC;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * <p>
+     * This PIP adds the {@value #CURRENT_DATETIME_ATTRIB_NAME},
+     * {@value #CURRENT_DATE_ATTRIB_NAME}, and
+     * {@value #CURRENT_TIME_ATTRIB_NAME} attributes to the request environment.
+     */
     public boolean populateRequest(Request request)
             throws PIPProcessingException {
         Environment environment= request.getEnvironment();
@@ -95,7 +101,7 @@ public class EnvironmentTimePIP extends AbstractPolicyInformationPoint {
         else {
             now= new GregorianCalendar();
         }
-        
+
         XMLGregorianCalendar currentTime= xmlCalendarFactory.newXMLGregorianCalendar(now);
         currentTime.setYear(DatatypeConstants.FIELD_UNDEFINED);
         currentTime.setMonth(DatatypeConstants.FIELD_UNDEFINED);
@@ -112,6 +118,8 @@ public class EnvironmentTimePIP extends AbstractPolicyInformationPoint {
         currentDate.setMinute(DatatypeConstants.FIELD_UNDEFINED);
         currentDate.setSecond(DatatypeConstants.FIELD_UNDEFINED);
         currentDate.setMillisecond(DatatypeConstants.FIELD_UNDEFINED);
+        // date without timezone, only YYYY-mm-dd
+        currentDate.setTimezone(DatatypeConstants.FIELD_UNDEFINED);
         Attribute currentDateAttribute= new Attribute();
         currentDateAttribute.setId(CURRENT_DATE_ATTRIB_NAME);
         currentDateAttribute.setDataType(Attribute.DT_DATE);
