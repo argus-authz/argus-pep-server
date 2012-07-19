@@ -16,10 +16,17 @@
     <version>1.5.2-DEV</version>
     <packaging>jar</packaging>
 
-
-    <description>XACML based authorization service developed within the gLite project.</description>
-    <url>http://glite.web.cern.ch/glite/</url>
+    <description>XACML based authorization service.</description>
+    <url>https://twiki.cern.ch/twiki/bin/view/EGEE/AuthorizationFramework</url>
     <inceptionYear>2008</inceptionYear>
+
+    <repositories>
+        <repository>
+            <id>switch</id>
+            <name>SWITCH Releases</name>
+            <url>http://www.switch.ch/grid/authz/docs/maven2/release</url>
+        </repository>
+    </repositories>
 
     <dependencies>
         <!-- Compile Dependencies -->
