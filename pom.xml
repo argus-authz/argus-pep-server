@@ -97,31 +97,30 @@
 
         <!-- Runtime Dependencies -->
         <dependency>
-            <groupId>org.apache.xerces</groupId>
-            <artifactId>xml-apis</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.xerces</groupId>
+            <groupId>xerces</groupId>
             <artifactId>xercesImpl</artifactId>
             <scope>runtime</scope>
         </dependency>
         <dependency>
-            <groupId>org.apache.xerces</groupId>
-            <artifactId>resolver</artifactId>
+            <groupId>xml-apis</groupId>
+            <artifactId>xml-apis</artifactId>
             <scope>runtime</scope>
         </dependency>
         <dependency>
-            <groupId>org.apache.xerces</groupId>
-            <artifactId>serializer</artifactId>
+            <groupId>xml-resolver</groupId>
+            <artifactId>xml-resolver</artifactId>
             <scope>runtime</scope>
         </dependency>
         <dependency>
-            <groupId>org.apache.xalan</groupId>
+            <groupId>xalan</groupId>
             <artifactId>xalan</artifactId>
             <scope>runtime</scope>
         </dependency>
-
+        <dependency>
+            <groupId>xalan</groupId>
+            <artifactId>serializer</artifactId>
+            <scope>runtime</scope>
+        </dependency>
         <!-- Test Dependencies -->
         <dependency>
             <groupId>junit</groupId>
