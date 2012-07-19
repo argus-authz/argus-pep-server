@@ -55,7 +55,8 @@ Installed in a fakeroot directory structure.
     <fileSets>
         <!-- /usr/share/argus/pepd home directory -->
         <fileSet>
-            <directory>src/home-tmpl/empty-dir</directory>
+            <directory>src/main/empty-dir</directory>
+            <excludes><exclude>.empty</exclude></excludes>
             <outputDirectory>/usr/share/argus/pepd</outputDirectory>
         </fileSet>
         <!-- /usr/share/argus/pepd/sbin/pepdctl control script -->
@@ -73,7 +74,8 @@ Installed in a fakeroot directory structure.
         </fileSet>
         <!-- /usr/sbin for linking pepdctl -->
         <fileSet>
-            <directory>src/home-tmpl/empty-dir</directory>
+            <directory>src/main/empty-dir</directory>
+            <excludes><exclude>.empty</exclude></excludes>
             <outputDirectory>/usr/sbin</outputDirectory>
         </fileSet>
         <!-- /etc/sysconfig/argus-pepd optional config -->
@@ -90,7 +92,8 @@ Installed in a fakeroot directory structure.
         </fileSet>
         <!-- /var/log/argus/pepd logging directory -->
         <fileSet>
-            <directory>src/home-tmpl/empty-dir</directory>
+            <directory>src/main/empty-dir</directory>
+            <excludes><exclude>.empty</exclude></excludes>
             <outputDirectory>/var/log/argus/pepd</outputDirectory>
             <directoryMode>0750</directoryMode>
         </fileSet>        
