@@ -16,7 +16,7 @@
     <version>1.5.2-DEV</version>
     <packaging>jar</packaging>
 
-    <description>XACML based authorization service.</description>
+    <description>XACML based authorization service</description>
     <url>https://twiki.cern.ch/twiki/bin/view/EGEE/AuthorizationFramework</url>
     <inceptionYear>2008</inceptionYear>
 
@@ -435,4 +435,8 @@
         <name>EMI - European Middleware Initiative</name>
         <url>http://www.eu-emi.eu/</url>
     </organization>
+    <scm>
+    	<connection>scm:git:https://github.com/argus-authz/argus-pep-server.git</connection>
+    	<url>https://github.com/argus-authz/argus-pep-server</url>
+    </scm>
 </project>
