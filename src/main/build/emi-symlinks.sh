@@ -22,26 +22,32 @@ NAME=pepd
 HOME="usr/share/argus/${NAME}"
 NAMECTL="${NAME}ctl"
 
+
 root_prefix="../../../.."
 
 create_symlink () {
 	if [ -e $2 ]; then
-		rm -rf $2
+		rm -vrf $2
 	fi
 	ln -vs $1 $2
 }
-# pepdctl: /usr/sbin/pepdctl -> /usr/share/argus/pepd/sbin/pepdctl
+
+# DEBUG
+ls -l $HOME
+
+# pdpctl: /usr/sbin/pdpctl -> /usr/share/argus/pdp/sbin/pdpctl
+mkdir -vp usr/sbin
 create_symlink ../../usr/share/argus/$NAME/sbin/$NAMECTL usr/sbin/$NAMECTL
 
-# conf: /usr/share/argus/pepd/conf -> /etc/argus/pepd
+# conf: /usr/share/argus/pdp/conf -> /etc/argus/pdp
 create_symlink $root_prefix/etc/argus/$NAME $HOME/conf
 
-# lib: /usr/share/argus/pepd/lib -> /var/lib/argus/pepd/lib
+# lib: /usr/share/argus/pdp/lib -> /var/lib/argus/pdp/lib
 create_symlink $root_prefix/var/lib/argus/$NAME/lib $HOME/lib
 
-# logs: /usr/share/argus/pepd/logs -> /var/log/argus/pepd
+# logs: /usr/share/argus/pdp/logs -> /var/log/argus/pdp
 create_symlink $root_prefix/var/log/argus/$NAME $HOME/logs
 
-# doc: /usr/share/argus/pepd/doc -> /usr/share/doc/argus/pepd
+# doc: /usr/share/argus/pdp/doc -> /usr/share/doc/argus/pdp
 create_symlink $root_prefix/usr/share/doc/argus/$NAME $HOME/doc
 

@@ -1,6 +1,0 @@
-# post-uninstall scriptlet
-# on update restart the service 
-if [ $1 -eq 1 ] ; then
-    /sbin/service argus-pepd start
-fi
-

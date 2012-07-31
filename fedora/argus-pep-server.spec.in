@@ -1,0 +1,117 @@
+## Turn off meaningless jar repackaging on SL6
+%define __jar_repack 0
+
+Name: argus-pep-server
+
+Version: 1.5.2
+Release: 1%{?dist}
+Summary: Argus PEP Server
+
+Group: System Environment/Daemons
+License: ASL 2.0
+URL: https://twiki.cern.ch/twiki/bin/view/EGEE/AuthorizationFramework
+
+Source: %{name}-%{version}.tar.gz
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+BuildArch: noarch
+
+BuildRequires: java-devel
+BuildRequires: maven
+
+Requires: java
+Requires: redhat-lsb
+Requires: argus-pep-common
+Requires: argus-pepd-pep-common
+Requires: emi-trustmanager
+Requires: voms-api-java
+Requires: bouncycastle
+
+%description 
+Argus PEP (Policy Enforcement Point) Server.
+The Argus Authorization Service renders consistent authorization decisions for distributed services (e.g., user interfaces, portals, computing elements, storage elements). The service is based on the XACML standard, and uses authorization policies to determine if a user is allowed or denied to perform a certain action on a particular service.
+The Argus Authorization Service is composed of three main components:
+- The Policy Administration Point (PAP) provides the tools to author authorization policies, organize them in the local repository and configure policy distribution among remote PAPs.
+- The Policy Decision Point (PDP) implements the authorization engine, and is responsible for the evaluation of the authorization requests against the XACML policies retrieved from the PAP.
+- The Policy Enforcement Point Server (PEP Server) ensures the integrity and consistency of the authorization requests received from the PEP clients. Lightweight PEP client libraries are also provided to ease the integration and interoperability with other EMI services or components. 
+
+%prep
+%setup -q -n argus-pep-server
+
+%build
+mvn -B @@BUILD_SETTINGS@@ package
+
+%install
+rm -rf $RPM_BUILD_ROOT
+mkdir -p $RPM_BUILD_ROOT
+tar -C $RPM_BUILD_ROOT -xvzf target/%{name}-%{version}.tar.gz
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%pre
+# on update stop the service, and clean up the lib directory
+if [ $1 -gt 1 ] ; then
+    /sbin/service argus-pepd stop > /dev/null 2>&1 || :
+    # delete all old bundled jar files and links
+    if [ -d /var/lib/argus/pepd/lib ] ; then
+        rm -f /var/lib/argus/pepd/lib/endorsed/*.jar 
+        rm -f /var/lib/argus/pepd/lib/*.jar
+    fi
+fi
+
+%preun
+# on uninstall stop and deregister the service
+if [ $1 -eq 0 ] ; then
+    /sbin/service argus-pepd stop > /dev/null 2>&1 || :
+    /sbin/chkconfig --del argus-pepd
+fi
+
+%post
+# create links to /usr/share/java jar files
+for jarname in argus-pep-common argus-pdp-pep-common voms-api-java trustmanager bcprov ; do
+    [ -f /usr/share/java/$jarname.jar ] || exit 1
+    ln -fs /usr/share/java/$jarname.jar /var/lib/argus/pepd/lib
+done
+# on install register the service in init.d
+if [ $1 -eq 1 ]; then 
+    /sbin/chkconfig --add argus-pepd
+fi
+
+%postun
+# on update restart the service 
+if [ $1 -eq 1 ] ; then
+    /sbin/service argus-pepd start
+fi
+
+%files
+%defattr(-,root,root,-)
+%{_sysconfdir}/init.d/argus-pepd
+%dir %{_sysconfdir}/argus/pepd
+%config(noreplace) %{_sysconfdir}/argus/pepd/logging.xml
+%config(noreplace) %{_sysconfdir}/argus/pepd/pepd.ini
+%config(noreplace) %{_sysconfdir}/sysconfig/argus-pepd
+%{_sbindir}/pepdctl
+%dir %{_datadir}/argus/pepd
+%dir %{_datadir}/argus/pepd/sbin
+%{_datadir}/argus/pepd/logs
+%{_datadir}/argus/pepd/conf
+%{_datadir}/argus/pepd/doc
+%{_datadir}/argus/pepd/lib
+%{_datadir}/argus/pepd/sbin/pepdctl
+%dir %{_defaultdocdir}/argus/pepd
+%{_defaultdocdir}/argus/pepd/COPYRIGHT
+%{_defaultdocdir}/argus/pepd/LICENSE
+%{_defaultdocdir}/argus/pepd/RELEASE-NOTES
+%dir %{_localstatedir}/lib/argus/pepd/lib
+%dir %{_localstatedir}/lib/argus/pepd/lib/endorsed
+%{_localstatedir}/lib/argus/pepd/lib/*.jar
+%{_localstatedir}/lib/argus/pepd/lib/endorsed/*.jar
+%dir %{_localstatedir}/log/argus/pepd
+
+%changelog
+* Mon Jul 30 2012 Valery Tschopp <valery.tschopp@switch.ch> 1.5.2-1
+- Self managed packaging with spec file.
+
+* Tue Apr 3 2012 Valery Tschopp <valery.tschopp@switch.ch> 1.5.1-1
+- Initial Argus PDP for EMI 2.
+

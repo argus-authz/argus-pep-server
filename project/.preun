@@ -1,7 +1,0 @@
-# pre-unistall scriptlet
-# on uninstall stop and deregister the service
-if [ $1 -eq 0 ] ; then
-    /sbin/service argus-pepd stop > /dev/null 2>&1 || :
-    /sbin/chkconfig --del argus-pepd
-fi
-

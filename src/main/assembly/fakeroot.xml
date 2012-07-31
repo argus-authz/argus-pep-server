@@ -32,6 +32,7 @@ Installed in a fakeroot directory structure.
             <outputDirectory>/var/lib/argus/pepd/lib</outputDirectory>
             <excludes>
                 <exclude>net.jcip:*</exclude>
+                <exclude>log4j:log4j</exclude>                
                 <!-- use jars from /usr/share/java directory -->
                 <exclude>org.bouncycastle:*</exclude>
                 <exclude>emi:trustmanager</exclude>
@@ -45,8 +46,10 @@ Installed in a fakeroot directory structure.
             <scope>runtime</scope>
             <outputDirectory>/var/lib/argus/pepd/lib/endorsed</outputDirectory>
             <includes>
-                <include>org.apache.xerces:*</include>
-                <include>org.apache.xalan:*</include>
+                <include>xerces:*</include>
+                <include>xml-apis:*</include>
+                <include>xml-resolver:*</include>
+                <include>xalan:*</include>
             </includes>
             <fileMode>0644</fileMode>
         </dependencySet>
@@ -55,8 +58,8 @@ Installed in a fakeroot directory structure.
     <fileSets>
         <!-- /usr/share/argus/pepd home directory -->
         <fileSet>
-            <directory>src/main/empty-dir</directory>
-            <excludes><exclude>.empty</exclude></excludes>
+            <directory>src/main/build</directory>
+            <excludes><exclude>*</exclude></excludes>
             <outputDirectory>/usr/share/argus/pepd</outputDirectory>
         </fileSet>
         <!-- /usr/share/argus/pepd/sbin/pepdctl control script -->
@@ -74,8 +77,8 @@ Installed in a fakeroot directory structure.
         </fileSet>
         <!-- /usr/sbin for linking pepdctl -->
         <fileSet>
-            <directory>src/main/empty-dir</directory>
-            <excludes><exclude>.empty</exclude></excludes>
+            <directory>src/main/build</directory>
+            <excludes><exclude>*</exclude></excludes>
             <outputDirectory>/usr/sbin</outputDirectory>
         </fileSet>
         <!-- /etc/sysconfig/argus-pepd optional config -->
@@ -92,8 +95,8 @@ Installed in a fakeroot directory structure.
         </fileSet>
         <!-- /var/log/argus/pepd logging directory -->
         <fileSet>
-            <directory>src/main/empty-dir</directory>
-            <excludes><exclude>.empty</exclude></excludes>
+            <directory>src/main/build</directory>
+            <excludes><exclude>*</exclude></excludes>
             <outputDirectory>/var/log/argus/pepd</outputDirectory>
             <directoryMode>0750</directoryMode>
         </fileSet>        
