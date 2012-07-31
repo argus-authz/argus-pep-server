@@ -260,7 +260,7 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <build>
-                <finalName>argus-pepd</finalName>
+                <finalName>argus-pep-server</finalName>
                 <plugins>
                     <plugin>
                         <artifactId>maven-assembly-plugin</artifactId>
@@ -303,7 +303,7 @@
                                     <executable>/bin/sh</executable>
                                     <arguments>
                                         <argument>${basedir}/src/main/build/emi-binary-tarball.sh</argument>
-                                        <argument>argus-pep-server-${project.version}</argument>
+                                        <argument>${project.build.finalName}-${project.version}</argument>
                                    </arguments>
                                 </configuration>
                             </execution>
