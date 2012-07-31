@@ -303,7 +303,7 @@
                                     <executable>/bin/sh</executable>
                                     <arguments>
                                         <argument>${basedir}/src/main/build/emi-binary-tarball.sh</argument>
-                                        <argument>${project.build.finalName}-${project.version}</argument>
+                                        <argument>argus-pep-server-${project.version}</argument>
                                    </arguments>
                                 </configuration>
                             </execution>
