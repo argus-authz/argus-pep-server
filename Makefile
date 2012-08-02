@@ -27,6 +27,7 @@ package-etics: spec-etics
 
 
 rpm: 
+	echo "Building RPM in $(rpmbuild_dir)"
 	mkdir -p $(rpmbuild_dir)/BUILD $(rpmbuild_dir)/RPMS \
 		$(rpmbuild_dir)/SOURCES $(rpmbuild_dir)/SPECS \
 		$(rpmbuild_dir)/SRPMS
@@ -34,6 +35,7 @@ rpm:
 	rpmbuild --nodeps -v -ba $(spec) --define "_topdir $(rpmbuild_dir)"
 
 etics: rpm
+	echo "Publising RPMs and tarballs"
 	mkdir -p tgz RPMS
 	cp target/*.tar.gz tgz
 	cp -r $(rpmbuild_dir)/RPMS/* $(rpmbuild_dir)/SRPMS/* RPMS
