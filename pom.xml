@@ -7,7 +7,7 @@
         <groupId>org.glite.authz</groupId>
         <artifactId>argus-parent</artifactId>
         <version>1.5</version>
-        <relativePath>../emi.argus.parent</relativePath>
+        <!-- <relativePath>../emi.argus.parent</relativePath> -->
     </parent>
 
     <name>Argus PEP Server</name>
