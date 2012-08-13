@@ -26,7 +26,7 @@ spec-etics:
 package-etics: spec-etics
 	mvn -B -s $(settings_file) package
 
-rpm: 
+rpm: package
 	@echo "Building RPM in $(rpmbuild_dir)"
 	mkdir -p $(rpmbuild_dir)/BUILD $(rpmbuild_dir)/RPMS \
 		$(rpmbuild_dir)/SOURCES $(rpmbuild_dir)/SPECS \
@@ -39,8 +39,9 @@ install:
 	mkdir -p $(DESTDIR)$(prefix)
 	tar -C $(DESTDIR)$(prefix) -xvzf target/$(name)-$(version).tar.gz
 
-etics: rpm
+etics:
 	@echo "Publising RPMs and tarballs"
+	test -f $(rpmbuild_dir)/SRPMS/$(name)-$(version)-*.src.rpm
 	mkdir -p tgz RPMS
 	cp target/*.tar.gz tgz
 	cp -r $(rpmbuild_dir)/RPMS/* $(rpmbuild_dir)/SRPMS/* RPMS
