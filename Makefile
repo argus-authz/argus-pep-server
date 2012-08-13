@@ -2,8 +2,10 @@ name=argus-pep-server
 spec=fedora/$(name).spec
 version=$(shell grep "Version:" $(spec) | sed -e "s/Version://g" -e "s/[ \t]*//g")
 release=1
+
 rpmbuild_dir=$(shell pwd)/rpmbuild
-settings_file=project/emi-maven-settings.xml
+maven_nexus_settings_file=project/emi-maven-settings.xml
+maven_settings_file=project/maven-settings.xml
 stage_dir=$(shell pwd)/stage
 prefix=/
 
@@ -15,16 +17,16 @@ clean:
 	rm -rf target $(rpmbuild_dir) stage tgz RPMS $(spec)
 
 spec:
-	sed -e 's#@@BUILD_SETTINGS@@# #g' $(spec).in > $(spec)
+	sed -e 's#@@BUILD_SETTINGS@@#-s $(maven_settings_file)#g' $(spec).in > $(spec)
 
 package: spec
-	mvn -B package
+	mvn -B -s $(maven_settings_file) package
 
 spec-etics:
-	sed -e 's#@@BUILD_SETTINGS@@#-s $(settings_file)#g' $(spec).in > $(spec)
+	sed -e 's#@@BUILD_SETTINGS@@#-s $(maven_nexus_settings_file)#g' $(spec).in > $(spec)
 
 package-etics: spec-etics
-	mvn -B -s $(settings_file) package
+	mvn -B -s $(maven_nexus_settings_file) package
 
 rpm: package
 	@echo "Building RPM in $(rpmbuild_dir)"
