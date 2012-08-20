@@ -1,40 +1,80 @@
+##
+# Copyright (c) Members of the EGEE Collaboration. 2006-2010.
+# See http://www.eu-egee.org/partners/ for details on the copyright holders.
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
 name=argus-pep-server
-spec=fedora/$(name).spec
-version=$(shell grep "Version:" $(spec) | sed -e "s/Version://g" -e "s/[ \t]*//g")
+
+version=1.5.2
 release=1
 
-rpmbuild_dir=$(shell pwd)/rpmbuild
-maven_nexus_settings_file=project/emi-maven-settings.xml
-maven_settings_file=project/maven-settings.xml
-stage_dir=$(shell pwd)/stage
 prefix=/
 
-.PHONY: etics package clean rpm
+spec_file=fedora/$(name).spec
+maven_settings_file=project/maven-settings.xml
 
-all: package rpm
+rpmbuild_dir=$(CURDIR)/rpmbuild
+debbuild_dir = $(CURDIR)/debbuild
+stage_dir=$(CURDIR)/stage
+tmp_dir=$(CURDIR)/tmp
 
-clean:	
-	rm -rf target $(rpmbuild_dir) stage tgz RPMS $(spec)
+.PHONY: clean spec package dist rpm debian install
+
+all: package
+
+clean:
+	rm -rf target $(rpmbuild_dir) $(debbuild_dir) $(tmp_dir) *.tar.gz stage tgz RPMS $(spec_file)
+
 
 spec:
-	sed -e 's#@@BUILD_SETTINGS@@#-s $(maven_settings_file)#g' $(spec).in > $(spec)
+	@echo "Setting version and release in spec file: $(version)-$(release)"
+	sed -e 's#@@VERSION@@#$(version)#g' -e 's#@@RELEASE@@#$(release)#g' $(spec_file).in > $(spec_file)
+
 
 package: spec
+	@echo "Build with maven"
 	mvn -B -s $(maven_settings_file) package
 
-spec-etics:
-	sed -e 's#@@BUILD_SETTINGS@@#-s $(maven_nexus_settings_file)#g' $(spec).in > $(spec)
 
-package-etics: spec-etics
-	mvn -B -s $(maven_nexus_settings_file) package
+dist: package
+	@echo "Repackaging the maven source tarball..."
+	test ! -d $(tmp_dir) || rm -fr $(tmp_dir)
+	mkdir -p $(tmp_dir)
+	tar -C $(tmp_dir) -xzf target/$(name)-$(version).src.tar.gz
+	mv $(tmp_dir)/$(name) $(tmp_dir)/$(name)-$(version)
+	test ! -f $(name)-$(version).tar.gz || rm $(name)-$(version).tar.gz
+	tar -C $(tmp_dir) -czf $(name)-$(version).tar.gz $(name)-$(version)
+	rm -fr $(tmp_dir)
 
-rpm: package
-	@echo "Building RPM in $(rpmbuild_dir)"
-	mkdir -p $(rpmbuild_dir)/BUILD $(rpmbuild_dir)/RPMS \
-		$(rpmbuild_dir)/SOURCES $(rpmbuild_dir)/SPECS \
-		$(rpmbuild_dir)/SRPMS
-	cp target/$(name)-$(version).src.tar.gz $(rpmbuild_dir)/SOURCES/$(name)-$(version).tar.gz
-	rpmbuild --nodeps -v -ba $(spec) --define "_topdir $(rpmbuild_dir)"
+
+rpm: dist
+	@echo "Building RPM and SRPM in $(rpmbuild_dir)"
+	mv $(name)-$(version).tar.gz $(name)-$(version).src.tar.gz
+	mkdir -p $(rpmbuild_dir)/BUILD $(rpmbuild_dir)/RPMS $(rpmbuild_dir)/SOURCES $(rpmbuild_dir)/SPECS $(rpmbuild_dir)/SRPMS
+	cp $(name)-$(version).src.tar.gz $(rpmbuild_dir)/SOURCES/$(name)-$(version).tar.gz
+	rpmbuild --nodeps -v -ba $(spec_file) --define "_topdir $(rpmbuild_dir)"
+
+
+deb: dist
+	@echo "Building Debian package in $(debbuild_dir)"
+	mv $(name)-$(version).tar.gz $(name)-$(version).src.tar.gz
+	mkdir -p $(debbuild_dir)
+	cp $(name)-$(version).src.tar.gz $(debbuild_dir)/$(name)_$(version).orig.tar.gz
+	tar -C $(debbuild_dir) -xzf $(name)-$(version).src.tar.gz
+	cd $(debbuild_dir)/$(name)-$(version) && debuild -us -uc 
+
 
 install:
 	@echo "Install binary in $(DESTDIR)$(prefix)"
@@ -43,13 +83,8 @@ install:
 	tar -C $(DESTDIR)$(prefix) -xvzf target/$(name)-$(version).tar.gz
 
 etics:
-	@echo "Publising RPMs and tarballs"
+	@echo "Publish RPMS, SRPMS and tarball"
 	test -f $(rpmbuild_dir)/SRPMS/$(name)-$(version)-*.src.rpm
 	mkdir -p tgz RPMS
 	cp target/*.tar.gz tgz
 	cp -r $(rpmbuild_dir)/RPMS/* $(rpmbuild_dir)/SRPMS/* RPMS
-
-stage:
-	@echo "Staging tarball in $(stage_dir)"
-	mkdir -p $(stage_dir)
-	tar -C $(stage_dir) -xvzf target/$(name)-$(version).tar.gz
