@@ -27,7 +27,6 @@ maven_settings_file=project/maven-settings.xml
 
 rpmbuild_dir=$(CURDIR)/rpmbuild
 debbuild_dir = $(CURDIR)/debbuild
-stage_dir=$(CURDIR)/stage
 tmp_dir=$(CURDIR)/tmp
 
 .PHONY: clean spec package dist rpm deb install
@@ -35,7 +34,7 @@ tmp_dir=$(CURDIR)/tmp
 all: package
 
 clean:
-	rm -rf target $(rpmbuild_dir) $(debbuild_dir) $(tmp_dir) *.tar.gz stage tgz RPMS $(spec_file)
+	rm -rf target $(rpmbuild_dir) $(debbuild_dir) $(tmp_dir) *.tar.gz tgz RPMS $(spec_file)
 
 
 spec:
@@ -48,12 +47,15 @@ package: spec
 	mvn -B -s $(maven_settings_file) package
 
 
-dist: package
-	@echo "Repackaging the maven source tarball..."
+dist: spec
+	@echo "Package the sources..."
 	test ! -d $(tmp_dir) || rm -fr $(tmp_dir)
-	mkdir -p $(tmp_dir)
-	tar -C $(tmp_dir) -xzf target/$(name)-$(version).src.tar.gz
-	mv $(tmp_dir)/$(name) $(tmp_dir)/$(name)-$(version)
+	mkdir -p $(tmp_dir)/$(name)-$(version)
+	cp .classpath .project Makefile README.md pom.xml $(tmp_dir)/$(name)-$(version)
+	cp -r debian fedora $(tmp_dir)/$(name)-$(version)
+	cp -r project $(tmp_dir)/$(name)-$(version)
+	cp -r doc $(tmp_dir)/$(name)-$(version)
+	cp -r src $(tmp_dir)/$(name)-$(version)
 	test ! -f $(name)-$(version).tar.gz || rm $(name)-$(version).tar.gz
 	tar -C $(tmp_dir) -czf $(name)-$(version).tar.gz $(name)-$(version)
 	rm -fr $(tmp_dir)

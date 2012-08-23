@@ -268,7 +268,8 @@
                         <configuration>
                             <descriptors>
                                 <descriptor>src/main/assembly/fakeroot.xml</descriptor>
-                                <descriptor>src/main/assembly/src-tarball.xml</descriptor>
+                                <!-- don't build source tarball with maven, use 'make dist' -->
+                                <!-- <descriptor>src/main/assembly/src-tarball.xml</descriptor> -->
                             </descriptors>
                             <attach>false</attach>
                             <ignoreDirFormatExtensions>false</ignoreDirFormatExtensions>
