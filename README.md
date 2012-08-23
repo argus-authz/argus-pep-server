@@ -1,5 +1,5 @@
 Argus PEP Server
-----------------
+================
 The Argus Authorization Service renders consistent authorization 
 decisions for distributed services (e.g., user interfaces, 
 portals, computing elements, storage elements). The service is 
