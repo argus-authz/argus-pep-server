@@ -5,4 +5,5 @@
 /RPMS
 /tgz
 /*.tar.gz
+/.pc
 argus-pep-server.spec
