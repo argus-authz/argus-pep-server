@@ -1,0 +1,14 @@
+argus-pepd for Debian
+--------------------
+
+On Debian 6, the available bouncycastle library is too old (bcprov-java 1.44). The upstream
+sources are patched to use bcprov 1.46 and embed it in the /var/lib/argus/pepd/lib directory.
+
+On Debian, the system configuration are stored in /etc/default. The upstream source are patched
+to rename the RHEL /etc/sysconfig directory to /etc/default.
+
+Not Debian packages exist yet for trustmanager and voms-api-java. The upstream source are patched
+to use trustmanager-3.1.4.jar and voms-api-java-2.0.8.jar from maven and embed them in the 
+/var/lib/argus/pepd/lib directory
+
+ -- Valery Tschopp <valery.tschopp@switch.ch>  Wed, 22 Aug 2012 11:10:59 +0200

@@ -1,0 +1,11 @@
+etc/argus/pepd
+etc/default
+etc/init.d
+usr/sbin
+usr/share/argus/pepd
+usr/share/argus/pepd/sbin
+var/lib/argus/pepd
+var/lib/argus/pepd/lib
+var/lib/argus/pepd/lib/endorsed
+var/log/argus/pepd
+
