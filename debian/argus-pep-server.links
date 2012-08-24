@@ -1,0 +1,6 @@
+# create links: $2 -> $1
+usr/share/argus/pepd/sbin/pepdctl usr/sbin/pepdctl
+etc/argus/pepd usr/share/argus/pepd/conf
+usr/share/doc/argus-pep-server usr/share/argus/pepd/doc
+var/lib/argus/pepd/lib usr/share/argus/pepd/lib
+var/log/argus/pepd usr/share/argus/pepd/logs
