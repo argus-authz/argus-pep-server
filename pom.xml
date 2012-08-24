@@ -453,7 +453,7 @@
         <url>http://www.eu-emi.eu/</url>
     </organization>
     <scm>
-    	<connection>scm:git:https://github.com/argus-authz/argus-pep-server.git</connection>
-    	<url>https://github.com/argus-authz/argus-pep-server</url>
+        <connection>scm:git:https://github.com/argus-authz/argus-pep-server.git</connection>
+        <url>https://github.com/argus-authz/argus-pep-server</url>
     </scm>
 </project>
