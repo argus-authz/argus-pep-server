@@ -23,8 +23,8 @@
 #
 ### BEGIN INIT INFO
 # Provides:          argus-pepd
-# Required-Start:    $network $remote_fs argus-pap argus-pdp
-# Required-Stop:     $network $remote_fs argus-pap argus-pdp
+# Required-Start:    $network $remote_fs 
+# Required-Stop:     $network $remote_fs 
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: Start pep-daemon at boot time
@@ -58,33 +58,38 @@ else
     exit 1
 fi
 
-PEPD_PROG="${NAME}"
+PEPD_PROG="$NAME"
 SHUTDOWN_WAIT=60
 KILL_WAIT=15
 HAS_LOCK=0
 PEPD_LOCK=
-PEPD_PID=${PEPD_PID:-"/var/run/${NAME}.pid"}
+PEPD_PID=${PEPD_PID:-"/var/run/$NAME.pid"}
 
 # See if there is an appropriate location for the lock-file, if not, do not use a lock-file
 if [ -d "/var/lock/subsys" ]; then
-    PEPD_LOCK="/var/lock/subsys/${NAME}"
+    PEPD_LOCK="/var/lock/subsys/$NAME"
     HAS_LOCK=1
 elif [ -d "/var/lock" ]; then
-    PEPD_LOCK="/var/lock/${NAME}"
+    PEPD_LOCK="/var/lock/$NAME"
     HAS_LOCK=1
 fi
 
 # source optional system configuration
-if [ -r "/etc/sysconfig/argus-pepd" ]; then
+# from /etc/sysconfig dir on SL5/SL6
+if [ -r "/etc/sysconfig/$NAME" ]; then
     # Auto-export variables to subsequent scripts
     set -a
-    source /etc/sysconfig/argus-pepd
+    source "/etc/sysconfig/$NAME"
+# from /etc/default dir on Debian6
+elif [ -r "/etc/default/$NAME" ]; then
+    # Auto-export variables to subsequent scripts
+    set -a
+    source "/etc/default/$NAME"
 fi
-
 
 # Function to start the PEPD daemon
 function start() {
-    echo -n "Starting ${PEPD_PROG}... "
+    echo -n "Starting $PEPD_PROG... "
     # get the current state of the program, this also creates appropriate pid and lock files
     # if the program is running but the files are missing.
     _current_state
@@ -115,7 +120,7 @@ function start() {
 
 # Function to stop the PEPD
 function stop() {
-    echo -n "Stopping ${PEPD_PROG}... "
+    echo -n "Stopping $PEPD_PROG... "
     _current_state
     state=$?
     
@@ -150,10 +155,10 @@ function status() {
     _current_state
     state=$?
     if [ $state -eq 5 ]; then
-        echo "${PEPD_PROG} is not running..."
+        echo "$PEPD_PROG is not running..."
         return $state
     else
-        echo "${PEPD_PROG} is running..."
+        echo "$PEPD_PROG is running..."
     fi
 }
 
@@ -162,7 +167,7 @@ function info() {
     _current_state
     state=$?
     if [ $state -eq 5 ]; then
-        echo "${PEPD_PROG} is not running..."
+        echo "$PEPD_PROG is not running..."
         return $state
     else
         $PEPDCTL status
@@ -174,7 +179,7 @@ function clearcache() {
     _current_state
     state=$?
     if [ $state -eq 5 ]; then
-        echo "${PEPD_PROG} is not running..."
+        echo "$PEPD_PROG is not running..."
         return $state
     else
         $PEPDCTL clearResponseCache
@@ -239,7 +244,7 @@ case "$1" in
     stop)
         stop
         ;;
-    restart)
+    restart|force-reload)
         stop
         start
         ;;
