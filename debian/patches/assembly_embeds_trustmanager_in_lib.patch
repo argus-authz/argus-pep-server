@@ -1,0 +1,15 @@
+Description: embeds trustmanager 3.1.4 in the lib directory.
+ EMI Trustmanager 3.1.4 does not have a Debian package (yet).
+ The assembly embeds trustmanager 3.1.4 from the SWITCH maven repo into
+ the lib directory.
+Author: Valery Tschopp <valery.tschopp@switch.ch>
+--- a/src/main/assembly/fakeroot.xml
++++ b/src/main/assembly/fakeroot.xml
+@@ -34,7 +34,6 @@
+                 <exclude>net.jcip:*</exclude>
+                 <exclude>log4j:log4j</exclude>                
+                 <!-- use jars from /usr/share/java directory -->
+-                <exclude>emi:trustmanager</exclude>
+                 <exclude>org.glite.voms:voms-api-java</exclude>
+                 <exclude>org.glite.authz:pep-common</exclude>
+                 <exclude>org.glite.authz:pdp-pep-common</exclude>

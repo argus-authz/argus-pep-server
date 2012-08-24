@@ -1,0 +1,21 @@
+Description: pom.xml defines a dependency on bouncycastle 1.46
+ Overwrite the default debian OS bcprov 1.44 which is too old.
+ The assembly will include bcprov 1.46, and then the bouncycastle
+ is embedded in the lib directory.
+Author: Valery Tschopp <valery.tschopp@switch.ch>
+
+--- a/pom.xml
++++ b/pom.xml
+@@ -29,6 +29,12 @@
+     </repositories>
+ 
+     <dependencies>
++        <!-- Debian6 patch: OS provided bouncycastle is too old -->
++        <dependency>
++            <groupId>org.bouncycastle</groupId>
++            <artifactId>bcprov-jdk15</artifactId>
++            <version>1.46</version>
++        </dependency>
+         <!-- Compile Dependencies -->
+         <dependency>
+             <groupId>org.glite.authz</groupId>

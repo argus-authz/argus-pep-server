@@ -1,0 +1,18 @@
+Description: pom.xml defines a dependency on voms-api-java 2.0.8
+ The assembly will embed voms-api-java 2.0.8 in the lib directory.
+Author: Valery Tschopp <valery.tschopp@switch.ch>
+--- a/pom.xml
++++ b/pom.xml
+@@ -29,6 +29,12 @@
+     </repositories>
+ 
+     <dependencies>
++        <!-- Debian6 patch: uses voms-api-java 2.0.8 -->
++        <dependency>
++            <groupId>org.glite.voms</groupId>
++            <artifactId>voms-api-java</artifactId>
++            <version>2.0.8</version>
++        </dependency>
+         <!-- Debian6 patch: uses trustmanager 3.1.4 -->
+         <dependency>
+             <groupId>emi</groupId>

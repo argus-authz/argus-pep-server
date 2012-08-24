@@ -1,0 +1,7 @@
+assembly_renames_sysconfig_to_default.patch
+assembly_embeds_bcprov_in_lib.patch
+pom_defines_bcprov_1_46.patch
+assembly_embeds_trustmanager_in_lib.patch
+pom_defines_trustmanager_3_1_4.patch
+assembly_embeds_voms_api_in_lib.patch
+pom_defines_voms_api_2_0_8.patch

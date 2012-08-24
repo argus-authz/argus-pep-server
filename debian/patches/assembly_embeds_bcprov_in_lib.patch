@@ -1,0 +1,15 @@
+Description: embeds bcprov 1.46 in the lib directory.
+ On debian OS bcprov 1.44 which is too old.
+ The assembly embeds bcprov 1.46 in the lib directory.
+Author: Valery Tschopp <valery.tschopp@switch.ch>
+
+--- a/src/main/assembly/fakeroot.xml
++++ b/src/main/assembly/fakeroot.xml
+@@ -34,7 +34,6 @@
+                 <exclude>net.jcip:*</exclude>
+                 <exclude>log4j:log4j</exclude>                
+                 <!-- use jars from /usr/share/java directory -->
+-                <exclude>org.bouncycastle:*</exclude>
+                 <exclude>emi:trustmanager</exclude>
+                 <exclude>org.glite.voms:voms-api-java</exclude>
+                 <exclude>org.glite.authz:pep-common</exclude>
