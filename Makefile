@@ -122,6 +122,9 @@ etics:
 		mv -v $(name)-$(version).tar.gz $(tgz_dir) ; \
 		rm -fr $(tmp_dir) ; \
 	fi
+	test ! -f $(debbuild_dir)/$(name)_$(version)-*.dsc || cp -v $(debbuild_dir)/$(name)_$(version)-*.dsc $(deb_dir)
+	test ! -f $(debbuild_dir)/$(name)_$(version)-*.debian.tar.gz || cp -v $(debbuild_dir)/$(name)_$(version)-*.debian.tar.gz $(deb_dir)
+	test ! -f $(debbuild_dir)/$(name)_$(version).orig.tar.gz || cp -v $(debbuild_dir)/$(name)_$(version).orig.tar.gz $(deb_dir)
 	if [ -f $(debbuild_dir)/$(name)_$(version)-*.deb ] ; then \
 		cp -v $(debbuild_dir)/$(name)_$(version)-*.deb $(deb_dir) ; \
 		test ! -d $(tmp_dir) || rm -fr $(tmp_dir) ; \
