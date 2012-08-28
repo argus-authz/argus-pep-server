@@ -130,6 +130,7 @@ etics:
 		test ! -d $(tmp_dir) || rm -fr $(tmp_dir) ; \
 		mkdir -p $(tmp_dir) ; \
 		dpkg -x $(debbuild_dir)/$(name)_$(version)-*.deb $(tmp_dir) ; \
+		cd $(tmp_dir) ; \
 		tar -C $(tmp_dir) -czf $(name)-$(version).tar.gz * ; \
 		mv -v $(name)-$(version).tar.gz $(tgz_dir) ; \
 		rm -fr $(tmp_dir) ; \
