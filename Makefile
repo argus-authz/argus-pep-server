@@ -80,14 +80,23 @@ rpm: pre_rpmbuild
 	rpmbuild --nodeps -v -ba $(spec_file) --define "_topdir $(rpmbuild_dir)"
 
 
-deb:
+pre_debbuild:
 	test -f $(name)-$(version).tar.gz || make dist
-	@echo "Building Debian package in $(debbuild_dir)"
+	@echo "Prepare for Debian building in $(debbuild_dir)"
 	mv $(name)-$(version).tar.gz $(name)-$(version).src.tar.gz
 	mkdir -p $(debbuild_dir)
 	cp $(name)-$(version).src.tar.gz $(debbuild_dir)/$(name)_$(version).orig.tar.gz
 	tar -C $(debbuild_dir) -xzf $(name)-$(version).src.tar.gz
+
+
+deb: pre_debbuild
+	@echo "Building Debian package in $(debbuild_dir)"
 	cd $(debbuild_dir)/$(name)-$(version) && debuild -us -uc 
+
+
+deb-src: pre_debbuild
+	@echo "Building Debian source package in $(debbuild_dir)"
+	cd $(debbuild_dir) && dpkg-source -b $(name)-$(version)
 
 
 install:
