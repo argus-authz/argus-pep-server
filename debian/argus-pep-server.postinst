@@ -29,6 +29,8 @@ case "$1" in
         fi
         ln -fs /usr/share/java/$jarname.jar /var/lib/argus/pepd/lib
     done
+    # fix permissions
+    chmod o-rwx /etc/argus/pepd/pepd.ini
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
