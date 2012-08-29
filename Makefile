@@ -31,7 +31,7 @@ tmp_dir=$(CURDIR)/tmp
 tgz_dir=$(CURDIR)/tgz
 deb_dir=$(CURDIR)/deb
 
-.PHONY: clean spec package dist srpm rpm deb install
+.PHONY: clean spec dist package install srpm rpm deb deb-src
 
 all: package
 
@@ -42,11 +42,6 @@ clean:
 spec:
 	@echo "Setting version and release in spec file: $(version)-$(release)"
 	sed -e 's#@@VERSION@@#$(version)#g' -e 's#@@RELEASE@@#$(release)#g' $(spec_file).in > $(spec_file)
-
-
-package: spec
-	@echo "Build with maven"
-	mvn -B -s $(maven_settings_file) package
 
 
 dist: spec
@@ -61,6 +56,18 @@ dist: spec
 	test ! -f $(name)-$(version).tar.gz || rm $(name)-$(version).tar.gz
 	tar -C $(tmp_dir) -czf $(name)-$(version).tar.gz $(name)-$(version)
 	rm -fr $(tmp_dir)
+
+
+package: spec
+	@echo "Build with maven"
+	mvn -B -s $(maven_settings_file) package
+
+
+install:
+	@echo "Install binary in $(DESTDIR)$(prefix)"
+	test -f target/$(name)-$(version).tar.gz
+	mkdir -p $(DESTDIR)$(prefix)
+	tar -C $(DESTDIR)$(prefix) -xvzf target/$(name)-$(version).tar.gz
 
 
 pre_rpmbuild:
@@ -98,13 +105,6 @@ deb: pre_debbuild
 deb-src: pre_debbuild
 	@echo "Building Debian source package in $(debbuild_dir)"
 	cd $(debbuild_dir) && dpkg-source -b $(name)-$(version)
-
-
-install:
-	@echo "Install binary in $(DESTDIR)$(prefix)"
-	test -f target/$(name)-$(version).tar.gz
-	mkdir -p $(DESTDIR)$(prefix)
-	tar -C $(DESTDIR)$(prefix) -xvzf target/$(name)-$(version).tar.gz
 
 
 etics:
