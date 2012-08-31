@@ -28,15 +28,17 @@ maven_settings_file=project/maven-settings.xml
 rpmbuild_dir=$(CURDIR)/rpmbuild
 debbuild_dir = $(CURDIR)/debbuild
 tmp_dir=$(CURDIR)/tmp
+# ETICS directories
 tgz_dir=$(CURDIR)/tgz
-deb_dir=$(CURDIR)/deb
+rpm_dir=$(CURDIR)/RPMS
+deb_dir=$(CURDIR)/debs
 
 .PHONY: clean spec dist package install srpm rpm deb deb-src
 
 all: package
 
 clean:
-	rm -rf target $(rpmbuild_dir) $(debbuild_dir) $(tmp_dir) *.tar.gz $(tgz_dir) $(deb_dir) RPMS $(spec_file)
+	rm -rf target $(rpmbuild_dir) $(debbuild_dir) $(tmp_dir) *.tar.gz $(tgz_dir) $(rpm_dir) $(deb_dir) $(spec_file)
 
 
 spec:
@@ -109,11 +111,11 @@ deb-src: pre_debbuild
 
 etics:
 	@echo "Publish SRPM/RPM/Debian/tarball"
-	mkdir -p RPMS $(tgz_dir) $(deb_dir)
+	mkdir -p $(rpm_dir) $(tgz_dir) $(deb_dir)
 	test ! -f $(name)-$(version).src.tar.gz || cp -v $(name)-$(version).src.tar.gz $(tgz_dir)
-	test ! -f $(rpmbuild_dir)/SRPMS/$(name)-$(version)-*.src.rpm || cp -v $(rpmbuild_dir)/SRPMS/$(name)-$(version)-*.src.rpm RPMS
+	test ! -f $(rpmbuild_dir)/SRPMS/$(name)-$(version)-*.src.rpm || cp -v $(rpmbuild_dir)/SRPMS/$(name)-$(version)-*.src.rpm $(rpm_dir)
 	if [ -f $(rpmbuild_dir)/RPMS/*/$(name)-$(version)-*.rpm ] ; then \
-		cp -v $(rpmbuild_dir)/RPMS/*/$(name)-$(version)-*.rpm RPMS ; \
+		cp -v $(rpmbuild_dir)/RPMS/*/$(name)-$(version)-*.rpm $(rpm_dir) ; \
 		test ! -d $(tmp_dir) || rm -fr $(tmp_dir) ; \
 		mkdir -p $(tmp_dir) ; \
 		cd $(tmp_dir) ; \
