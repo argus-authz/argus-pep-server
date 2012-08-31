@@ -21,7 +21,7 @@ BuildRequires: maven
 Requires: java
 Requires: redhat-lsb
 Requires: argus-pep-common
-Requires: argus-pepd-pep-common
+Requires: argus-pdp-pep-common
 Requires: emi-trustmanager
 Requires: voms-api-java
 Requires: bouncycastle
