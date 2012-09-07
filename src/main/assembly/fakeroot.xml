@@ -66,14 +66,14 @@ Installed in a fakeroot directory structure.
         <fileSet>
             <directory>src/main/scripts/sbin</directory>
             <outputDirectory>/usr/share/argus/pepd/sbin</outputDirectory>
-            <fileMode>0750</fileMode>
+            <fileMode>0755</fileMode>
         </fileSet>
         <!-- /etc/argus/pepd config directory -->
         <fileSet>
             <directory>src/main/config</directory>
             <outputDirectory>/etc/argus/pepd</outputDirectory>
-            <fileMode>0640</fileMode>
-            <directoryMode>0750</directoryMode>
+            <fileMode>0644</fileMode>
+            <directoryMode>0755</directoryMode>
         </fileSet>
         <!-- /usr/sbin for linking pepdctl -->
         <fileSet>
@@ -85,7 +85,7 @@ Installed in a fakeroot directory structure.
         <fileSet>
             <directory>src/main/scripts/sysconfig</directory>
             <outputDirectory>/etc/sysconfig</outputDirectory>
-            <fileMode>0640</fileMode>
+            <fileMode>0644</fileMode>
         </fileSet>
         <!-- /etc/init.d startup script -->
         <fileSet>
