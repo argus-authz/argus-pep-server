@@ -1,5 +1,5 @@
-## Turn off meaningless jar repackaging on SL6
-%define __jar_repack 0
+# Turn off the brp-java-repack-jars script
+%global __os_install_post %(echo '%{__os_install_post}' | sed -e 's!/usr/lib[^[:space:]]*/brp-java-repack-jars[[:space:]].*$!!g')
 
 Name: argus-pep-server
 
@@ -16,9 +16,11 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch: noarch
 
 BuildRequires: java-devel
+BuildRequires: jpackage-utils
 BuildRequires: maven
 
 Requires: java
+Requires: jpackage-utils
 Requires: redhat-lsb
 Requires: argus-pep-common
 Requires: argus-pdp-pep-common
@@ -64,7 +66,7 @@ make DESTDIR=$RPM_BUILD_ROOT install
 rm -rf $RPM_BUILD_ROOT
 
 %pre
-# on update stop the service, and clean up the lib directory
+# on update (>1) stop the service, and clean up the lib directory
 if [ $1 -gt 1 ] ; then
     /sbin/service argus-pepd stop > /dev/null 2>&1 || :
     # delete all old bundled jar files and links
@@ -74,28 +76,35 @@ if [ $1 -gt 1 ] ; then
     fi
 fi
 
+%post
+# create links to /usr/share/java jar files
+build-jar-repository -s -p /var/lib/argus/pepd/lib argus-pep-common argus-pdp-pep-common voms-api-java trustmanager bcprov 
+# on install (1) register the service in init.d
+if [ $1 -eq 1 ]; then 
+    /sbin/chkconfig --add argus-pepd
+fi
+# correct files/dirs permission
+chmod -f 640 %{_sysconfdir}/argus/pepd/pepd.ini
+chmod -f 750 %{_datadir}/argus/pepd/sbin/pepdctl
+chmod -f 750 %{_localstatedir}/log/argus/pepd
+
 %preun
-# on uninstall stop and deregister the service
+# on uninstall (0) stop and deregister the service
 if [ $1 -eq 0 ] ; then
     /sbin/service argus-pepd stop > /dev/null 2>&1 || :
     /sbin/chkconfig --del argus-pepd
 fi
 
-%post
-# create links to /usr/share/java jar files
-for jarname in argus-pep-common argus-pdp-pep-common voms-api-java trustmanager bcprov ; do
-    [ -f /usr/share/java/$jarname.jar ] || exit 1
-    ln -fs /usr/share/java/$jarname.jar /var/lib/argus/pepd/lib
-done
-# on install register the service in init.d
-if [ $1 -eq 1 ]; then 
-    /sbin/chkconfig --add argus-pepd
-fi
-
 %postun
-# on update restart the service 
+# on update (1) restart the service 
+# on full remove (0) clean up the lib dir
 if [ $1 -eq 1 ] ; then
     /sbin/service argus-pepd start
+elif [ $1 -eq 0 ] ; then
+    # delete all the links created in %post scriptlet
+    if [ -d /var/lib/argus/pepd/lib ] ; then
+        rm -f /var/lib/argus/pepd/lib/*.jar
+    fi
 fi
 
 %files
