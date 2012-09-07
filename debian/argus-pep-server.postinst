@@ -20,17 +20,19 @@ set -e
 
 case "$1" in
     configure)
-    # create links to /usr/share/java jar files from dependencies
-    #TODO: for jarname in argus-pep-common argus-pdp-pep-common voms-api-java trustmanager ; do
-    for jarname in argus-pep-common argus-pdp-pep-common ; do
-        if [ ! -f /usr/share/java/$jarname.jar ] ; then
-           echo "$0: missing dependency jar file: $jarname.jar" >&2
-           exit 1
-        fi
-        ln -fs /usr/share/java/$jarname.jar /var/lib/argus/pepd/lib
-    done
-    # fix permissions
-    chmod o-rwx /etc/argus/pepd/pepd.ini
+        # create links to /usr/share/java jar files from dependencies
+        #TODO: for jarname in argus-pep-common argus-pdp-pep-common voms-api-java trustmanager ; do
+        for jarname in argus-pep-common argus-pdp-pep-common ; do
+            if [ ! -f /usr/share/java/$jarname.jar ] ; then
+                echo "$0: missing dependency jar file: $jarname.jar" >&2
+                exit 1
+            fi
+            ln -fs /usr/share/java/$jarname.jar /var/lib/argus/pepd/lib
+        done
+        # fix permissions
+        chmod -f 640 /etc/argus/pepd/pepd.ini
+        chmod -f 750 /usr/share/argus/pepd/sbin/pepdctl
+        chmod -f 750 /var/log/argus/pepd
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
