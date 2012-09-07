@@ -2,7 +2,7 @@ Source: argus-pep-server
 Priority: extra
 Maintainer: Valery Tschopp <valery.tschopp@switch.ch>
 Build-Depends: debhelper (>= 7.0.50~), maven2, default-jdk
-Standards-Version: 3.8.4
+Standards-Version: 3.9.1
 Section: java
 Homepage: https://twiki.cern.ch/twiki/bin/view/EGEE/AuthorizationFramework
 Vcs-Git: git://github.com/argus-authz/argus-pep-server.git
