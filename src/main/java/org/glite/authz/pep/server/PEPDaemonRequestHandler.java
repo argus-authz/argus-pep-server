@@ -26,6 +26,7 @@ import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.store.MemoryStoreEvictionPolicy;
 
+import org.glite.authz.common.AuthzServiceConstants;
 import org.glite.authz.common.context.DecisionRequestContext;
 import org.glite.authz.common.context.DecisionRequestContextHelper;
 import org.glite.authz.common.logging.LoggingConstants;
@@ -39,11 +40,11 @@ import org.glite.authz.pep.obligation.ObligationProcessingException;
 import org.glite.authz.pep.pip.PIPProcessingException;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
 import org.glite.authz.pep.server.config.PEPDaemonConfiguration;
-
 import org.opensaml.Configuration;
 import org.opensaml.saml2.core.Assertion;
 import org.opensaml.saml2.core.Statement;
 import org.opensaml.ws.soap.client.SOAPFaultException;
+import org.opensaml.ws.soap.client.http.HttpSOAPRequestParameters;
 import org.opensaml.ws.soap.common.SOAPException;
 import org.opensaml.ws.soap.soap11.Envelope;
 import org.opensaml.xacml.ctx.RequestType;
@@ -93,18 +94,7 @@ public class PEPDaemonRequestHandler {
 
         if (daemonConfig.getMaxCachedResponses() > 0) {
             CacheManager cacheMgr= CacheManager.create();
-            responseCache= new Cache(RESPONSE_CACHE_NAME,
-                                     daemonConfig.getMaxCachedResponses(),
-                                     MemoryStoreEvictionPolicy.LFU,
-                                     false,
-                                     null,
-                                     false,
-                                     daemonConfig.getCachedResponseTTL(),
-                                     daemonConfig.getCachedResponseTTL(),
-                                     false,
-                                     Long.MAX_VALUE,
-                                     null,
-                                     null);
+            responseCache= new Cache(RESPONSE_CACHE_NAME, daemonConfig.getMaxCachedResponses(), MemoryStoreEvictionPolicy.LFU, false, null, false, daemonConfig.getCachedResponseTTL(), daemonConfig.getCachedResponseTTL(), false, Long.MAX_VALUE, null, null);
             cacheMgr.addCache(responseCache);
         }
         else {
@@ -113,12 +103,12 @@ public class PEPDaemonRequestHandler {
     }
 
     /**
-     * Handles a PEP think client request. The request is deserialized from the
-     * input stream and then converted into a {@link RequestType}. The request
-     * is sent to a PDP with each registered PDP being tried in turn until one
-     * accepts the incoming connection. The
+     * Handles a PEP thin client Hessian request. The request is deserialized
+     * from the input stream and then converted into a {@link RequestType}. The
+     * request is sent to a PDP with each registered PDP being tried in turn
+     * until one accepts the incoming connection. The
      * {@link org.opensaml.xacml.ctx.ResponseType} from the PDP is then turned
-     * in to a {@link Response}, serialized and then written out.
+     * in to a {@link Response}, serialized in Hessian and then written out.
      * 
      * @param request
      *            the request to be evaluated
@@ -132,92 +122,81 @@ public class PEPDaemonRequestHandler {
     public Response handle(Request request) throws IOException {
         daemonConfig.getServiceMetrics().incrementTotalServiceRequests();
 
-        DecisionRequestContext messageContext= DecisionRequestContextHelper.buildMessageContext(daemonConfig.getEntityId());
+        PEPDaemonDecisionRequestContext messageContext= buildMessageContext(daemonConfig.getEntityId());
 
         Response response= null;
         try {
             // run the policy information points over the request
             for (PolicyInformationPoint pip : daemonConfig.getPolicyInformationPoints()) {
                 if (pip.populateRequest(request)) {
-                    log.debug("Applied PIP {} to Hessian request", pip.getId());
+                    log.debug("PIP {} applied to Hessian request", pip.getId());
                 }
                 else {
-                    log.debug("PIP {} did not apply to this request",
-                              pip.getId());
+                    log.debug("PIP {} do not apply to request", pip.getId());
                 }
             }
-            protocolLog.info("Hessian request after PIPs have been run\n{}",
-                             request.toString());
+            protocolLog.info("Hessian request after PIPs have been run\n{}", request.toString());
 
-            // check to see if we have a cached response, if not, make the
-            // request to the PDP
+            // check to see if we have a cached response
             if (responseCache != null) {
                 log.debug("Checking if a response has already been cached for this request");
                 net.sf.ehcache.Element cacheElement= responseCache.get(request);
                 if (cacheElement != null) {
-                    response= (Response) cacheElement.getValue();
-                    if (response != null) {
+                    Response cachedResponse= (Response) cacheElement.getValue();
+                    if (cachedResponse != null) {
                         log.debug("Cached response found, using it");
-                        return response;
+                        response= cachedResponse;
                     }
                 }
             }
-            log.debug("Response not found in cache");
-
-            // no cached response so make request to PDP and cache the result
-            response= sendRequestToPDP(messageContext, request);
+            // if no cached response, send request to PDP
             if (response == null) {
-                log.debug("No response received from registered PDPs");
-                daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
-                response= buildErrorResponse(request,
-                                             StatusCodeType.SC_PROCESSING_ERROR,
-                                             null);
-                return response;
+                log.debug("Response not found in cache, send to PDP");
+                response= sendRequestToPDP(messageContext, request);
+                if (response == null) {
+                    String error= "No response received from PDP: " + daemonConfig.getPDPEndpoints();
+                    log.error(error);
+                    daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
+                    response= buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, error);
+                    writeAuditLogEntry(messageContext);
+                    return response;
+                }
             }
 
             Result result= response.getResults().get(0);
-
             // cache Deny/Permit decisions
             if (responseCache != null
                     && (result.getDecision() == Result.DECISION_DENY || result.getDecision() == Result.DECISION_PERMIT)) {
-                log.debug("Caching response {} for request {}",
-                          messageContext.getInboundMessageId(),
-                          messageContext.getOutboundMessageId());
+                log.debug("Caching response {} for request {}", messageContext.getInboundMessageId(), messageContext.getOutboundMessageId());
                 responseCache.put(new net.sf.ehcache.Element(request, response));
             }
 
             // run obligations handlers over the response
             if (daemonConfig.getObligationService() != null) {
                 log.debug("Processing obligations");
-                daemonConfig.getObligationService().processObligations(request,
-                                                                       result);
+                daemonConfig.getObligationService().processObligations(request, result);
             }
+
+            
         } catch (PIPProcessingException e) {
             daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
-            log.error("Error processing policy information points: "
+            log.error("Error processing PIP: "
                     + e.getMessage());
             log.debug("", e);
-            response= buildErrorResponse(request,
-                                         StatusCodeType.SC_PROCESSING_ERROR,
-                                         e.getMessage());
+            response= buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, e.getMessage());
         } catch (ObligationProcessingException e) {
             daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
             log.error("Error processing obligation handlers: " + e.getMessage());
             log.debug("", e);
-            response= buildErrorResponse(request,
-                                         StatusCodeType.SC_PROCESSING_ERROR,
-                                         e.getMessage());
+            response= buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, e.getMessage());
         } catch (Exception e) {
             daemonConfig.getServiceMetrics().incrementTotalServiceRequestErrors();
             log.error("Error processing authorization request: "
                     + e.getMessage());
             log.debug("", e);
-            response= buildErrorResponse(request,
-                                         StatusCodeType.SC_PROCESSING_ERROR,
-                                         null);
+            response= buildErrorResponse(request, StatusCodeType.SC_PROCESSING_ERROR, e.getMessage());
         } finally {
-            protocolLog.info("Complete hessian response\n{}",
-                             response.toString());
+            protocolLog.info("Complete hessian response\n{}", response.toString());
         }
 
         writeAuditLogEntry(messageContext);
@@ -237,56 +216,55 @@ public class PEPDaemonRequestHandler {
      * 
      * @return the returned response
      */
-    private Response sendRequestToPDP(DecisionRequestContext messageContext,
-            Request authzRequest) {
+    private Response sendRequestToPDP(PEPDaemonDecisionRequestContext messageContext,
+                                      Request authzRequest) {
         RequestType xacmlRequest= XACMLConverter.requestToXACML(authzRequest);
-        Envelope soapRequest= DecisionRequestContextHelper.buildSOAPMessage(daemonConfig.getEntityId(),
-                                                                            messageContext,
-                                                                            xacmlRequest);
+        Envelope soapRequest= DecisionRequestContextHelper.buildSOAPMessage(daemonConfig.getEntityId(), messageContext, xacmlRequest);
         logSOAPProtocolMessage(soapRequest, true);
 
         Iterator<String> pdpItr= daemonConfig.getPDPEndpoints().iterator();
         String pdpEndpoint= null;
         Response authzResponse= null;
+        String errorMessage= null;
         while (pdpItr.hasNext()) {
             try {
                 pdpEndpoint= pdpItr.next();
-                log.debug("Sending request {} to {}",
-                          messageContext.getOutboundMessageId(),
-                          pdpEndpoint);
+                log.debug("Sending request {} to {}", messageContext.getOutboundMessageId(), pdpEndpoint);
                 daemonConfig.getSOAPClient().send(pdpEndpoint, messageContext);
-                authzResponse= extractResponse(messageContext,
-                                               pdpEndpoint,
-                                               (Envelope) messageContext.getInboundMessage());
+                authzResponse= extractResponse(messageContext, pdpEndpoint, (Envelope) messageContext.getInboundMessage());
                 if (authzResponse != null) {
-                    logSOAPProtocolMessage(messageContext.getInboundMessage(),
-                                           false);
+                    logSOAPProtocolMessage(messageContext.getInboundMessage(), false);
                     messageContext.setRespondingPDP(pdpEndpoint);
                     messageContext.setAuthorizationDecision(authzResponse.getResults().get(0).getDecisionString());
                     break;
                 }
             } catch (SOAPFaultException e) {
-                log.warn("Recieved SOAP Fault " + e.getFault().getCode()
-                        + " from PDP endpoint: " + pdpEndpoint, e);
+                String error= "Recieved SOAP Fault " + e.getFault().getCode()
+                        + " from PDP: " + pdpEndpoint;
+                log.warn(error, e);
+                errorMessage= error;
             } catch (SOAPException e) {
-                log.error("Error sending request to PDP endpoint "
-                        + pdpEndpoint, e);
+                String error= "Error sending request to PDP: " + pdpEndpoint;
+                log.error(error, e);
+                errorMessage= error;                
             } catch (SecurityException e) {
-                log.error("Response from PDP endpoint " + pdpEndpoint
-                        + " did not meet message security requirements", e);
+                String error= "Response from PDP " + pdpEndpoint
+                        + " did not meet message security requirements";
+                log.error(error, e);
+                errorMessage= error;                
             }
         }
 
         if (authzResponse != null) {
-            log.debug("A decision of {} was reached by {} in response to request {}",
-                      new Object[] {
-                                    authzResponse.getResults().get(0).getDecisionString(),
-                                    messageContext.getRespondingPDP(),
-                                    messageContext.getOutboundMessageId(), });
+            log.debug("A decision of {} was reached by {} in response to request {}", new Object[] {
+                    authzResponse.getResults().get(0).getDecisionString(),
+                    messageContext.getRespondingPDP(),
+                    messageContext.getOutboundMessageId(), });
             return authzResponse;
         }
         else {
             log.error("No PDP endpoint was able to answer the authorization request");
+            messageContext.setProcessingError(errorMessage);
             return null;
         }
     }
@@ -303,41 +281,36 @@ public class PEPDaemonRequestHandler {
      *            the SOAP response containing the XACML-SAML authorization
      *            response
      * 
-     * @return the extract response
+     * @return the extract response or <code>null</code> on error.
      */
     private Response extractResponse(DecisionRequestContext messageContext,
-            String pdpEndpoint, Envelope soapResponse) {
+                                     String pdpEndpoint, Envelope soapResponse) {
         org.opensaml.saml2.core.Response samlResponse= (org.opensaml.saml2.core.Response) soapResponse.getBody().getOrderedChildren().get(0);
 
         if (samlResponse.getAssertions() == null
                 || samlResponse.getAssertions().isEmpty()) {
-            log.warn("Response from PDP {} was an invalid message.  It did not contain an assertion",
-                     pdpEndpoint);
+            log.warn("Response from PDP {} was an invalid message.  It did not contain an assertion", pdpEndpoint);
             return null;
         }
         if (samlResponse.getAssertions().size() > 1) {
-            log.warn("Response from PDP {} was an invalid message.  It contained more than 1 assertion",
-                     pdpEndpoint);
+            log.warn("Response from PDP {} was an invalid message.  It contained more than 1 assertion", pdpEndpoint);
             return null;
         }
         Assertion samlAssertion= samlResponse.getAssertions().get(0);
 
         List<Statement> authzStatements= samlAssertion.getStatements(XACMLAuthzDecisionStatementType.TYPE_NAME_XACML20);
         if (authzStatements == null || authzStatements.isEmpty()) {
-            log.warn("Response from PDP {} was an invalid message.  It did not contain an authorization statement",
-                     pdpEndpoint);
+            log.warn("Response from PDP {} was an invalid message.  It did not contain an authorization statement", pdpEndpoint);
             return null;
         }
         if (authzStatements.size() > 1) {
-            log.warn("Response from PDP {} was an invalid message.  It contained more than 1 authorization statement",
-                     pdpEndpoint);
+            log.warn("Response from PDP {} was an invalid message.  It contained more than 1 authorization statement", pdpEndpoint);
             return null;
         }
 
         messageContext.setInboundMessageId(samlResponse.getID());
         XACMLAuthzDecisionStatementType authzStatement= (XACMLAuthzDecisionStatementType) authzStatements.get(0);
-        return XACMLConverter.responseFromXACML(authzStatement.getResponse(),
-                                                authzStatement.getRequest());
+        return XACMLConverter.responseFromXACML(authzStatement.getResponse(), authzStatement.getRequest());
     }
 
     /**
@@ -354,7 +327,7 @@ public class PEPDaemonRequestHandler {
      * @return the built response
      */
     private Response buildErrorResponse(Request request, String statusCode,
-            String errorMessage) {
+                                        String errorMessage) {
         StatusCode errorCode= new StatusCode();
         errorCode.setCode(statusCode);
 
@@ -391,12 +364,10 @@ public class PEPDaemonRequestHandler {
             try {
                 Element messageDom= Configuration.getMarshallerFactory().getMarshaller(message).marshall(message);
                 if (isRequest) {
-                    protocolLog.debug("Outgoing SOAP request\n{}",
-                                      XMLHelper.prettyPrintXML(messageDom));
+                    protocolLog.debug("Outgoing SOAP request\n{}", XMLHelper.prettyPrintXML(messageDom));
                 }
                 else {
-                    protocolLog.debug("Inbound SOAP response\n{}",
-                                      XMLHelper.prettyPrintXML(messageDom));
+                    protocolLog.debug("Inbound SOAP response\n{}", XMLHelper.prettyPrintXML(messageDom));
                 }
             } catch (MarshallingException e) {
                 log.error("Unable to marshall SOAP message");
@@ -410,11 +381,54 @@ public class PEPDaemonRequestHandler {
      * @param messageContext
      *            current message context
      */
-    private void writeAuditLogEntry(DecisionRequestContext messageContext) {
-        AuditLogEntry entry= new AuditLogEntry(messageContext.getOutboundMessageId(),
-                                               messageContext.getRespondingPDP(),
-                                               messageContext.getInboundMessageId(),
-                                               messageContext.getAuthorizationDecision());
+    private void writeAuditLogEntry(PEPDaemonDecisionRequestContext messageContext) {
+        AuditLogEntry entry= new AuditLogEntry(messageContext.getOutboundMessageId(), messageContext.getRespondingPDP(), messageContext.getInboundMessageId(), messageContext.getAuthorizationDecision());
+        entry.setErrorMessage(messageContext.getProcessingError());
         auditLog.info(entry.toString());
+    }
+
+    /**
+     * Extends the {@link DecisionRequestContext} to include processing error
+     * message.
+     * 
+     * @see PEPDaemonRequestHandler#buildMessageContext(String)
+     */
+    protected class PEPDaemonDecisionRequestContext extends
+            DecisionRequestContext {
+
+        /** The processing error message. */
+        private String processingError_;
+
+        /**
+         * @return the processing error
+         */
+        public String getProcessingError() {
+            return processingError_;
+        }
+
+        /**
+         * @param processingError
+         *            the processing error to set
+         */
+        public void setProcessingError(String processingError) {
+            processingError_= processingError;
+        }
+
+    }
+
+    /**
+     * Builds a {@link PEPDaemonDecisionRequestContext}. The communication
+     * profileID used is {@value AuthzServiceConstants#XACML_SAML_PROFILE_URI}.
+     * 
+     * @param messageIssuerId
+     *            The entityID of the message issuer
+     * @return
+     */
+    protected PEPDaemonDecisionRequestContext buildMessageContext(String messageIssuerId) {
+        PEPDaemonDecisionRequestContext messageContext= new PEPDaemonDecisionRequestContext();
+        messageContext.setCommunicationProfileId(AuthzServiceConstants.XACML_SAML_PROFILE_URI);
+        messageContext.setOutboundMessageIssuer(messageIssuerId);
+        messageContext.setSOAPRequestParameters(new HttpSOAPRequestParameters("http://www.oasis-open.org/committees/security"));
+        return messageContext;
     }
 }
