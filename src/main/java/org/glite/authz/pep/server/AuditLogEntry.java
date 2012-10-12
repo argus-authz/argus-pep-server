@@ -41,20 +41,47 @@ public class AuditLogEntry {
     /** The authorization decision. */
     private String policyDecision;
 
+    /** The error message, if any */
+    private String errorMessage;
+
     /**
      * Constructor.
      * 
-     * @param request ID of the SAML authorization request message
-     * @param responder URL of the PDP that responded to the authorization request
-     * @param decision the authorization decision
-     * @param response ID of the SAML authorization response message
+     * @param request
+     *            ID of the SAML authorization request message
+     * @param responder
+     *            URL of the PDP that responded to the authorization request
+     * @param decision
+     *            the authorization decision
+     * @param response
+     *            ID of the SAML authorization response message
      */
-    public AuditLogEntry(String request, String responder, String response, String decision) {
-        requestTime = new DateTime().toDateTimeISO().getMillis();
-        requestId = Strings.safeTrimOrNullString(request);
-        responderId = Strings.safeTrimOrNullString(responder);
-        responseId = Strings.safeTrimOrNullString(response);
-        policyDecision = decision;
+    public AuditLogEntry(String request, String responder, String response,
+                         String decision) {
+        requestTime= new DateTime().toDateTimeISO().getMillis();
+        requestId= Strings.safeTrimOrNullString(request);
+        responderId= Strings.safeTrimOrNullString(responder);
+        responseId= Strings.safeTrimOrNullString(response);
+        policyDecision= Strings.safeTrimOrNullString(decision);
+    }
+
+    /**
+     * Sets the error message.
+     * 
+     * @param message
+     *            The error message
+     */
+    public void setErrorMessage(String message) {
+        errorMessage= Strings.safeTrimOrNullString(message);
+    }
+
+    /**
+     * Gets the error message.
+     * 
+     * @return error message
+     */
+    public String getErrorMessage() {
+        return errorMessage;
     }
 
     /**
@@ -85,7 +112,8 @@ public class AuditLogEntry {
     }
 
     /**
-     * Gets the time, in milliseconds since the Unix epoch, in UTC, that the request was made.
+     * Gets the time, in milliseconds since the Unix epoch, in UTC, that the
+     * request was made.
      * 
      * @return time the request was made
      */
@@ -104,7 +132,7 @@ public class AuditLogEntry {
 
     /** {@inheritDoc} */
     public String toString() {
-        StringBuilder entryString = new StringBuilder();
+        StringBuilder entryString= new StringBuilder();
 
         entryString.append(getRequestTime());
         entryString.append("|");
@@ -118,8 +146,16 @@ public class AuditLogEntry {
         entryString.append(getResponseId());
         entryString.append("|");
 
-        entryString.append(getPolicyDecision());
-        entryString.append("|");
+        if (getPolicyDecision() != null) {
+            entryString.append(getPolicyDecision());
+            entryString.append("|");
+        }
+        else {
+            entryString.append("Error|");
+            if (getErrorMessage() != null) {
+                entryString.append(getErrorMessage());
+            }
+        }
 
         return entryString.toString();
     }
