@@ -17,50 +17,67 @@
 
 package org.glite.authz.pep.pip.provider;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.glite.authz.common.config.AbstractConfigurationBuilder;
 import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.common.config.IniConfigUtil;
 import org.glite.authz.common.config.IniSectionConfigurationParser;
 import org.glite.authz.common.util.Files;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
-import org.glite.voms.PKIStore;
-
 import org.ini4j.Ini;
+import org.italiangrid.voms.ac.VOMSACValidator;
+import org.italiangrid.voms.ac.impl.DefaultVOMSValidator;
+import org.italiangrid.voms.store.VOMSTrustStore;
+import org.italiangrid.voms.store.impl.DefaultUpdatingVOMSTrustStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import eu.emi.security.authn.x509.X509CertChainValidator;
+import eu.emi.security.authn.x509.X509CertChainValidatorExt;
+
 /** Configuration parser for {@link AbstractX509PIP} PIPs. */
-public abstract class AbstractX509PIPIniConfigurationParser implements IniSectionConfigurationParser<PolicyInformationPoint> {
+public abstract class AbstractX509PIPIniConfigurationParser implements
+        IniSectionConfigurationParser<PolicyInformationPoint> {
 
     /**
-     * The name of the {@value} property which determines whether a subject's certificate chain must contain a proxy
-     * certificate.
+     * The name of the {@value} property which determines whether a subject's
+     * certificate chain must contain a proxy certificate.
      */
-    public static final String REQ_PROXY_PROP = "requireProxy";
+    public static final String REQ_PROXY_PROP= "requireProxy";
     /** Default value of {@value #REQ_PROXY_PROP}, {@value} . */
-    public static final boolean DEFAULT_REQ_PROXY = false;
-    
+    public static final boolean DEFAULT_REQ_PROXY= false;
 
     /**
-     * The name of the {@value} property the indicates whether PKIX validation will be performed on the certificate
-     * chain.
+     * The name of the {@value} property the indicates whether PKIX validation
+     * will be performed on the certificate chain.
      */
-    public static final String PERFORM_PKIX_VALIDATION_PROP = "performPKIXValidation";
+    public static final String PERFORM_PKIX_VALIDATION_PROP= "performPKIXValidation";
 
-    /** The name of the {@value} property which gives the absolute path to the 'vomsdir' directory. */
-    public static final String VOMS_INFO_DIR_PROP = "vomsInfoDir";
+    /**
+     * The name of the {@value} property which gives the absolute path to the
+     * 'vomsdir' directory.
+     */
+    public static final String VOMS_INFO_DIR_PROP= "vomsInfoDir";
 
-    /** The name of the {@value} which gives the refresh period, in minutes, for 'vomsdir' information. */
-    public static final String VOMS_INFO_REFRESH_PROP = "vomsInfoRefresh";
+    /**
+     * The name of the {@value} which gives the refresh period, in minutes, for
+     * 'vomsdir' information.
+     */
+    public static final String VOMS_INFO_REFRESH_PROP= "vomsInfoRefresh";
 
-    /** Default value (1 hour in minutes) of the {@value #VOMS_INFO_REFRESH_PROP} property, {@value} . */
-    public static final int DEFAULT_VOMS_INFO_REFRESH = 60;
+    /**
+     * Default value (1 hour in minutes) of the {@value #VOMS_INFO_REFRESH_PROP}
+     * property, {@value} .
+     */
+    public static final int DEFAULT_VOMS_INFO_REFRESH= 60;
 
     /** Default value of {@value #PERFORM_PKIX_VALIDATION_PROP}, {@value} . */
-    public static final boolean DEFAULT_PERFORM_PKIX_VALIDATION = true;
+    public static final boolean DEFAULT_PERFORM_PKIX_VALIDATION= true;
 
     /** Class logger. */
-    private Logger log = LoggerFactory.getLogger(AbstractX509PIPIniConfigurationParser.class);
+    private Logger log= LoggerFactory.getLogger(AbstractX509PIPIniConfigurationParser.class);
 
     /** {@inheritDoc} */
     public PolicyInformationPoint parse(Ini.Section iniConfig, AbstractConfigurationBuilder<?> configurationBuilder)
@@ -71,7 +88,7 @@ public abstract class AbstractX509PIPIniConfigurationParser implements IniSectio
         boolean requireProxy = IniConfigUtil.getBoolean(iniConfig, REQ_PROXY_PROP, DEFAULT_REQ_PROXY);
         log.info("{}: subject proxy certificate required: {}", pipId, requireProxy);
 
-        PKIStore acTrustMaterial = null;
+        VOMSACValidator vomsValidator = null;
         String vomsInfoDir = IniConfigUtil.getString(iniConfig, VOMS_INFO_DIR_PROP, null);
         if (vomsInfoDir != null) {
             log.info("{}: VOMS info directory: {}", pipId, vomsInfoDir);
@@ -83,8 +100,12 @@ public abstract class AbstractX509PIPIniConfigurationParser implements IniSectio
             log.info("{}: VOMS info refresh interval: {}ms", pipId, vomsInfoRefresh);
             try {
                 Files.getFile(vomsInfoDir, false, true, true, false);
-                acTrustMaterial = new PKIStore(vomsInfoDir, PKIStore.TYPE_VOMSDIR);
-                acTrustMaterial.rescheduleRefresh(vomsInfoRefresh);
+                List<String> vomsInfoDirs= Arrays.asList(vomsInfoDir);
+                //TODO: add update listener!!!!
+                VOMSTrustStore vomsTrustStore= new DefaultUpdatingVOMSTrustStore(vomsInfoDirs, vomsInfoRefresh); 
+                X509CertChainValidatorExt certChainValidator= configurationBuilder.getCertChainValidator();
+                //TODO: add validation listener!!!!
+                vomsValidator= new DefaultVOMSValidator(vomsTrustStore, certChainValidator);
             } catch (Exception e) {
                 throw new ConfigurationException("Unable to read VOMS AC validation information", e);
             }
@@ -94,25 +115,35 @@ public abstract class AbstractX509PIPIniConfigurationParser implements IniSectio
                 DEFAULT_PERFORM_PKIX_VALIDATION);
         log.info("{}: perform PKIX validation on cert chains: {}", pipId,performPKIXValidation);
 
-        return buildInformationPoint(iniConfig, requireProxy, configurationBuilder.getTrustMaterialStore(),
-                acTrustMaterial, performPKIXValidation);
+        return buildInformationPoint(iniConfig, requireProxy, configurationBuilder.getCertChainValidator(),
+                vomsValidator, performPKIXValidation);
     }
 
     /**
-     * Builds the instance of the policy information point given the parsed configuration.
+     * Builds the instance of the policy information point given the parsed
+     * configuration.
      * 
-     * @param iniConfig the INI configuration for the PIP
-     * @param requireProxy whether proxy certificates are required
-     * @param trustMaterial the trust anchors used for validating user certificates
-     * @param acTrustMaterial the trust anchors used for validating attribute certificates
-     * @param performPKIXValidation whether PKIX validation should be performed
+     * @param iniConfig
+     *            the INI configuration for the PIP
+     * @param requireProxy
+     *            whether proxy certificates are required
+     * @param x509Validator
+     *            the X.509 validator used for validating user certificates
+     * @param vomsACValidator
+     *            the VOMS AC validator used for validating attribute certificates
+     * @param performPKIXValidation
+     *            whether PKIX validation should be performed
      * 
      * @return the constructed information point
      * 
-     * @throws ConfigurationException thrown if there is a problem building the PIP with the given configuration
-     *             parameters
+     * @throws ConfigurationException
+     *             thrown if there is a problem building the PIP with the given
+     *             configuration parameters
      */
-    protected abstract PolicyInformationPoint buildInformationPoint(Ini.Section iniConfig, boolean requireProxy,
-            PKIStore trustMaterial, PKIStore acTrustMaterial, boolean performPKIXValidation)
+    protected abstract PolicyInformationPoint buildInformationPoint(Ini.Section iniConfig,
+                                                                    boolean requireProxy,
+                                                                    X509CertChainValidator x509Validator,
+                                                                    VOMSACValidator vomsACValidator,
+                                                                    boolean performPKIXValidation)
             throws ConfigurationException;
 }

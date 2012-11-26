@@ -34,11 +34,12 @@ import org.glite.authz.common.model.Request;
 import org.glite.authz.common.profile.GLiteAuthorizationProfileConstants;
 import org.glite.authz.pep.pip.PIPProcessingException;
 import org.glite.voms.FQAN;
-import org.glite.voms.PKIStore;
-import org.glite.voms.VOMSAttribute;
-
+import org.italiangrid.voms.VOMSAttribute;
+import org.italiangrid.voms.ac.VOMSACValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import eu.emi.security.authn.x509.X509CertChainValidator;
 
 /**
  * The PIP applies to request which have a profile identifier
@@ -82,10 +83,10 @@ public class GLiteAuthorizationProfilePIP extends AbstractX509PIP {
      * @param requireProxy
      *            whether a subject's certificate chain must require a proxy in
      *            order to be valid
-     * @param eeTrustMaterial
+     * @param x509Validator
      *            trust material used to validate the subject's end entity
      *            certificate
-     * @param acTrustMaterial
+     * @param vomsACValidator
      *            trust material used to validate the subject's attribute
      *            certificate certificate, may be <code>null</code> if AC
      *            support is not desired
@@ -95,9 +96,11 @@ public class GLiteAuthorizationProfilePIP extends AbstractX509PIP {
      *             thrown if the configuration of the PIP fails
      */
     public GLiteAuthorizationProfilePIP(String pipID, boolean requireProxy,
-            PKIStore eeTrustMaterial, PKIStore acTrustMaterial,
-            boolean performPKIXValidation) throws ConfigurationException {
-        super(pipID, requireProxy, eeTrustMaterial, acTrustMaterial);
+                                        X509CertChainValidator x509Validator,
+                                        VOMSACValidator vomsACValidator,
+                                        boolean performPKIXValidation)
+                                                                      throws ConfigurationException {
+        super(pipID, requireProxy, x509Validator, vomsACValidator);
         performPKIXValidation(performPKIXValidation);
     }
 
@@ -128,14 +131,12 @@ public class GLiteAuthorizationProfilePIP extends AbstractX509PIP {
      *             thrown if the configuration of the PIP fails
      */
     public GLiteAuthorizationProfilePIP(String pipID, boolean requireProxy,
-            PKIStore eeTrustMaterial, PKIStore acTrustMaterial,
-            boolean performPKIXValidation, String[] acceptedProfileIds)
-            throws ConfigurationException {
-        this(pipID,
-             requireProxy,
-             eeTrustMaterial,
-             acTrustMaterial,
-             performPKIXValidation);
+                                        X509CertChainValidator x509Validator,
+                                        VOMSACValidator vomsACValidator,
+                                        boolean performPKIXValidation,
+                                        String[] acceptedProfileIds)
+                                                                    throws ConfigurationException {
+        this(pipID, requireProxy, x509Validator,vomsACValidator, performPKIXValidation);
         if (acceptedProfileIds == null) {
             // accept all
             log.debug("{}: accept all profile ID values", pipID);
@@ -147,9 +148,7 @@ public class GLiteAuthorizationProfilePIP extends AbstractX509PIP {
             acceptedProfileIds_= Collections.emptyList();
         }
         else {
-            log.debug("{}: accept profile ID values: ",
-                      pipID,
-                      Arrays.toString(acceptedProfileIds));
+            log.debug("{}: accept profile ID values: ", pipID, Arrays.toString(acceptedProfileIds));
             acceptedProfileIds_= new ArrayList<String>(Arrays.asList(acceptedProfileIds));
         }
     }
@@ -170,38 +169,30 @@ public class GLiteAuthorizationProfilePIP extends AbstractX509PIP {
                 if (GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_PROFILE_ID.equals(attrib.getId())) {
                     if (acceptedProfileIds_ == null) {
                         // accept all profile IDs
-                        log.trace("PIP '{}' accept all {} value",
-                                  getId(),
-                                  GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_PROFILE_ID);
+                        log.trace("PIP '{}' accept all {} value", getId(), GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_PROFILE_ID);
                         return true;
                     }
                     else if (acceptedProfileIds_.isEmpty()) {
                         // accept none
-                        log.warn("PIP '{}' don't accept any profile ID, specify 'acceptedProfileIDs = ...' in config.",
-                                 getId());
+                        log.warn("PIP '{}' don't accept any profile ID, specify 'acceptedProfileIDs = ...' in config.", getId());
                         return false;
                     }
                     else {
                         // accept only listed one
                         for (String acceptedProfileId : acceptedProfileIds_) {
                             if (attrib.getValues().contains(acceptedProfileId)) {
-                                log.trace("PIP '{}' accept {}",
-                                          getId(),
-                                          acceptedProfileId);
+                                log.trace("PIP '{}' accept {}", getId(), acceptedProfileId);
                                 return true;
                             }
                         }
-                        log.debug("PIP '{}' don't accept profile ID: {}",
-                                  getId(),
-                                  attrib.getValues());
+                        log.debug("PIP '{}' don't accept profile ID: {}", getId(), attrib.getValues());
                         return false;
                     }
                 }
             }
         }
 
-        log.debug("Skipping PIP '{}', request does not contain a profile identifier in environment",
-                  getId());
+        log.debug("Skipping PIP '{}', request does not contain a profile identifier in environment", getId());
         return false;
     }
 
@@ -232,8 +223,8 @@ public class GLiteAuthorizationProfilePIP extends AbstractX509PIP {
      *             thrown if there is a problem reading the information from the
      *             certificate chain
      */
-    protected Collection<Attribute> processCertChain(
-            X509Certificate endEntityCertificate, X509Certificate[] certChain)
+    protected Collection<Attribute> processCertChain(X509Certificate endEntityCertificate,
+                                                     X509Certificate[] certChain)
             throws PIPProcessingException {
         if (endEntityCertificate == null || certChain == null
                 || certChain.length == 0) {
@@ -263,8 +254,7 @@ public class GLiteAuthorizationProfilePIP extends AbstractX509PIP {
         subjectAttributes.add(attribute);
 
         if (isVOMSSupportEnabled()) {
-            Collection<Attribute> vomsAttributes= processVOMS(endEntityCertificate,
-                                                              certChain);
+            Collection<Attribute> vomsAttributes= processVOMS(endEntityCertificate, certChain);
             if (vomsAttributes != null) {
                 subjectAttributes.addAll(vomsAttributes);
             }
@@ -289,12 +279,12 @@ public class GLiteAuthorizationProfilePIP extends AbstractX509PIP {
      *             thrown if the end entity certificate contains more than one
      *             attribute certificate
      */
-    @SuppressWarnings("unchecked")
     private Collection<Attribute> processVOMS(X509Certificate endEntityCert,
-            X509Certificate[] certChain) throws PIPProcessingException {
+                                              X509Certificate[] certChain)
+            throws PIPProcessingException {
 
         log.debug("Extracting VOMS attribute certificate attributes");
-        VOMSAttribute attributeCertificate= extractAttributeCertificate(certChain);
+        VOMSAttribute attributeCertificate= extractVOMSAttributeCertificate(certChain);
         if (attributeCertificate == null) {
             return null;
         }

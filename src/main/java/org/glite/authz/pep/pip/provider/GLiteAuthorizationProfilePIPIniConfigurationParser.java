@@ -24,11 +24,12 @@ import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.common.profile.GLiteAuthorizationProfileConstants;
 import org.glite.authz.common.util.Strings;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
-import org.glite.voms.PKIStore;
-
 import org.ini4j.Ini;
+import org.italiangrid.voms.ac.VOMSACValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import eu.emi.security.authn.x509.X509CertChainValidator;
 
 /**
  * The PIP applies to request which have a profile identifier
@@ -61,7 +62,8 @@ public class GLiteAuthorizationProfilePIPIniConfigurationParser extends Abstract
 
     /** {@inheritDoc} */
     protected PolicyInformationPoint buildInformationPoint(Ini.Section iniConfig, boolean requireProxy,
-            PKIStore trustMaterial, PKIStore acTrustMaterial, boolean performPKIXValidation)
+                                                           X509CertChainValidator x509Validator,
+                                                           VOMSACValidator vomsACValidator, boolean performPKIXValidation)
             throws ConfigurationException {
         String pipId = iniConfig.getName();
 
@@ -73,7 +75,7 @@ public class GLiteAuthorizationProfilePIPIniConfigurationParser extends Abstract
             log.info("{}: accepted profile IDs: all", pipId);
         }
 
-        GLiteAuthorizationProfilePIP pip = new GLiteAuthorizationProfilePIP(pipId, requireProxy, trustMaterial, acTrustMaterial,
+        GLiteAuthorizationProfilePIP pip = new GLiteAuthorizationProfilePIP(pipId, requireProxy, x509Validator, vomsACValidator,
                 performPKIXValidation, acceptedProfileIds);
         return pip;
 

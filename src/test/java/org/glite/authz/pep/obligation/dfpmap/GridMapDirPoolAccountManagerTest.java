@@ -24,11 +24,11 @@ import java.util.List;
 
 import javax.security.auth.x500.X500Principal;
 
-import org.glite.voms.PKIUtils;
+import junit.framework.TestCase;
 
 import org.apache.commons.httpclient.URIException;
 
-import junit.framework.TestCase;
+import eu.emi.security.authn.x509.impl.OpensslNameUtils;
 
 /**
  * JUnit for pool account management and mapping for bug
@@ -286,10 +286,10 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
         System.out.println("BUG FIX: https://savannah.cern.ch/bugs/index.php?83419");
         X500Principal principal= new X500Principal("CN=John-John Doe,DC=Test,DC=users");
         System.out.println("Principal: " + principal);
-        String openSSLPrincipal= PKIUtils.getOpenSSLFormatPrincipal(principal,
-                                                                    true);
-        System.out.println("Subject: " + openSSLPrincipal);
-        String encodedSubject= gridmapPool.encodeSubjectIdentifier(openSSLPrincipal);
+        String rfc2253Subject= principal.getName();
+        String openSSLSubject= OpensslNameUtils.convertFromRfc2253(rfc2253Subject, false);
+        System.out.println("Subject: " + openSSLSubject);
+        String encodedSubject= gridmapPool.encodeSubjectIdentifier(openSSLSubject);
         System.out.println("Encoded subject: " + encodedSubject);
         assertFalse("Subject not correctly encoded",encodedSubject.contains("-"));
         assertFalse("Subject not correctly encoded",encodedSubject.contains("/"));

@@ -20,16 +20,14 @@ package org.glite.authz.pep.pip.provider;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Vector;
-
 import javax.security.auth.x500.X500Principal;
 
 import org.glite.authz.common.config.ConfigurationException;
@@ -38,29 +36,22 @@ import org.glite.authz.common.model.Request;
 import org.glite.authz.common.model.Subject;
 import org.glite.authz.common.util.Strings;
 import org.glite.authz.pep.pip.PIPProcessingException;
-import org.glite.security.util.CertUtil;
-import org.glite.security.util.FileCertReader;
-import org.glite.voms.PKIStore;
-import org.glite.voms.PKIUtils;
-import org.glite.voms.PKIVerifier;
-import org.glite.voms.VOMSAttribute;
-import org.glite.voms.VOMSValidator;
-import org.glite.voms.ac.ACValidator;
-
+import org.italiangrid.voms.VOMSAttribute;
+import org.italiangrid.voms.ac.VOMSACValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import eu.emi.security.authn.x509.ValidationError;
+import eu.emi.security.authn.x509.ValidationResult;
+import eu.emi.security.authn.x509.X509CertChainValidator;
+import eu.emi.security.authn.x509.impl.PEMCredential;
+import eu.emi.security.authn.x509.proxy.ProxyUtils;
 
 /** Base class for PIPs which work with X.509 certificates. */
 public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
 
     /** Class logger. */
     private Logger log= LoggerFactory.getLogger(AbstractX509PIP.class);
-
-    /**
-     * Reads a set of certificates in to a chain of {@link X509Certificate}
-     * objects.
-     */
-    private FileCertReader certReader;
 
     /**
      * Whether the given cert chain must contain a proxy certificate in order to
@@ -75,16 +66,15 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
     private boolean vomsSupportEnabled;
 
     /**
-     * PKIStore containing trust material used to validate the subject's end
-     * entity certificate
+     * X509 cert chain validator for the subject's end entity certificate
      */
-    private PKIStore eeTrustMaterial;
+    private X509CertChainValidator certChainValidator;
 
     /**
      * Verifier used to validate an X.509 certificate chain which may, or may
      * not, include AC certs.
      */
-    private PKIVerifier certVerifier;
+    private VOMSACValidator vomsACValidator;
 
     /**
      * The constructor for this PIP. This constructor enables support for the
@@ -95,11 +85,11 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
      * @param requireProxy
      *            whether a subject's certificate chain must require a proxy in
      *            order to be valid
-     * @param eeTrustMaterial
-     *            trust material used to validate the subject's end entity
+     * @param x509Validator
+     *            the X.509 validator used to validate the subject's end entity
      *            certificate
-     * @param acTrustMaterial
-     *            trust material used to validate the subject's attribute
+     * @param vomsACValidator
+     *            VOMS AC validator used to validate the subject's attribute
      *            certificate certificate, may be null of AC support is not
      *            desired
      * 
@@ -107,31 +97,26 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
      *             thrown if the configuration of the PIP fails
      */
     public AbstractX509PIP(String pipID, boolean requireProxy,
-            PKIStore eeTrustMaterial, PKIStore acTrustMaterial)
-            throws ConfigurationException {
+                           X509CertChainValidator x509Validator,
+                           VOMSACValidator vomsACValidator)
+                                                           throws ConfigurationException {
         super(pipID);
 
         requireProxyCertificate= requireProxy;
 
-        if (eeTrustMaterial == null) {
+        if (x509Validator == null) {
             throw new ConfigurationException("Policy information point trust material may not be null");
         }
 
-        if (acTrustMaterial == null) {
+        if (vomsACValidator == null) {
             vomsSupportEnabled= false;
         }
         else {
             vomsSupportEnabled= true;
         }
 
-        try {
-            certReader= new FileCertReader();
-            this.eeTrustMaterial= eeTrustMaterial;
-            certVerifier= new PKIVerifier(acTrustMaterial, eeTrustMaterial);
-        } catch (Exception e) {
-            throw new ConfigurationException("Unable to create X509 trust manager: "
-                    + e.getMessage());
-        }
+        this.certChainValidator= x509Validator;
+        this.vomsACValidator= vomsACValidator;
     }
 
     /**
@@ -174,16 +159,16 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
     }
 
     /**
-     * Gets the PKI certificate verifier.
+     * Gets the X.509 certificate validator.
      * 
-     * @return PKI certificate verifier
+     * @return X.509 cert chain validator
      */
-    public PKIVerifier getCertVerifier() {
-        return certVerifier;
+    public X509CertChainValidator getX509CertChainValidator() {
+        return certChainValidator;
     }
 
-    protected PKIStore getTrustMaterial() {
-        return eeTrustMaterial;
+    protected VOMSACValidator getVOMSACValidator() {
+        return vomsACValidator;
     }
 
     /** {@inheritDoc} */
@@ -194,7 +179,6 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
         }
 
         X509Certificate[] certChain;
-        X509Certificate endEntityCert;
         Collection<Attribute> certAttributes;
         for (Subject subject : request.getSubjects()) {
             certChain= extractCertificateChain(subject);
@@ -202,35 +186,39 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
                 continue;
             }
             // sort the cert chain starting from proxy/end-entity cert
-            certChain= sortCertificateChain(certChain);
-            
+            // FIXME: NEEDED ??????? certChain= sortCertificateChain(certChain);
+
             // bug fix: complete cert chain up to trust anchor
-            certChain= completeCertificateChain(certChain);
+            //FIXME: re-implement this
+//            certChain= completeCertificateChain(certChain);
             if (log.isDebugEnabled()) {
                 int i= 0;
                 for (X509Certificate cert : certChain) {
-                    log.debug("certChain[{}]: {}",
-                              i++,
-                              cert.getSubjectX500Principal().getName(X500Principal.RFC2253));
+                    log.debug("certChain[{}]: {}", i++, cert.getSubjectX500Principal().getName(X500Principal.RFC2253));
                 }
             }
 
-            endEntityCert= certChain[CertUtil.findClientCert(certChain)];
-            String endEntitySubjectDN= endEntityCert.getSubjectX500Principal().getName(X500Principal.RFC2253);
-            if (performPKIXValidation && !certVerifier.verify(certChain)) {
-                String errorMsg= "Certificate with subject DN "
-                        + endEntitySubjectDN + " failed PKIX validation";
-                log.error(errorMsg);
-                throw new PIPProcessingException(errorMsg);
-            }
+            if (isPKIXValidationEnabled()) {
+                ValidationResult result= certChainValidator.validate(certChain);
+                if (!result.isValid()) {
+                    StringBuilder sb= new StringBuilder();
+                    sb.append("PKIX validation failed: ");
+                    for (ValidationError validationError : result.getErrors()) {
+                        sb.append(validationError.getMessage());
+                        sb.append(",");
+                    }
 
-            log.debug("Extracting subject attributes from certificate with subject DN {}",
-                      endEntitySubjectDN);
-            certAttributes= processCertChain(endEntityCert, certChain);
+                    String errorMsg= sb.toString();
+                    log.error(errorMsg);
+                    throw new PIPProcessingException(errorMsg);
+                }
+            }
+            X509Certificate userCert= ProxyUtils.getEndUserCertificate(certChain);
+
+            log.debug("Extracting subject attributes from certificate with subject: {}", userCert.getSubjectX500Principal());
+            certAttributes= processCertChain(userCert, certChain);
             if (certAttributes != null) {
-                log.debug("Extracted subject attributes {} from certificate with subject DN {}",
-                          certAttributes,
-                          endEntitySubjectDN);
+                log.debug("Extracted subject attributes {} from certificate with subject {}", certAttributes, userCert.getSubjectX500Principal());
                 updateSubjectCertificateAttributes(subject, certAttributes);
                 return true;
             }
@@ -255,7 +243,7 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
      *            the certificate attributes
      */
     private void updateSubjectCertificateAttributes(Subject subject,
-            Collection<Attribute> certAttributes) {
+                                                    Collection<Attribute> certAttributes) {
         for (Attribute certAttribute : certAttributes) {
             boolean alreadyExists= false;
             String certAttributeId= certAttribute.getId();
@@ -264,9 +252,7 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
                 if (subjectAttribute.getId().equals(certAttributeId)
                         && subjectAttribute.getDataType().equals(certAttributeDataType)) {
                     alreadyExists= true;
-                    log.debug("Subject {} already contains values, replace them with {}",
-                              subjectAttribute,
-                              certAttribute);
+                    log.debug("Subject {} already contains values, replace them with {}", subjectAttribute, certAttribute);
                     subjectAttribute.getValues().clear();
                     subjectAttribute.getValues().addAll(certAttribute.getValues());
                 }
@@ -310,10 +296,8 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
 
         for (Attribute attribute : subject.getAttributes()) {
             // check attribute Id and datatype
-            if (Strings.safeEquals(attribute.getId(),
-                                   getCertificateAttributeId())
-                    && Strings.safeEquals(attribute.getDataType(),
-                                          getCertificateAttributeDatatype())) {
+            if (Strings.safeEquals(attribute.getId(), getCertificateAttributeId())
+                    && Strings.safeEquals(attribute.getDataType(), getCertificateAttributeDatatype())) {
                 if (pemCertChain != null || attribute.getValues().size() < 1) {
                     String errorMsg= "Subject contains more than one X509 certificate chain.";
                     log.error(errorMsg);
@@ -331,30 +315,31 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
         }
 
         BufferedInputStream bis= new BufferedInputStream(new ByteArrayInputStream(pemCertChain.getBytes()));
-        Vector<X509Certificate> chainVector;
+        PEMCredential subjectCertificate= null;
         try {
-            chainVector= certReader.readCertChain(bis);
+            subjectCertificate= new PEMCredential(bis, null);
         } catch (IOException e) {
-            log.error("Unable to parse subject cert chain", e);
-            throw new PIPProcessingException("Unable to parse subject cert chain",
-                                             e);
+            log.error("Unable to read subject cert chain", e);
+            throw new PIPProcessingException("Unable to read subject cert chain", e);
+        } catch (GeneralSecurityException e) {
+            log.error("Unable to process subject cert chain", e);
+            throw new PIPProcessingException("Unable to process subject cert chain", e);
         } finally {
             try {
                 bis.close();
             } catch (IOException e) {
-                log.error("Unable to close cert chain inputstream", e);
+                log.warn("Unable to close cert chain inputstream: {}", e.getMessage());
             }
         }
 
-        X509Certificate[] certChain= chainVector.toArray(new X509Certificate[] {});
+        X509Certificate[] certChain= subjectCertificate.getCertificateChain();
         boolean proxyPresent= false;
         for (X509Certificate cert : certChain) {
             if (cert.getVersion() < 3) {
-                log.warn("Subject certificate {} is not a version 3, or greater, certificate, certificate chain ignored",
-                         cert.getSubjectX500Principal().getName(X500Principal.RFC2253));
+                log.warn("Subject certificate {} is not a version 3, or greater, certificate, certificate chain ignored", cert.getSubjectX500Principal().getName(X500Principal.RFC2253));
                 return null;
             }
-            if (isProxyCertificateRequired() && PKIUtils.isProxy(cert)) {
+            if (isProxyCertificateRequired() && ProxyUtils.isProxy(cert)) {
                 proxyPresent= true;
             }
         }
@@ -402,8 +387,8 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
      *             thrown if there is a problem reading the information from the
      *             certificate chain
      */
-    protected abstract Collection<Attribute> processCertChain(
-            X509Certificate endEntityCertificate, X509Certificate[] certChain)
+    protected abstract Collection<Attribute> processCertChain(X509Certificate endEntityCertificate,
+                                                              X509Certificate[] certChain)
             throws PIPProcessingException;
 
     /**
@@ -420,27 +405,24 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
      *             thrown if there is more than one valid attribute certificate
      *             within the certificate chain
      */
-    @SuppressWarnings("unchecked")
-    protected VOMSAttribute extractAttributeCertificate(
-            X509Certificate[] certChain) throws PIPProcessingException {
-        VOMSValidator vomsValidator= new VOMSValidator(certChain,
-                                                       new ACValidator(getCertVerifier()));
-        vomsValidator.validate();
-        List<VOMSAttribute> attributeCertificates= vomsValidator.getVOMSAttributes();
-
-        if (attributeCertificates == null || attributeCertificates.isEmpty()) {
+    protected VOMSAttribute extractVOMSAttributeCertificate(X509Certificate[] certChain)
+            throws PIPProcessingException {
+        
+        List<VOMSAttribute> vomsAttrs= vomsACValidator.validate(certChain);
+        
+        if (vomsAttrs == null || vomsAttrs.isEmpty()) {
             return null;
         }
 
-        if (attributeCertificates.size() > 1) {
-            String errorMsg= "End entity certificate for subject"
+        if (vomsAttrs.size() > 1) {
+            String errorMsg= "Proxy certificate for subject"
                     + certChain[0].getSubjectX500Principal().getName(X500Principal.RFC2253)
                     + " contains more than one attribute certificate";
             log.error(errorMsg);
             throw new PIPProcessingException(errorMsg);
         }
 
-        return attributeCertificates.get(0);
+        return vomsAttrs.get(0);
     }
 
     /**
@@ -525,17 +507,18 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
      *             if PKIX validation is enabled and an error occurs while
      *             building the complete cert chain
      */
+/*    
     @SuppressWarnings("unchecked")
-    protected X509Certificate[] completeCertificateChain(
-            X509Certificate[] certChain) throws PIPProcessingException {
+    protected X509Certificate[] completeCertificateChain(X509Certificate[] certChain)
+            throws PIPProcessingException {
         if (certChain == null) {
             return null;
         }
-        if (certChain.length < 1) {
+        if (certChain.length <= 1) {
             return certChain;
         }
         // get the trust anchors store
-        Hashtable<String, Vector<X509Certificate>> certificates= eeTrustMaterial.getCAs();
+        X509Certificate trustedIssers[]= certChainValidator.getTrustedIssuers();
 
         Vector<X509Certificate> certChainVector= new Vector<X509Certificate>();
 
@@ -548,17 +531,14 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
         for (int i= 1; i < certChain.length; i++) {
             if (PKIUtils.checkIssued(certChain[i], certChain[i - 1])) {
                 if (log.isDebugEnabled()) {
-                    log.debug("checkIssued: YES: {} issued {}",
-                              certChain[i].getSubjectX500Principal().getName(X500Principal.RFC2253),
-                              certChain[i - 1].getSubjectX500Principal().getName(X500Principal.RFC2253));
+                    log.debug("checkIssued: YES: {} issued {}", certChain[i].getSubjectX500Principal().getName(X500Principal.RFC2253), certChain[i - 1].getSubjectX500Principal().getName(X500Principal.RFC2253));
                 }
                 currentCert= certChain[i];
                 certChainVector.add(currentCert);
             }
         }
 
-        log.debug("is trust anchor? {}",
-                  currentCert.getSubjectX500Principal().getName(X500Principal.RFC2253));
+        log.debug("is trust anchor? {}", currentCert.getSubjectX500Principal().getName(X500Principal.RFC2253));
 
         // check that currentCert is self signed and in ca store (trusted
         // anchor).
@@ -578,13 +558,11 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
                 }
             }
             else {
-                log.debug("YES: {} is a valid trust anchor",
-                          currentCert.getSubjectX500Principal().getName(X500Principal.RFC2253));
+                log.debug("YES: {} is a valid trust anchor", currentCert.getSubjectX500Principal().getName(X500Principal.RFC2253));
             }
         }
         else {
-            log.debug("NO: searching trust anchor for {}",
-                      currentCert.getSubjectX500Principal().getName(X500Principal.RFC2253));
+            log.debug("NO: searching trust anchor for {}", currentCert.getSubjectX500Principal().getName(X500Principal.RFC2253));
             // and complete the certification path.
             do {
                 // find trusted issuer
@@ -597,15 +575,12 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
                     for (X509Certificate issuer : issuers) {
                         if (PKIUtils.checkIssued(issuer, currentCert)) {
                             if (log.isDebugEnabled()) {
-                                log.debug("checkIssued: YES: {} issued {}",
-                                          issuer.getSubjectX500Principal().getName(X500Principal.RFC2253),
-                                          currentCert.getSubjectX500Principal().getName(X500Principal.RFC2253));
+                                log.debug("checkIssued: YES: {} issued {}", issuer.getSubjectX500Principal().getName(X500Principal.RFC2253), currentCert.getSubjectX500Principal().getName(X500Principal.RFC2253));
                             }
                             currentCert= issuer;
                             certChainVector.add(currentCert);
                             if (log.isDebugEnabled()) {
-                                log.debug("currentCert: {}",
-                                          currentCert.getSubjectX500Principal().getName(X500Principal.RFC2253));
+                                log.debug("currentCert: {}", currentCert.getSubjectX500Principal().getName(X500Principal.RFC2253));
                             }
                             break;
                         }
@@ -630,12 +605,11 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
         if (log.isTraceEnabled()) {
             int i= 0;
             for (X509Certificate cert : certChainVector) {
-                log.trace("completed chain[{}]: {}",
-                          i++,
-                          cert.getSubjectX500Principal().getName(X500Principal.RFC2253));
+                log.trace("completed chain[{}]: {}", i++, cert.getSubjectX500Principal().getName(X500Principal.RFC2253));
             }
         }
 
         return certChainVector.toArray(new X509Certificate[certChainVector.size()]);
     }
+    */
 }

@@ -25,11 +25,12 @@ import org.glite.authz.common.model.Attribute;
 import org.glite.authz.common.profile.CommonXACMLAuthorizationProfileConstants;
 import org.glite.authz.common.util.Strings;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
-import org.glite.voms.PKIStore;
-
 import org.ini4j.Ini;
+import org.italiangrid.voms.ac.VOMSACValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import eu.emi.security.authn.x509.X509CertChainValidator;
 
 /**
  * The PIP applies to request which have a profile identifier
@@ -73,8 +74,8 @@ public class CommonXACMLAuthorizationProfilePIPIniConfigurationParser extends
 
     /** {@inheritDoc} */
     protected PolicyInformationPoint buildInformationPoint(Ini.Section iniConfig,
-            boolean requireProxy, PKIStore trustMaterial,
-            PKIStore acTrustMaterial, boolean performPKIXValidation)
+            boolean requireProxy, X509CertChainValidator x509Validator,
+            VOMSACValidator vomsACValidator, boolean performPKIXValidation)
             throws ConfigurationException {
         String pipId= iniConfig.getName();
 
@@ -91,8 +92,8 @@ public class CommonXACMLAuthorizationProfilePIPIniConfigurationParser extends
 
         CommonXACMLAuthorizationProfilePIP pip= new CommonXACMLAuthorizationProfilePIP(pipId,
                                                                                        requireProxy,
-                                                                                       trustMaterial,
-                                                                                       acTrustMaterial,
+                                                                                       x509Validator,
+                                                                                       vomsACValidator,
                                                                                        performPKIXValidation,
                                                                                        acceptedProfileIds);
         return pip;

@@ -25,8 +25,8 @@ import org.glite.authz.common.model.Subject;
 import org.glite.authz.common.profile.GLiteAuthorizationProfileConstants;
 import org.glite.authz.common.util.LazyList;
 import org.glite.authz.pep.pip.PIPProcessingException;
-import org.glite.security.util.DN;
-import org.glite.security.util.DNHandler;
+import org.glite.authz.pep.utils.DN;
+import org.glite.authz.pep.utils.DNHandler;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

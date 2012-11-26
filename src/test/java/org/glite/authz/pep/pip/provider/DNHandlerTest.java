@@ -18,8 +18,8 @@ package org.glite.authz.pep.pip.provider;
 
 import junit.framework.TestCase;
 
-import org.glite.security.util.DN;
-import org.glite.security.util.DNHandler;
+import org.glite.authz.pep.utils.DN;
+import org.glite.authz.pep.utils.DNHandler;
 
 /**
  * Test util-java DN constructor and conversion functionalities

@@ -45,15 +45,15 @@ import org.glite.authz.common.util.Base64;
 import org.glite.authz.common.util.Strings;
 import org.glite.authz.pep.pip.PIPProcessingException;
 import org.glite.voms.FQAN;
-import org.glite.voms.PKIStore;
-import org.glite.voms.PKIUtils;
-import org.glite.voms.VOMSAttribute;
-import org.glite.voms.VOMSValidator;
-import org.glite.voms.ac.ACValidator;
+import org.italiangrid.voms.VOMSAttribute;
+import org.italiangrid.voms.ac.VOMSACValidator;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import eu.emi.security.authn.x509.X509CertChainValidator;
+import eu.emi.security.authn.x509.proxy.ProxyUtils;
 
 /**
  * The PIP applies to request which have a profile identifier
@@ -120,10 +120,10 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
      *             thrown if the configuration of the PIP fails
      */
     public CommonXACMLAuthorizationProfilePIP(String pipID,
-            boolean requireProxy, PKIStore eeTrustMaterial,
-            PKIStore acTrustMaterial, boolean performPKIXValidation)
+            boolean requireProxy, X509CertChainValidator x509Validator,
+            VOMSACValidator vomsACValidator, boolean performPKIXValidation)
             throws ConfigurationException {
-        super(pipID, requireProxy, eeTrustMaterial, acTrustMaterial);
+        super(pipID, requireProxy, x509Validator, vomsACValidator);
         performPKIXValidation(performPKIXValidation);
         try {
             cf_= CertificateFactory.getInstance("X.509",
@@ -162,13 +162,13 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
      *             thrown if the configuration of the PIP fails
      */
     public CommonXACMLAuthorizationProfilePIP(String pipID,
-            boolean requireProxy, PKIStore eeTrustMaterial,
-            PKIStore acTrustMaterial, boolean performPKIXValidation,
+            boolean requireProxy, X509CertChainValidator x509Validator,
+            VOMSACValidator vomsACValidator, boolean performPKIXValidation,
             String[] acceptedProfileIds) throws ConfigurationException {
         this(pipID,
              requireProxy,
-             eeTrustMaterial,
-             acTrustMaterial,
+             x509Validator,
+             vomsACValidator,
              performPKIXValidation);
         if (acceptedProfileIds == null) {
             // accept all
@@ -323,12 +323,11 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
      * @return the attributes extracted from the VOMS attribute certificates or
      *         <code>null</code> if the cert chain doesn't contain any VOMS AC.
      */
-    @SuppressWarnings("unchecked")
     protected Collection<Attribute> processVOMS(X509Certificate[] certChain) {
 
         log.debug("Extracting VOMS ACs");
-        List<VOMSAttribute> vomsACs= extractVOMSAttributes(certChain);
-        if (vomsACs == null || vomsACs.isEmpty()) {
+        List<VOMSAttribute> vomsAttributes= extractVOMSAttributes(certChain);
+        if (vomsAttributes == null) {
             log.debug("No VOMS AC found in cert chain");
             return null;
         }
@@ -347,12 +346,12 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
         // issuer -> HASHTABLE(groupName, roleAttribute);
         Hashtable<String, Attribute> issuerRoleAttributeHT= new Hashtable<String, Attribute>();
         boolean primaryGroupRole= true;
-        for (VOMSAttribute vomsAC : vomsACs) {
+        for (VOMSAttribute vomsAttribute : vomsAttributes) {
             // VO name
-            String voName= vomsAC.getVO();
+            String voName= vomsAttribute.getVO();
             voAttribute.getValues().add(voName);
             // extract groups and roles from AC -> FQANs
-            List<FQAN> fqans= vomsAC.getListOfFQAN();
+            List<FQAN> fqans= vomsAttribute.getListOfFQAN();
             for (FQAN fqan : fqans) {
                 // group name
                 String groupName= fqan.getGroup();
@@ -408,13 +407,10 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
      * @return the list of VOMS ACs or <code>null</code> if the cert chain
      *         doesn't contain any AC.
      */
-    @SuppressWarnings("unchecked")
     private List<VOMSAttribute> extractVOMSAttributes(
             X509Certificate[] certChain) {
-        VOMSValidator vomsValidator= new VOMSValidator(certChain,
-                                                       new ACValidator(getCertVerifier()));
-        vomsValidator.validate();
-        List<VOMSAttribute> vomsAttributes= vomsValidator.getVOMSAttributes();
+        VOMSACValidator validator= getVOMSACValidator();
+        List<VOMSAttribute> vomsAttributes= validator.validate(certChain);
 
         if (vomsAttributes == null || vomsAttributes.isEmpty()) {
             return null;
@@ -475,7 +471,7 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
                          cert.getSubjectX500Principal().getName(X500Principal.RFC2253));
                 return null;
             }
-            if (isProxyCertificateRequired() && PKIUtils.isProxy(cert)) {
+            if (isProxyCertificateRequired() && ProxyUtils.isProxy(cert)) {
                 proxyPresent= true;
             }
         }

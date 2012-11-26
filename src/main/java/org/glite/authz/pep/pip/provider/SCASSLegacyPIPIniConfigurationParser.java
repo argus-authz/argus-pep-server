@@ -19,18 +19,28 @@ package org.glite.authz.pep.pip.provider;
 
 import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
-import org.glite.voms.PKIStore;
-
 import org.ini4j.Ini;
+import org.italiangrid.voms.ac.VOMSACValidator;
 
-/** Configuration parser for {@link SCASLegacyPIP} PIPs. */
-public class SCASSLegacyPIPIniConfigurationParser extends AbstractX509PIPIniConfigurationParser {
+import eu.emi.security.authn.x509.X509CertChainValidator;
+
+/**
+ * Configuration parser for {@link SCASLegacyPIP} PIPs.
+ * 
+ * @deprecated {@link SCASLegacyPIP} is deprecated
+ */
+public class SCASSLegacyPIPIniConfigurationParser extends
+        AbstractX509PIPIniConfigurationParser {
 
     /** {@inheritDoc} */
-    protected PolicyInformationPoint buildInformationPoint(Ini.Section iniConfig, boolean requireProxy, PKIStore trustMaterial,
-            PKIStore acTrustMaterial, boolean performPKIXValidation) throws ConfigurationException {
+    protected PolicyInformationPoint buildInformationPoint(Ini.Section iniConfig,
+                                                           boolean requireProxy,
+                                                           X509CertChainValidator x509Validator,
+                                                           VOMSACValidator vomsACValidator,
+                                                           boolean performPKIXValidation)
+            throws ConfigurationException {
         String pipId= iniConfig.getName();
-        SCASLegacyPIP pip= new SCASLegacyPIP(pipId, requireProxy, trustMaterial, acTrustMaterial);
+        SCASLegacyPIP pip= new SCASLegacyPIP(pipId, requireProxy, x509Validator, vomsACValidator);
         // bug fix: perform PKIX validation not passed to PIP
         pip.performPKIXValidation(performPKIXValidation);
         return pip;

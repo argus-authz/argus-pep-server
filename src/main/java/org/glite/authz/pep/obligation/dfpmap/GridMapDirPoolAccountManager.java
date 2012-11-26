@@ -28,15 +28,15 @@ import java.util.regex.Pattern;
 
 import javax.security.auth.x500.X500Principal;
 
-import org.glite.authz.common.util.Strings;
-import org.glite.authz.pep.obligation.ObligationProcessingException;
-import org.glite.voms.PKIUtils;
-
 import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.util.URIUtil;
+import org.glite.authz.common.util.Strings;
+import org.glite.authz.pep.obligation.ObligationProcessingException;
 import org.jruby.ext.posix.FileStat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import eu.emi.security.authn.x509.impl.OpensslNameUtils;
 
 /**
  * A {@link PoolAccountManager} implementation that uses the filesystem as a
@@ -314,11 +314,12 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
         StringBuilder identifier= new StringBuilder();
 
         try {
-            String openSSLPrincipal= PKIUtils.getOpenSSLFormatPrincipal(subjectDN,
-                                                                        true);
+            String rfc2253Subject= subjectDN.getName();
+            String openSSLSubject= OpensslNameUtils.convertFromRfc2253(rfc2253Subject, false);
+
             // BUG FIX: https://savannah.cern.ch/bugs/index.php?83419
             // encode using the legacy gLExec LCAS/LCMAP algorithm
-            String encodedId= encodeSubjectIdentifier(openSSLPrincipal);
+            String encodedId= encodeSubjectIdentifier(openSSLSubject);
             identifier.append(encodedId);
         } catch (URIException e) {
             throw new RuntimeException("Charset required to be supported by JVM but is not available",

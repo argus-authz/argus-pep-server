@@ -33,11 +33,13 @@ import net.sf.ehcache.Status;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.glite.authz.common.config.ConfigurationException;
+import org.glite.authz.common.http.CertChainValidatorDisposeTask;
 import org.glite.authz.common.http.JettyAdminService;
 import org.glite.authz.common.http.JettyRunThread;
-import org.glite.authz.common.http.JettyShutdownTask;
+import org.glite.authz.common.http.JettyServerShutdownTask;
 import org.glite.authz.common.http.JettySslSelectChannelConnector;
 import org.glite.authz.common.http.ServiceMetricsServlet;
+import org.glite.authz.common.http.ShutdownTask;
 import org.glite.authz.common.http.StatusCommand;
 import org.glite.authz.common.http.SystemExitTask;
 import org.glite.authz.common.http.TimerShutdownTask;
@@ -57,6 +59,8 @@ import org.mortbay.thread.concurrent.ThreadPool;
 import org.opensaml.DefaultBootstrap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import eu.emi.security.authn.x509.X509CertChainValidatorExt;
 
 /**
  * The daemon component for the PEP.
@@ -80,7 +84,7 @@ public final class PEPDaemon {
     /** System property name PEPD_LOGDIR path is bound to. */
     public static final String PEP_LOGDIR_PROP= "org.glite.authz.pep.logdir";
 
-    /** System property name PEP_GRACEFUL to set to force a graceful shutdown  */
+    /** System property name PEP_GRACEFUL to set to force a graceful shutdown */
     public static final String PEP_GRACEFUL_PROP= "org.glite.authz.pep.server.graceful";
 
     /** Default admin port: {@value} */
@@ -118,12 +122,11 @@ public final class PEPDaemon {
 
         String confDir= System.getProperty(PEP_CONFDIR_PROP);
         if (confDir == null) {
-            errorAndExit("System property " + PEP_CONFDIR_PROP + " is not set",
-                         null);
+            errorAndExit("System property " + PEP_CONFDIR_PROP + " is not set", null);
         }
 
         final Timer backgroundTaskTimer= new Timer(true);
-        
+
         String loggingConfigFilePath= confDir + "/logging.xml";
         initializeLogging(loggingConfigFilePath, backgroundTaskTimer);
 
@@ -147,9 +150,7 @@ public final class PEPDaemon {
         pepDaemonServiceThread.setName("PEP Server Service");
         pepDaemonServiceThread.start();
 
-        JettyAdminService adminService= createAdminService(daemonConfig,
-                                                           backgroundTaskTimer,
-                                                           pepDaemonService);
+        JettyAdminService adminService= createAdminService(daemonConfig, backgroundTaskTimer, pepDaemonService);
         LOG.debug("Starting admin service");
         adminService.start();
 
@@ -164,13 +165,12 @@ public final class PEPDaemon {
      * 
      * @return a configured PEP daemon server
      */
-    private static Server createPEPDaemonService(
-            PEPDaemonConfiguration daemonConfig) {
+    private static Server createPEPDaemonService(PEPDaemonConfiguration daemonConfig) {
         Server httpServer= new Server();
         httpServer.setSendServerVersion(false);
         httpServer.setSendDateHeader(false);
-        if (System.getProperty(PEP_GRACEFUL_PROP)!=null) {
-            LOG.info("Graceful shutdown enabled: " + PEP_GRACEFUL_PROP );
+        if (System.getProperty(PEP_GRACEFUL_PROP) != null) {
+            LOG.info("Graceful shutdown enabled: " + PEP_GRACEFUL_PROP);
             httpServer.setGracefulShutdown(1000); // 1 sec
         }
         httpServer.setStopAtShutdown(true);
@@ -182,11 +182,7 @@ public final class PEPDaemon {
         else {
             requestQueue= new ArrayBlockingQueue<Runnable>(daemonConfig.getMaxRequestQueueSize());
         }
-        ThreadPool threadPool= new ThreadPool(5,
-                                              daemonConfig.getMaxRequests(),
-                                              1,
-                                              TimeUnit.SECONDS,
-                                              requestQueue);
+        ThreadPool threadPool= new ThreadPool(5, daemonConfig.getMaxRequests(), 1, TimeUnit.SECONDS, requestQueue);
         httpServer.setThreadPool(threadPool);
 
         Connector connector= createServiceConnector(daemonConfig);
@@ -194,8 +190,7 @@ public final class PEPDaemon {
 
         Context servletContext= new Context(httpServer, "/", false, false);
         servletContext.setDisplayName("PEP Server");
-        servletContext.setAttribute(PEPDaemonConfiguration.BINDING_NAME,
-                                    daemonConfig);
+        servletContext.setAttribute(PEPDaemonConfiguration.BINDING_NAME, daemonConfig);
 
         FilterHolder accessLoggingFilter= new FilterHolder(new AccessLoggingFilter());
         servletContext.addFilter(accessLoggingFilter, "/*", Context.REQUEST);
@@ -207,7 +202,7 @@ public final class PEPDaemon {
         ServletHolder statusRequestServlet= new ServletHolder(new ServiceMetricsServlet(daemonConfig.getServiceMetrics()));
         statusRequestServlet.setName("Status Servlet");
         servletContext.addServlet(statusRequestServlet, "/status");
-        
+
         return httpServer;
     }
 
@@ -235,9 +230,9 @@ public final class PEPDaemon {
      * 
      * @return the admin service
      */
-    private static JettyAdminService createAdminService(
-            PEPDaemonConfiguration daemonConfig, Timer backgroundTimer,
-            Server daemonService) {
+    private static JettyAdminService createAdminService(PEPDaemonConfiguration daemonConfig,
+                                                        Timer backgroundTimer,
+                                                        Server daemonService) {
 
         String adminHost= daemonConfig.getAdminHost();
         if (adminHost == null) {
@@ -249,9 +244,7 @@ public final class PEPDaemon {
             adminPort= DEFAULT_ADMIN_PORT;
         }
 
-        JettyAdminService adminService= new JettyAdminService(adminHost,
-                                                              adminPort,
-                                                              daemonConfig.getAdminPassword());
+        JettyAdminService adminService= new JettyAdminService(adminHost, adminPort, daemonConfig.getAdminPassword());
 
         adminService.registerAdminCommand(new StatusCommand(daemonConfig.getServiceMetrics()));
         adminService.registerAdminCommand(new ClearResponseCacheCommand());
@@ -259,8 +252,9 @@ public final class PEPDaemon {
         // first shutdown task will force a System.exit(0) after 60 sec.
         adminService.registerShutdownTask(new SystemExitTask(60000));
         adminService.registerShutdownTask(new TimerShutdownTask(backgroundTimer));
-        adminService.registerShutdownTask(new JettyShutdownTask(daemonService));
-        adminService.registerShutdownTask(new Runnable() {
+        adminService.registerShutdownTask(new JettyServerShutdownTask(daemonService));
+        // shutdown the cache
+        adminService.registerShutdownTask(new ShutdownTask() {
             public void run() {
                 CacheManager cacheMgr= CacheManager.getInstance();
                 if (cacheMgr != null
@@ -269,6 +263,9 @@ public final class PEPDaemon {
                 }
             }
         });
+        // dispose the cert chain validator
+        X509CertChainValidatorExt validator= daemonConfig.getCertChainValidator();
+        adminService.registerShutdownTask(new CertChainValidatorDisposeTask(validator));
 
         return adminService;
     }
@@ -281,8 +278,7 @@ public final class PEPDaemon {
      * 
      * @return the created connector
      */
-    private static Connector createServiceConnector(
-            PEPDaemonConfiguration daemonConfig) {
+    private static Connector createServiceConnector(PEPDaemonConfiguration daemonConfig) {
         Connector connector;
         if (!daemonConfig.isSslEnabled()) {
             connector= new SelectChannelConnector();
@@ -294,8 +290,7 @@ public final class PEPDaemon {
             if (daemonConfig.getTrustManager() == null) {
                 LOG.error("Service port was meant to be SSL enabled but no trust information directory was specified in the configuration file");
             }
-            connector= new JettySslSelectChannelConnector(daemonConfig.getKeyManager(),
-                                                          daemonConfig.getTrustManager());
+            connector= new JettySslSelectChannelConnector(daemonConfig.getKeyManager(), daemonConfig.getTrustManager());
             if (daemonConfig.isClientCertAuthRequired()) {
                 ((JettySslSelectChannelConnector) connector).setNeedClientAuth(true);
             }
@@ -322,8 +317,7 @@ public final class PEPDaemon {
      * 
      * @return configuration file and creates a configuration from it
      */
-    private static PEPDaemonConfiguration parseConfiguration(
-            String configFilePath) {
+    private static PEPDaemonConfiguration parseConfiguration(String configFilePath) {
         File configFile= null;
 
         try {
@@ -338,12 +332,10 @@ public final class PEPDaemon {
             return configParser.parse(new FileReader(configFile));
         } catch (IOException e) {
             LOG.error("Unable to read configuration file", e);
-            errorAndExit("Unable to read configuration file " + configFilePath,
-                         e);
+            errorAndExit("Unable to read configuration file " + configFilePath, e);
         } catch (ConfigurationException e) {
             LOG.error("Unable to load configuration file", e);
-            errorAndExit("Error parsing configuration file " + configFilePath,
-                         e);
+            errorAndExit("Error parsing configuration file " + configFilePath, e);
         }
 
         return null;
@@ -381,7 +373,7 @@ public final class PEPDaemon {
      *            timer controlling the reloading of tasks
      */
     private static void initializeLogging(String loggingConfigFilePath,
-            Timer reloadTasks) {
+                                          Timer reloadTasks) {
         LoggingReloadTask reloadTask= null;
         try {
             reloadTask= new LoggingReloadTask(loggingConfigFilePath);
@@ -391,8 +383,6 @@ public final class PEPDaemon {
         }
         // check/reload every 5 minutes
         reloadTask.run();
-        reloadTasks.scheduleAtFixedRate(reloadTask,
-                                        DEFAULT_LOGGING_CONFIG_REFRESH_PERIOD,
-                                        DEFAULT_LOGGING_CONFIG_REFRESH_PERIOD);
+        reloadTasks.scheduleAtFixedRate(reloadTask, DEFAULT_LOGGING_CONFIG_REFRESH_PERIOD, DEFAULT_LOGGING_CONFIG_REFRESH_PERIOD);
     }
 }
