@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
  * @author Joni Hahkala Created on August 26, 2003, 10:21 AM
  * @deprecated use caNl instead
  */
-@SuppressWarnings({"unchecked","rawtypes"})
+@SuppressWarnings({ "unchecked", "rawtypes" })
 public class DNHandler {
     /** Logging Facility. */
     final Logger LOGGER= LoggerFactory.getLogger(DNHandler.class);
@@ -68,9 +68,9 @@ public class DNHandler {
      *            The certificate to the the issuer from.
      * @return The DN class representation of the issuer.
      */
-    public static DN getIssuer(X509Certificate cert) {
+    public static DN getIssuerDN(X509Certificate cert) {
         // logger.debug("getting the issuer");
-        return getDN(cert.getIssuerDN());
+        return getPrincipalDN(cert.getIssuerDN());
     }
 
     /**
@@ -81,8 +81,8 @@ public class DNHandler {
      *            The certificate to the the issuer from.
      * @return The DN class representation of the subject.
      */
-    public static DN getSubject(X509Certificate cert) {
-        return getDN(cert.getSubjectDN());
+    public static DN getSubjectDN(X509Certificate cert) {
+        return getPrincipalDN(cert.getSubjectDN());
     }
 
     /**
@@ -92,38 +92,9 @@ public class DNHandler {
      *            The Principal to get the DN from.
      * @return The DN class representation of the DN.
      */
-    public static DN getDN(Principal principal) {
+    public static DN getPrincipalDN(Principal principal) {
         // logger.debug("getting the DN from principal");
         return new DNImplRFC2253(principal);
-    }
-
-    /**
-     * Generates a DN object form the X509Name object.
-     * 
-     * @param x509Name
-     *            The X509Name to get the DN from.
-     * @return The DN class representation of the DN.
-     */
-    public static DN getDN(X509Name x509Name) {
-        // logger.debug("getting the DN from principal");
-        return new DNImplRFC2253(x509Name);
-    }
-
-    /**
-     * Generates a DN object form a String. If the string starts with a slash
-     * character, it is assumed to be old openssl X500 form, e.g.
-     * "/C=FR/O=Acme/CN=John Doe". Otherwise the string is assumed to be pseudo
-     * RFC 2253 format DN in the direct order in violation of RFC2253, e.g.
-     * "C=FR, O=Acme, CN=John Doe".
-     * 
-     * @param inputDN
-     *            The string to get the DN from.
-     * @return The DN class representation of the DN.
-     * @deprecated Use getDNRFC2253(String inputDN) instead for proper reversed
-     *             RFC 2253 DN support. This assumes DN that is not reversed.
-     */
-    public static DN getDN(String inputDN) {
-        return new DNImplRFC2253(inputDN, false);
     }
 
     /**
