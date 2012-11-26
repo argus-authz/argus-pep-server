@@ -6,14 +6,13 @@
     <parent>
         <groupId>org.glite.authz</groupId>
         <artifactId>argus-parent</artifactId>
-        <version>1.5</version>
-        <!-- <relativePath>../emi.argus.parent</relativePath> -->
+        <version>1.6</version>
     </parent>
 
     <name>Argus PEP Server</name>
     <groupId>org.glite.authz</groupId>
     <artifactId>argus-pepd</artifactId>
-    <version>1.5.2</version>
+    <version>1.6.0</version>
     <packaging>jar</packaging>
 
     <description>XACML based authorization service</description>
@@ -37,6 +36,10 @@
         <dependency>
             <groupId>org.glite.authz</groupId>
             <artifactId>pdp-pep-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.italiangrid</groupId>
+            <artifactId>voms-api-java</artifactId>
         </dependency>
         <dependency>
             <groupId>net.sf.ehcache</groupId>
