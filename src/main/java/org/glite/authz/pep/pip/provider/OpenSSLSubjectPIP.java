@@ -55,8 +55,7 @@ public final class OpenSSLSubjectPIP extends AbstractPolicyInformationPoint {
                                                                                   GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ID);
 
     /**
-     * Default list of subject attribute datatype what must be converted: *
-     * {@value}
+     * Default list of subject attribute datatype what must be converted: {@value}
      */
     public final static List<String> DEFAULT_OPENSSL_SUBJECT_ATTRIBUTE_DATATYPES= Arrays.asList(GLiteAuthorizationProfileConstants.DATATYPE_STRING);
 

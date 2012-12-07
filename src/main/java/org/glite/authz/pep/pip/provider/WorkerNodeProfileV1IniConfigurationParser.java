@@ -52,10 +52,11 @@ public class WorkerNodeProfileV1IniConfigurationParser extends
                                                            boolean requireProxy,
                                                            X509CertChainValidator x509Validator,
                                                            VOMSACValidator vomsACValidator,
-                                                           boolean performPKIXValidation)
+                                                           boolean performPKIXValidation,boolean requireCertificate)
             throws ConfigurationException {
         String pipId= iniConfig.getName();
         WorkerNodeProfileV1 pip= new WorkerNodeProfileV1(pipId, requireProxy, x509Validator, vomsACValidator, performPKIXValidation);
+        pip.setRequireCertificate(requireCertificate);
         return pip;
 
     }

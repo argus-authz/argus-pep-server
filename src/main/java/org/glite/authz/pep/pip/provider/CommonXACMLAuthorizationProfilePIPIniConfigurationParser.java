@@ -70,12 +70,12 @@ public class CommonXACMLAuthorizationProfilePIPIniConfigurationParser extends
      * The name of the {@value} property to define the accepted Grid
      * Authorization Profile ID to process.
      */
-    protected static String ACCEPTED_PROFILE_IDS_PROP= "acceptedProfileIDs";
+    public static String ACCEPTED_PROFILE_IDS_PROP= "acceptedProfileIDs";
 
     /** {@inheritDoc} */
     protected PolicyInformationPoint buildInformationPoint(Ini.Section iniConfig,
             boolean requireProxy, X509CertChainValidator x509Validator,
-            VOMSACValidator vomsACValidator, boolean performPKIXValidation)
+            VOMSACValidator vomsACValidator, boolean performPKIXValidation,boolean requireCertificate)
             throws ConfigurationException {
         String pipId= iniConfig.getName();
 
@@ -96,8 +96,16 @@ public class CommonXACMLAuthorizationProfilePIPIniConfigurationParser extends
                                                                                        vomsACValidator,
                                                                                        performPKIXValidation,
                                                                                        acceptedProfileIds);
+        pip.setRequireCertificate(requireCertificate);
         return pip;
 
+    }
+
+    /**
+     * @return <code>false</code>
+     */
+    protected boolean getRequireCertificateDefault() {
+        return false;
     }
 
     /**
@@ -109,7 +117,7 @@ public class CommonXACMLAuthorizationProfilePIPIniConfigurationParser extends
      * @return array of values or <code>null</code> if valuesList is
      *         <code>null</code>
      */
-    protected String[] parseValuesList(String valuesList) {
+    private String[] parseValuesList(String valuesList) {
         if (valuesList == null) {
             return null;
         }

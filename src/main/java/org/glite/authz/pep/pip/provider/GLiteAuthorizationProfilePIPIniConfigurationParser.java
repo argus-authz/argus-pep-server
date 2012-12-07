@@ -63,7 +63,7 @@ public class GLiteAuthorizationProfilePIPIniConfigurationParser extends Abstract
     /** {@inheritDoc} */
     protected PolicyInformationPoint buildInformationPoint(Ini.Section iniConfig, boolean requireProxy,
                                                            X509CertChainValidator x509Validator,
-                                                           VOMSACValidator vomsACValidator, boolean performPKIXValidation)
+                                                           VOMSACValidator vomsACValidator, boolean performPKIXValidation,boolean requireCertificate)
             throws ConfigurationException {
         String pipId = iniConfig.getName();
 
@@ -77,6 +77,7 @@ public class GLiteAuthorizationProfilePIPIniConfigurationParser extends Abstract
 
         GLiteAuthorizationProfilePIP pip = new GLiteAuthorizationProfilePIP(pipId, requireProxy, x509Validator, vomsACValidator,
                 performPKIXValidation, acceptedProfileIds);
+        pip.setRequireCertificate(requireCertificate);
         return pip;
 
     }
@@ -88,7 +89,7 @@ public class GLiteAuthorizationProfilePIPIniConfigurationParser extends Abstract
      * 
      * @return array of values or <code>null</code> if valuesList is <code>null</code>
      */
-    protected String[] parseValuesList(String valuesList) {
+    private String[] parseValuesList(String valuesList) {
         if (valuesList == null) {
             return null;
         }

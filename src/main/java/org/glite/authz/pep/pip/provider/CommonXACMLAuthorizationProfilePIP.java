@@ -34,6 +34,7 @@ import java.util.Set;
 
 import javax.security.auth.x500.X500Principal;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.common.model.Attribute;
 import org.glite.authz.common.model.Environment;
@@ -42,13 +43,14 @@ import org.glite.authz.common.model.Subject;
 import org.glite.authz.common.profile.CommonXACMLAuthorizationProfileConstants;
 import org.glite.authz.common.profile.GLiteAuthorizationProfileConstants;
 import org.glite.authz.common.util.Base64;
+import org.glite.authz.common.util.LazyList;
 import org.glite.authz.common.util.Strings;
 import org.glite.authz.pep.pip.PIPProcessingException;
 import org.glite.voms.FQAN;
 import org.italiangrid.voms.VOMSAttribute;
 import org.italiangrid.voms.ac.VOMSACValidator;
-
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.italiangrid.voms.ac.VOMSValidationResult;
+import org.italiangrid.voms.error.VOMSValidationErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -410,9 +412,32 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
     private List<VOMSAttribute> extractVOMSAttributes(
             X509Certificate[] certChain) {
         VOMSACValidator validator= getVOMSACValidator();
-        List<VOMSAttribute> vomsAttributes= validator.validate(certChain);
+        
+        log.debug("Validating VOMS AC...");
+        
+        List<VOMSValidationResult> results= validator.validateWithResult(certChain);
 
-        if (vomsAttributes == null || vomsAttributes.isEmpty()) {
+        if (results.isEmpty()) {
+            log.warn("No VOMS attributes found in cert chain: {}",certChain[0].getSubjectX500Principal().getName(X500Principal.RFC2253));
+            return null;
+        }
+
+        List<VOMSAttribute> vomsAttributes= new LazyList<VOMSAttribute>();
+        for (VOMSValidationResult result : results) {
+            if (result.isValid()) {
+                vomsAttributes.add(result.getAttributes());
+            }
+            else {
+                List<VOMSValidationErrorMessage> errorMessages= result.getValidationErrors();
+                for (VOMSValidationErrorMessage errorMessage : errorMessages) {
+                    log.error("VOMS validation fails: " + errorMessage.getMessage());
+                    return null;
+                }
+
+            }
+        }
+        if (vomsAttributes.isEmpty()) {
+            log.warn("No valid VOMS attributes found in cert chain: {}",certChain[0].getSubjectX500Principal().getName(X500Principal.RFC2253));
             return null;
         }
 
@@ -464,6 +489,11 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
             }
         }
 
+        if (certChain.isEmpty()) {
+            log.debug("No attribute: {} datatype: {} found in Subject",getCertificateAttributeId(),getCertificateAttributeDatatype());
+            return null;
+        }
+        
         boolean proxyPresent= false;
         for (X509Certificate cert : certChain) {
             if (cert.getVersion() < 3) {
@@ -481,7 +511,7 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
             return null;
         }
 
-        return certChain.toArray(new X509Certificate[] {});
+        return certChain.toArray(new X509Certificate[certChain.size()]);
     }
 
     /** the "NULL" string */

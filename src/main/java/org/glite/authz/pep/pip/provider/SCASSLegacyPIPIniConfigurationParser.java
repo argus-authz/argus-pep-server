@@ -37,12 +37,13 @@ public class SCASSLegacyPIPIniConfigurationParser extends
                                                            boolean requireProxy,
                                                            X509CertChainValidator x509Validator,
                                                            VOMSACValidator vomsACValidator,
-                                                           boolean performPKIXValidation)
+                                                           boolean performPKIXValidation,boolean requireCertificate)
             throws ConfigurationException {
         String pipId= iniConfig.getName();
         SCASLegacyPIP pip= new SCASLegacyPIP(pipId, requireProxy, x509Validator, vomsACValidator);
         // bug fix: perform PKIX validation not passed to PIP
         pip.performPKIXValidation(performPKIXValidation);
+        pip.setRequireCertificate(requireCertificate);
         return pip;
     }
 }

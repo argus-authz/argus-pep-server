@@ -42,6 +42,14 @@ public abstract class AbstractX509PIPIniConfigurationParser implements
         IniSectionConfigurationParser<PolicyInformationPoint> {
 
     /**
+     * The name of the {@value} property to enable or disable the requirement to
+     * have a certificate chain in the Subject.
+     */
+    public static final String REQUIRE_CERTIFICATE_PROP= "requireCertificate";
+    
+    /** Default value of {@value #REQUIRE_CERTIFICATE_PROP}: {@value} . */
+    public static final boolean DEFAULT_REQUIRE_CERTIFICATE= true;
+    /**
      * The name of the {@value} property which determines whether a subject's
      * certificate chain must contain a proxy certificate.
      */
@@ -80,45 +88,54 @@ public abstract class AbstractX509PIPIniConfigurationParser implements
     private Logger log= LoggerFactory.getLogger(AbstractX509PIPIniConfigurationParser.class);
 
     /** {@inheritDoc} */
-    public PolicyInformationPoint parse(Ini.Section iniConfig, AbstractConfigurationBuilder<?> configurationBuilder)
+    public PolicyInformationPoint parse(Ini.Section iniConfig,
+                                        AbstractConfigurationBuilder<?> configurationBuilder)
             throws ConfigurationException {
-        
-        String pipId = iniConfig.getName();
-        
-        boolean requireProxy = IniConfigUtil.getBoolean(iniConfig, REQ_PROXY_PROP, DEFAULT_REQ_PROXY);
+
+        String pipId= iniConfig.getName();
+
+        boolean requireProxy= IniConfigUtil.getBoolean(iniConfig, REQ_PROXY_PROP, DEFAULT_REQ_PROXY);
         log.info("{}: subject proxy certificate required: {}", pipId, requireProxy);
 
-        VOMSACValidator vomsValidator = null;
-        String vomsInfoDir = IniConfigUtil.getString(iniConfig, VOMS_INFO_DIR_PROP, null);
+        VOMSACValidator vomsValidator= null;
+        String vomsInfoDir= IniConfigUtil.getString(iniConfig, VOMS_INFO_DIR_PROP, null);
         if (vomsInfoDir != null) {
             log.info("{}: VOMS info directory: {}", pipId, vomsInfoDir);
             // get refresh interval: default 1h
-            int vomsInfoRefresh = IniConfigUtil.getInt(iniConfig, VOMS_INFO_REFRESH_PROP, DEFAULT_VOMS_INFO_REFRESH, 1,
-                    Integer.MAX_VALUE);
+            int vomsInfoRefresh= IniConfigUtil.getInt(iniConfig, VOMS_INFO_REFRESH_PROP, DEFAULT_VOMS_INFO_REFRESH, 1, Integer.MAX_VALUE);
             // minute -> millis
-            vomsInfoRefresh = vomsInfoRefresh * 60 * 1000;
+            vomsInfoRefresh= vomsInfoRefresh * 60 * 1000;
             log.info("{}: VOMS info refresh interval: {}ms", pipId, vomsInfoRefresh);
             try {
                 Files.getFile(vomsInfoDir, false, true, true, false);
                 List<String> vomsInfoDirs= Arrays.asList(vomsInfoDir);
-                //TODO: add update listener!!!!
-                VOMSTrustStore vomsTrustStore= new DefaultUpdatingVOMSTrustStore(vomsInfoDirs, vomsInfoRefresh); 
+                // TODO: add update listener!!!!
+                VOMSTrustStore vomsTrustStore= new DefaultUpdatingVOMSTrustStore(vomsInfoDirs, vomsInfoRefresh);
                 X509CertChainValidatorExt certChainValidator= configurationBuilder.getCertChainValidator();
-                //TODO: add validation listener!!!!
+                // TODO: add validation listener!!!!
                 vomsValidator= new DefaultVOMSValidator(vomsTrustStore, certChainValidator);
             } catch (Exception e) {
                 throw new ConfigurationException("Unable to read VOMS AC validation information", e);
             }
         }
 
-        boolean performPKIXValidation = IniConfigUtil.getBoolean(iniConfig, PERFORM_PKIX_VALIDATION_PROP,
-                DEFAULT_PERFORM_PKIX_VALIDATION);
-        log.info("{}: perform PKIX validation on cert chains: {}", pipId,performPKIXValidation);
+        boolean requireCertificate= IniConfigUtil.getBoolean(iniConfig, REQUIRE_CERTIFICATE_PROP, getRequireCertificateDefault());
+        log.info("{}: require a certificate chains: {}", pipId, requireCertificate);
 
-        return buildInformationPoint(iniConfig, requireProxy, configurationBuilder.getCertChainValidator(),
-                vomsValidator, performPKIXValidation);
+        boolean performPKIXValidation= IniConfigUtil.getBoolean(iniConfig, PERFORM_PKIX_VALIDATION_PROP, DEFAULT_PERFORM_PKIX_VALIDATION);
+        log.info("{}: perform PKIX validation on cert chains: {}", pipId, performPKIXValidation);
+
+        PolicyInformationPoint pip= buildInformationPoint(iniConfig, requireProxy, configurationBuilder.getCertChainValidator(), vomsValidator, performPKIXValidation, requireCertificate);
+        return pip;
     }
 
+    /**
+     * @return the default value for requireCertificate: {@value #DEFAULT_REQUIRE_CERTIFICATE}
+     */
+    protected boolean getRequireCertificateDefault() {
+        return DEFAULT_REQUIRE_CERTIFICATE;
+    }
+    
     /**
      * Builds the instance of the policy information point given the parsed
      * configuration.
@@ -130,9 +147,13 @@ public abstract class AbstractX509PIPIniConfigurationParser implements
      * @param x509Validator
      *            the X.509 validator used for validating user certificates
      * @param vomsACValidator
-     *            the VOMS AC validator used for validating attribute certificates
+     *            the VOMS AC validator used for validating attribute
+     *            certificates
      * @param performPKIXValidation
      *            whether PKIX validation should be performed
+     * @param requireCertificate
+     *            to disable the requirement to have a cert in subject (default
+     *            is true)
      * 
      * @return the constructed information point
      * 
@@ -144,6 +165,7 @@ public abstract class AbstractX509PIPIniConfigurationParser implements
                                                                     boolean requireProxy,
                                                                     X509CertChainValidator x509Validator,
                                                                     VOMSACValidator vomsACValidator,
-                                                                    boolean performPKIXValidation)
+                                                                    boolean performPKIXValidation,
+                                                                    boolean requireCertificate)
             throws ConfigurationException;
 }

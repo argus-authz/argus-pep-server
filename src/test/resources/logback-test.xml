@@ -7,7 +7,7 @@
         which level, and to which appender. Levels: OFF, ERROR, WARN,
         INFO, DEBUG, TRACE, ALL
     -->
-    <logger name="org.glite.authz" level="debug"/>
+    <logger name="org.glite.authz" level="trace"/>
 
     <!-- OpenSAML loggers -->
     <logger name="org.opensaml" level="warn" />
