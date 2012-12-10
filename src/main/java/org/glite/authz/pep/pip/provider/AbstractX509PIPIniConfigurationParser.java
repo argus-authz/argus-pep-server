@@ -49,13 +49,15 @@ public abstract class AbstractX509PIPIniConfigurationParser implements
     
     /** Default value of {@value #REQUIRE_CERTIFICATE_PROP}: {@value} . */
     public static final boolean DEFAULT_REQUIRE_CERTIFICATE= true;
+    
     /**
      * The name of the {@value} property which determines whether a subject's
      * certificate chain must contain a proxy certificate.
      */
-    public static final String REQ_PROXY_PROP= "requireProxy";
-    /** Default value of {@value #REQ_PROXY_PROP}, {@value} . */
-    public static final boolean DEFAULT_REQ_PROXY= false;
+    public static final String REQUIRE_PROXY_PROP= "requireProxy";
+    
+    /** Default value of {@value #REQUIRE_PROXY_PROP}: {@value} . */
+    public static final boolean DEFAULT_REQUIRE_PROXY= false;
 
     /**
      * The name of the {@value} property the indicates whether PKIX validation
@@ -94,7 +96,7 @@ public abstract class AbstractX509PIPIniConfigurationParser implements
 
         String pipId= iniConfig.getName();
 
-        boolean requireProxy= IniConfigUtil.getBoolean(iniConfig, REQ_PROXY_PROP, DEFAULT_REQ_PROXY);
+        boolean requireProxy= IniConfigUtil.getBoolean(iniConfig, REQUIRE_PROXY_PROP, DEFAULT_REQUIRE_PROXY);
         log.info("{}: subject proxy certificate required: {}", pipId, requireProxy);
 
         VOMSACValidator vomsValidator= null;
