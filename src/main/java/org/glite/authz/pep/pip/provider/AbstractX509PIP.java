@@ -218,17 +218,21 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
             certChain= sortCertificateChain(certChain);
 
             // bug fix: complete cert chain up to trust anchor
+            // it is now implemented in caNl validator, see ValidationResult.getValidChain()
             certChain= completeCertificateChain(certChain);
+            
             if (log.isDebugEnabled()) {
                 int i= 0;
+                log.debug("before caNl validation:");
                 for (X509Certificate cert : certChain) {
-                    log.debug("certChain[{}]: {}", i++, cert.getSubjectX500Principal().getName(X500Principal.RFC2253));
+                    String certSubject= cert.getSubjectX500Principal().getName(X500Principal.RFC2253);
+                    log.debug("certChain[{}]: {}", i++, certSubject);
                 }
             }
 
             if (isPKIXValidationEnabled()) {
                 log.debug("Validating cert chain...");
-                
+
                 ValidationResult result= certChainValidator.validate(certChain);
                 if (!result.isValid()) {
                     StringBuilder sb= new StringBuilder();
@@ -242,7 +246,22 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
                     log.error(errorMsg);
                     throw new PIPProcessingException(errorMsg);
                 }
+                else {
+                    // get full certchain from validator
+                    List<X509Certificate> validChain= result.getValidChain();
+                    certChain= validChain.toArray(new X509Certificate[validChain.size()]);
+                }
             }
+
+            if (log.isDebugEnabled()) {
+                int i= 0;
+                log.debug("after caNl validation:");
+                for (X509Certificate cert : certChain) {
+                    String certSubject= cert.getSubjectX500Principal().getName(X500Principal.RFC2253);
+                    log.debug("certChain[{}]: {}", i++, certSubject);
+                }
+            }
+
             X509Certificate userCert= ProxyUtils.getEndUserCertificate(certChain);
 
             log.debug("Extracting subject attributes from certificate with subject: {}", userCert.getSubjectX500Principal());
@@ -557,7 +576,7 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
      *             building the complete cert chain
      */
     protected X509Certificate[] completeCertificateChain(X509Certificate[] certChain) {
-        log.debug("TODO implement");
+        log.debug("implemented in caNl validator...");
         return certChain;
     }
     /*
