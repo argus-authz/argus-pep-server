@@ -240,17 +240,18 @@ public class GLiteAuthorizationProfilePIP extends AbstractX509PIP {
         attribute.setId(Attribute.ID_SUB_ID);
         attribute.setDataType(Attribute.DT_X500_NAME);
         attribute.getValues().add(endEntitySubjectDN);
-        log.debug("Extracted attribute: {}", attribute);
+        log.debug("Extracted subject-id attribute: {}", attribute);
         subjectAttributes.add(attribute);
 
         // set the issuer DN attribute.
         attribute= new Attribute();
         attribute.setId(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ISSUER);
         attribute.setDataType(Attribute.DT_X500_NAME);
-        for (int i= 1; i < certChain.length; i++) {
-            attribute.getValues().add(certChain[i].getSubjectX500Principal().getName(X500Principal.RFC2253));
+        for (X509Certificate cert : certChain) {
+            String issuer= cert.getIssuerX500Principal().getName(X500Principal.RFC2253);
+            attribute.getValues().add(issuer);
         }
-        log.debug("Extracted attribute: {}", attribute);
+        log.debug("Extracted subject-issuer attribute: {}", attribute);
         subjectAttributes.add(attribute);
 
         if (isVOMSSupportEnabled()) {
@@ -295,7 +296,7 @@ public class GLiteAuthorizationProfilePIP extends AbstractX509PIP {
         voAttribute.setId(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_VIRTUAL_ORGANIZATION);
         voAttribute.setDataType(Attribute.DT_STRING);
         voAttribute.getValues().add(attributeCertificate.getVO());
-        log.debug("Extracted attribute: {}", voAttribute);
+        log.debug("Extracted virtual-organization attribute: {}", voAttribute);
         vomsAttributes.add(voAttribute);
 
         List<FQAN> fqans= attributeCertificate.getListOfFQAN();
@@ -304,7 +305,7 @@ public class GLiteAuthorizationProfilePIP extends AbstractX509PIP {
             primaryFqanAttribute.setId(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_PRIMARY_FQAN);
             primaryFqanAttribute.setDataType(GLiteAuthorizationProfileConstants.DATATYPE_FQAN);
             primaryFqanAttribute.getValues().add(fqans.get(0).getFQAN());
-            log.debug("Extracted attribute: {}", primaryFqanAttribute);
+            log.debug("Extracted fqan/primary attribute: {}", primaryFqanAttribute);
             vomsAttributes.add(primaryFqanAttribute);
 
             // handle rest of the fqans
@@ -314,7 +315,7 @@ public class GLiteAuthorizationProfilePIP extends AbstractX509PIP {
             for (FQAN fqan : fqans) {
                 fqanAttribute.getValues().add(fqan.getFQAN());
             }
-            log.debug("Extracted attribute: {}", fqanAttribute);
+            log.debug("Extracted fqan attribute: {}", fqanAttribute);
             vomsAttributes.add(fqanAttribute);
         }
 

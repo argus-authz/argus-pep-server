@@ -284,7 +284,7 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
             return null;
         }
 
-        log.debug("Extracting end-entity certificate attributes");
+        log.debug("Extracting EEC attributes...");
         Set<Attribute> subjectAttributes= new HashSet<Attribute>();
 
         // get and set the subject DN attribute.
@@ -298,8 +298,9 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
         // set the issuer DN attribute.
         Attribute subjectIssuerAttribute= new Attribute(CommonXACMLAuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ISSUER,
                                                         CommonXACMLAuthorizationProfileConstants.DATATYPE_X500_NAME);
-        for (int i= 1; i < certChain.length; i++) {
-            subjectIssuerAttribute.getValues().add(certChain[i].getSubjectX500Principal().getName(X500Principal.RFC2253));
+        for (X509Certificate cert : certChain) {
+            String issuer= cert.getIssuerX500Principal().getName(X500Principal.RFC2253);
+            subjectIssuerAttribute.getValues().add(issuer);
         }
         log.debug("subject-issuer attribute: {}", subjectIssuerAttribute);
         subjectAttributes.add(subjectIssuerAttribute);
@@ -412,13 +413,13 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
     private List<VOMSAttribute> extractVOMSAttributes(
             X509Certificate[] certChain) {
         VOMSACValidator validator= getVOMSACValidator();
-        
-        log.debug("Validating VOMS AC...");
+        String x509Subject= certChain[0].getSubjectX500Principal().getName(X500Principal.RFC2253);
+        log.debug("Validating VOMS AC for {}",x509Subject);
         
         List<VOMSValidationResult> results= validator.validateWithResult(certChain);
 
         if (results.isEmpty()) {
-            log.warn("No VOMS attributes found in cert chain: {}",certChain[0].getSubjectX500Principal().getName(X500Principal.RFC2253));
+            log.warn("No VOMS attributes found in cert chain: {}",x509Subject);
             return null;
         }
 
@@ -437,7 +438,7 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
             }
         }
         if (vomsAttributes.isEmpty()) {
-            log.warn("No valid VOMS attributes found in cert chain: {}",certChain[0].getSubjectX500Principal().getName(X500Principal.RFC2253));
+            log.warn("No valid VOMS attributes found in cert chain: {}",x509Subject);
             return null;
         }
 
