@@ -526,7 +526,7 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
      * @return <code>true</code> iff the str is <code>null</code> or case
      *         insensitive equals to the "NULL" string.
      */
-    private boolean isNullorNULL(String str) {
+    static private boolean isNullorNULL(String str) {
         if (str == null)
             return true;
         else
