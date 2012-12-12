@@ -23,6 +23,7 @@ import java.security.Security;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -36,6 +37,7 @@ import javax.security.auth.x500.X500Principal;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.glite.authz.common.config.ConfigurationException;
+import org.glite.authz.common.fqan.FQAN;
 import org.glite.authz.common.model.Attribute;
 import org.glite.authz.common.model.Environment;
 import org.glite.authz.common.model.Request;
@@ -46,7 +48,6 @@ import org.glite.authz.common.util.Base64;
 import org.glite.authz.common.util.LazyList;
 import org.glite.authz.common.util.Strings;
 import org.glite.authz.pep.pip.PIPProcessingException;
-import org.glite.voms.FQAN;
 import org.italiangrid.voms.VOMSAttribute;
 import org.italiangrid.voms.ac.VOMSACValidator;
 import org.italiangrid.voms.ac.VOMSValidationResult;
@@ -354,10 +355,17 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
             String voName= vomsAttribute.getVO();
             voAttribute.getValues().add(voName);
             // extract groups and roles from AC -> FQANs
-            List<FQAN> fqans= vomsAttribute.getListOfFQAN();
-            for (FQAN fqan : fqans) {
+            List<String> fqans= vomsAttribute.getFQANs();
+            for (String fqanString : fqans) {
+                FQAN fqan;
+                try {
+                    fqan= FQAN.parseFQAN(fqanString);
+                } catch (ParseException e) {
+                    log.warn("Failed to parse FQAN: {}. {}",fqanString,e.getMessage());
+                    continue;
+                }
                 // group name
-                String groupName= fqan.getGroup();
+                String groupName= fqan.getGroupName();
                 groupAttribute.getValues().add(groupName);
                 // role name, issuer is group name
                 String roleName= fqan.getRole();
