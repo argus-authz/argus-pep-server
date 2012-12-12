@@ -376,7 +376,8 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
         BufferedInputStream bis= new BufferedInputStream(new ByteArrayInputStream(pemCertChain.getBytes()));
         PEMCredential subjectCertificate= null;
         try {
-            subjectCertificate= new PEMCredential(bis, null);
+            char[] nopass= null;
+            subjectCertificate= new PEMCredential(bis, nopass);
         } catch (IOException e) {
             log.error("Unable to read subject cert chain", e);
             throw new PIPProcessingException("Unable to read subject cert chain", e);
