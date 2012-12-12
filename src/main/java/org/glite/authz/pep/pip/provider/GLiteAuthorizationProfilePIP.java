@@ -33,7 +33,6 @@ import org.glite.authz.common.model.Environment;
 import org.glite.authz.common.model.Request;
 import org.glite.authz.common.profile.GLiteAuthorizationProfileConstants;
 import org.glite.authz.pep.pip.PIPProcessingException;
-import org.glite.voms.FQAN;
 import org.italiangrid.voms.VOMSAttribute;
 import org.italiangrid.voms.ac.VOMSACValidator;
 import org.slf4j.Logger;
@@ -299,21 +298,22 @@ public class GLiteAuthorizationProfilePIP extends AbstractX509PIP {
         log.debug("Extracted virtual-organization attribute: {}", voAttribute);
         vomsAttributes.add(voAttribute);
 
-        List<FQAN> fqans= attributeCertificate.getListOfFQAN();
-        if (fqans != null && !fqans.isEmpty()) {
-            Attribute primaryFqanAttribute= new Attribute();
-            primaryFqanAttribute.setId(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_PRIMARY_FQAN);
-            primaryFqanAttribute.setDataType(GLiteAuthorizationProfileConstants.DATATYPE_FQAN);
-            primaryFqanAttribute.getValues().add(fqans.get(0).getFQAN());
-            log.debug("Extracted fqan/primary attribute: {}", primaryFqanAttribute);
-            vomsAttributes.add(primaryFqanAttribute);
-
+        String primaryFqan= attributeCertificate.getPrimaryFQAN();
+        Attribute primaryFqanAttribute= new Attribute();
+        primaryFqanAttribute.setId(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_PRIMARY_FQAN);
+        primaryFqanAttribute.setDataType(GLiteAuthorizationProfileConstants.DATATYPE_FQAN);
+        primaryFqanAttribute.getValues().add(primaryFqan);
+        log.debug("Extracted fqan/primary attribute: {}", primaryFqanAttribute);
+        vomsAttributes.add(primaryFqanAttribute);
+        
+        List<String> fqans= attributeCertificate.getFQANs();
+        if (!fqans.isEmpty()) {
             // handle rest of the fqans
             Attribute fqanAttribute= new Attribute();
             fqanAttribute.setId(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_FQAN);
             fqanAttribute.setDataType(GLiteAuthorizationProfileConstants.DATATYPE_FQAN);
-            for (FQAN fqan : fqans) {
-                fqanAttribute.getValues().add(fqan.getFQAN());
+            for (String fqan : fqans) {
+                fqanAttribute.getValues().add(fqan);
             }
             log.debug("Extracted fqan attribute: {}", fqanAttribute);
             vomsAttributes.add(fqanAttribute);
