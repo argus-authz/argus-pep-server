@@ -25,11 +25,10 @@ import org.glite.authz.common.model.Subject;
 import org.glite.authz.common.profile.GLiteAuthorizationProfileConstants;
 import org.glite.authz.common.util.LazyList;
 import org.glite.authz.pep.pip.PIPProcessingException;
-import org.glite.authz.pep.utils.DN;
-import org.glite.authz.pep.utils.DNHandler;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import eu.emi.security.authn.x509.impl.OpensslNameUtils;
 
 /**
  * A Policy Information Point which transform OpenSSL oneline format DN into
@@ -92,8 +91,8 @@ public final class OpenSSLSubjectPIP extends AbstractPolicyInformationPoint {
                                                           attribute.getIssuer());
                     for (Object value : attribute.getValues()) {
                         String opensslDN= value.toString();
-                        DN dn= DNHandler.getDNRFC2253(opensslDN);
-                        String rfcDN= dn.getRFCDN();
+                        @SuppressWarnings("deprecation")
+                        String rfcDN= OpensslNameUtils.opensslToRfc2253(opensslDN);
                         if (log.isDebugEnabled()) {
                             log.debug("OpenSSL DN {} converted to {}",
                                       opensslDN,
