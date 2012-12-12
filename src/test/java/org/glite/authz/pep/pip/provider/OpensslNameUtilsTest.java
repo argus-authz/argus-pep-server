@@ -17,14 +17,12 @@
 package org.glite.authz.pep.pip.provider;
 
 import junit.framework.TestCase;
-
-import org.glite.authz.pep.utils.DN;
-import org.glite.authz.pep.utils.DNHandler;
+import eu.emi.security.authn.x509.impl.OpensslNameUtils;
 
 /**
- * Test util-java DN constructor and conversion functionalities
+ * Test caNl OpensslNameUtils conversion functionalities
  */
-public class DNHandlerTest extends TestCase {
+public class OpensslNameUtilsTest extends TestCase {
 
     static String opensslDN= "/C=ch/O=SWITCH/CN=Valery Tschopp";
     static String rfc2253DN= "CN=Valery Tschopp,O=SWITCH,C=ch";
@@ -39,25 +37,21 @@ public class DNHandlerTest extends TestCase {
         super.tearDown();
     }
 
-    public void testDNFromOpenSSL() {
+    @SuppressWarnings("deprecation")
+    public void testRFC2253FromOpenSSL() {
         System.out.println(" input: " + opensslDN);
-        DN subjectDN= DNHandler.getDNRFC2253(opensslDN);
-        assertEquals(rfc2253DN, subjectDN.getRFCDN());
-        System.out.println("output: " + subjectDN.getRFCDN());
+        String subjectDN= OpensslNameUtils.opensslToRfc2253(opensslDN);
+        assertEquals(rfc2253DN, subjectDN);
+        System.out.println("output: " + subjectDN);
     }
     
-    public void testDNFromRFC2253() {
+    public void testOpenSSLFromRFC2253() {
         System.out.println(" input: " + rfc2253DN);
-        DN subjectDN= DNHandler.getDNRFC2253(rfc2253DN);
-        assertEquals(rfc2253DN, subjectDN.getRFCDN());
-        System.out.println("output: " + subjectDN.getRFCDN());
+        String subjectDN= OpensslNameUtils.convertFromRfc2253(rfc2253DN,false);
+        assertEquals(opensslDN, subjectDN);
+        System.out.println("output: " + subjectDN);
     }
     
-    public void testDNHandler() {
-        DN dnFromOpenSSL= DNHandler.getDNRFC2253(opensslDN);
-        DN dnFromRFC= DNHandler.getDNRFC2253(rfc2253DN);
-        assertEquals(dnFromOpenSSL.getRFCDN(), dnFromRFC.getRFCDN());
-    }
 
 //    
 //    public void testX500Principal() {
