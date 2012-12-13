@@ -1,10 +1,15 @@
-Changes in Release 1.5.2
+Changes in Release 1.6.0
 ========================
 
-This release is an update for EMI-2. 
+This is the EMI-3 release.
 
 New features:
-- Debian 6 support added.
+- Debian 6 platform support added.
+- Uses the new common authentication library (caNl).
+- Uses the new VOMS library (voms-api-java3).
+
+Changes:
+- RPM and Debian packaging moved to separate projects.
 
 RfCs implemented:
 - PEP Server PDP response caching mechanism don't apply OH if response is already in cache.
