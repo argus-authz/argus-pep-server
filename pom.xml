@@ -204,26 +204,8 @@
     <reporting>
         <plugins>
             <plugin>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <configuration>
-                    <links>
-                        <link>http://java.sun.com/j2se/1.5.0/docs/api/
-                        </link>
-                    </links>
-                    <quiet>true</quiet>
-                    <aggregate>true</aggregate>
-                    <author>false</author>
-                    <version>true</version>
-                    <doctitle>${project.name} ${project.version} Java
-                        API.</doctitle>
-                    <windowtitle>${project.name} ${project.version} Java
-                        API.
-                    </windowtitle>
-                    <overview>src/main/java/overview.html</overview>
-                </configuration>
-            </plugin>
-            <plugin>
                 <artifactId>maven-jxr-plugin</artifactId>
+                <version>2.3</version>
                 <configuration>
                     <aggregate>true</aggregate>
                     <outputDirectory>${project.reporting.outputDirectory}/xref
@@ -240,6 +222,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-report-plugin</artifactId>
+                <version>2.12</version>
                 <configuration>
                     <aggregate>true</aggregate>
                     <outputDirectory>${project.reporting.outputDirectory}/unitTest

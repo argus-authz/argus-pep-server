@@ -36,6 +36,7 @@ PEPD_CONFDIR=${PEPD_CONFDIR:-"$PEPD_HOME/conf"}
 PEPD_LOGDIR=${PEPD_LOGDIR:-"$PEPD_HOME/logs"}
 PEPD_LIBDIR=${PEPD_LIBDIR:-"$PEPD_HOME/lib"}
 PEPD_ENDORSEDDIR=${PEPD_ENDORSEDDIR:-"$PEPD_LIBDIR/endorsed"}
+PEPD_PROVIDEDDIR=${PEPD_PROVIDEDDIR:-"$PEPD_LIBDIR/provided"}
 
 # PID file location
 PEPD_PID=${PEPD_PID:-"/var/run/argus-pepd.pid"}
@@ -54,29 +55,85 @@ if [ ! -x "$JAVACMD" ] ; then
     exit 1
 fi
 
-# uses pep-common, pdp-pep-common, voms-api-java, trustmanager and bouncycastle from
-# the installed RPM packages (see .postinstall script and build-jar-repository)
-LOCALCLASSPATH=""
+# uses pep-common and pdp-pep-common from the installed packages
+# uses canl, voms-api-java and bouncycastle from the install RPM packages or provided
+LOCALCLASSPATH="/usr/share/java/argus-pdp-pep-common.jar:/usr/share/java/argus-pep-common.jar"
+if [ "$PEPD_USE_OS_CANL" = "false" ] ; then
+    for jar in $PEPD_PROVIDEDDIR/canl-*.jar
+    do
+        if [ -f "$jar" ] ; then
+            LOCALCLASSPATH="$LOCALCLASSPATH:$jar"
+        fi
+    done
+else
+    LOCALCLASSPATH="$LOCALCLASSPATH:/usr/share/java/canl.jar"
+fi
+if [ "$PEPD_USE_OS_BCPROV" = "false" ] ; then
+    for jar in $PEPD_PROVIDEDDIR/bcprov-*.jar
+    do
+        if [ -f "$jar" ] ; then
+            LOCALCLASSPATH="$LOCALCLASSPATH:$jar"
+        fi
+    done
+else
+    LOCALCLASSPATH="$LOCALCLASSPATH:/usr/share/java/bcprov-1.46.jar"
+fi
+if [ "$PEPD_USE_OS_VOMS" = "false" ] ; then
+    for jar in $PEPD_PROVIDEDDIR/voms-api-java-*.jar
+    do
+        if [ -f "$jar" ] ; then
+            LOCALCLASSPATH="$LOCALCLASSPATH:$jar"
+        fi
+    done
+else
+    LOCALCLASSPATH="$LOCALCLASSPATH:/usr/share/java/voms-api-java3.jar"
+fi
+if [ "$PEPD_USE_OS_BCMAIL" = "false" ] ; then
+    for jar in $PEPD_PROVIDEDDIR/bcmail-*.jar
+    do
+        if [ -f "$jar" ] ; then
+            LOCALCLASSPATH="$LOCALCLASSPATH:$jar"
+        fi
+    done
+else
+    LOCALCLASSPATH="$LOCALCLASSPATH:/usr/share/java/bcmail-1.46.jar"
+fi
+
+# include all embedded jar
 jarfiles="$PEPD_LIBDIR/*.jar"
 for jar in $jarfiles
 do
     # if the directory is empty, then it will return the input string
-    # this is stupid, so case for it
     if [ -f "$jar" ] ; then
         LOCALCLASSPATH="$LOCALCLASSPATH:$jar"
     fi
 done
+
+# remove first :
 LOCALCLASSPATH="$(echo $LOCALCLASSPATH | sed 's/^://g')"
+
 # check classpath
 if [ -z "$LOCALCLASSPATH" ]; then
     echo "$0: ERROR: LOCALCLASSPATH empty, check the $PEPD_LIBDIR directory"
     exit 1
 fi
+
+# check that all jars in classpath exist
+check_jarfiles="$(echo $LOCALCLASSPATH | sed 's/:/ /g')"
+for jar in $check_jarfiles
+do
+    if [ ! -f "$jar" ] ; then
+        echo "$0: ERROR: $jar in classpath does not exist"
+        exit 1
+    fi
+done
+
 # check endorsed directory
 if [ ! -d "$PEPD_ENDORSEDDIR" ]; then
     echo "$0: ERROR: $PEPD_ENDORSEDDIR does not exist"
     exit 1
 fi
+
 # set default max memory
 if [ -z "$PEPD_JOPTS" ]; then
     PEPD_JOPTS="-Xmx256M"
@@ -104,7 +161,7 @@ function executeAdminCommand {
 }
 
 function start {
-    # Run the PDP
+    # Run the PEP Server (background)
     $JAVACMD $PEPD_JOPTS 'org.glite.authz.pep.server.PEPDaemon' $PEPD_CONF &
     if [ -n "$PEPD_PID" ]; then
       echo $! > $PEPD_PID
@@ -125,7 +182,7 @@ function print_help {
    echo "  $0 stop    - to stop the service" 
    echo "  $0 status  - print PEP daemon status"
    echo "  $0 version - print PEP daemon version"
-   echo "  $0 clearResponseCache - clears the PEP daemon PDP response cache"
+   echo "  $0 clearResponseCache - clears the PEP Server PDP response cache"
 }
 
 case "$1" in
