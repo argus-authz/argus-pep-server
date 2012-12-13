@@ -1,9 +1,0 @@
-/.settings
-/target
-/rpmbuild
-/debbuild
-/RPMS
-/tgz
-/*.tar.gz
-/.pc
-argus-pep-server.spec
