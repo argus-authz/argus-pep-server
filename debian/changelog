@@ -1,5 +1,0 @@
-argus-pep-server (1.5.2-1) unstable; urgency=low
-
-  * Initial release for Debian (Closes: #23482)
-
- -- Valery Tschopp <valery.tschopp@switch.ch>  Thu, 16 Aug 2012 09:52:59 +0200
