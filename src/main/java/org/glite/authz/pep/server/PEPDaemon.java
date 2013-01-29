@@ -47,6 +47,7 @@ import org.glite.authz.common.logging.AccessLoggingFilter;
 import org.glite.authz.common.logging.LoggingReloadTask;
 import org.glite.authz.common.util.Files;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
+import org.glite.authz.pep.pip.PolicyInformationPointsShutdownTask;
 import org.glite.authz.pep.server.config.PEPDaemonConfiguration;
 import org.glite.authz.pep.server.config.PEPDaemonIniConfigurationParser;
 import org.mortbay.jetty.Connector;
@@ -137,6 +138,7 @@ public final class PEPDaemon {
 
         List<PolicyInformationPoint> pips= daemonConfig.getPolicyInformationPoints();
         if (pips != null && !pips.isEmpty()) {
+            LOG.info("Starting all PIPs");
             for (PolicyInformationPoint pip : daemonConfig.getPolicyInformationPoints()) {
                 if (pip != null) {
                     LOG.debug("Starting PIP {}", pip.getId());
@@ -145,15 +147,23 @@ public final class PEPDaemon {
             }
         }
 
-        Server pepDaemonService= createPEPDaemonService(daemonConfig);
-        JettyRunThread pepDaemonServiceThread= new JettyRunThread(pepDaemonService);
+        final Server pepServer= createPEPDaemonService(daemonConfig);
+        JettyRunThread pepDaemonServiceThread= new JettyRunThread(pepServer);
         pepDaemonServiceThread.setName("PEP Server Service");
         pepDaemonServiceThread.start();
 
-        JettyAdminService adminService= createAdminService(daemonConfig, backgroundTaskTimer, pepDaemonService);
+        JettyAdminService adminService= createAdminService(daemonConfig, backgroundTaskTimer, pepServer);
         LOG.debug("Starting admin service");
         adminService.start();
 
+        LOG.debug("Register shutdown hook");
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            ShutdownTask task= new JettyServerShutdownTask(pepServer);
+            public void run() {
+                task.run();
+            }
+        });
+        
         LOG.info(Version.getServiceIdentifier() + " started");
     }
 
@@ -169,10 +179,13 @@ public final class PEPDaemon {
         Server httpServer= new Server();
         httpServer.setSendServerVersion(false);
         httpServer.setSendDateHeader(false);
+        
+        // set JOPTS=-Dorg.glite.authz.pep.server.graceful to enable graceful shutdown (10sec)
         if (System.getProperty(PEP_GRACEFUL_PROP) != null) {
             LOG.info("Graceful shutdown enabled: " + PEP_GRACEFUL_PROP);
-            httpServer.setGracefulShutdown(1000); // 1 sec
+            httpServer.setGracefulShutdown(10000); // 10 sec
         }
+        
         httpServer.setStopAtShutdown(true);
 
         BlockingQueue<Runnable> requestQueue;
@@ -263,6 +276,9 @@ public final class PEPDaemon {
                 }
             }
         });
+        // shutdown the PIPs
+        adminService.registerShutdownTask(new PolicyInformationPointsShutdownTask(daemonConfig.getPolicyInformationPoints()));
+        
         // dispose the cert chain validator
         X509CertChainValidatorExt validator= daemonConfig.getCertChainValidator();
         adminService.registerShutdownTask(new CertChainValidatorDisposeTask(validator));
