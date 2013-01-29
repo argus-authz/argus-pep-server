@@ -44,9 +44,9 @@ public class PolicyInformationPointsShutdownTask implements ShutdownTask {
 
     /** {@inheritDoc} */
     public void run() {
-        log.info("Stopping all the PIPs");
+        log.info("Stopping all PIPs");
         for (PolicyInformationPoint pip : pips_) {
-            log.debug("Stopping {}", pip.getId());
+            log.debug("Stopping PIP {}", pip.getId());
             try {
                 pip.stop();
             } catch (PIPException e) {
