@@ -192,7 +192,7 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
     public void stop() throws PIPException {
         super.stop();
         if (vomsACValidator != null) {
-            log.debug("shutdown VOMS AC validator...");
+            log.debug("Shutdown VOMS AC validator...");
             vomsACValidator.shutdown();
             vomsACValidator= null;
         }
