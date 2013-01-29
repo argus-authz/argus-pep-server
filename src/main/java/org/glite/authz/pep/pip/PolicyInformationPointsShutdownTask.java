@@ -36,8 +36,14 @@ public class PolicyInformationPointsShutdownTask implements ShutdownTask {
     /** Class logger. */
     private Logger log= LoggerFactory.getLogger(PolicyInformationPointsShutdownTask.class);
 
+    /** List of PIP */
     List<PolicyInformationPoint> pips_;
 
+    /**
+     * Constructor
+     * 
+     * @param pips List of {@link PolicyInformationPoint}
+     */
     public PolicyInformationPointsShutdownTask(List<PolicyInformationPoint> pips) {
         pips_= pips;
     }
@@ -45,12 +51,14 @@ public class PolicyInformationPointsShutdownTask implements ShutdownTask {
     /** {@inheritDoc} */
     public void run() {
         log.info("Stopping all PIPs");
-        for (PolicyInformationPoint pip : pips_) {
-            log.debug("Stopping PIP {}", pip.getId());
-            try {
-                pip.stop();
-            } catch (PIPException e) {
-                log.error("Can not stop " + pip.getId(), e);
+        if (pips_ != null) {
+            for (PolicyInformationPoint pip : pips_) {
+                log.debug("Stopping PIP {}", pip.getId());
+                try {
+                    pip.stop();
+                } catch (PIPException e) {
+                    log.error("Can not stop " + pip.getId(), e);
+                }
             }
         }
 
