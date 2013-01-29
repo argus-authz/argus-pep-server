@@ -27,10 +27,11 @@ import org.glite.authz.common.config.IniSectionConfigurationParser;
 import org.glite.authz.common.util.Files;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
 import org.ini4j.Ini;
+import org.italiangrid.voms.VOMSValidators;
 import org.italiangrid.voms.ac.VOMSACValidator;
-import org.italiangrid.voms.ac.impl.DefaultVOMSValidator;
 import org.italiangrid.voms.store.VOMSTrustStore;
-import org.italiangrid.voms.store.impl.DefaultUpdatingVOMSTrustStore;
+import org.italiangrid.voms.store.VOMSTrustStores;
+import org.italiangrid.voms.util.NullListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,16 +47,16 @@ public abstract class AbstractX509PIPIniConfigurationParser implements
      * have a certificate chain in the Subject.
      */
     public static final String REQUIRE_CERTIFICATE_PROP= "requireCertificate";
-    
+
     /** Default value of {@value #REQUIRE_CERTIFICATE_PROP}: {@value} . */
     public static final boolean DEFAULT_REQUIRE_CERTIFICATE= true;
-    
+
     /**
      * The name of the {@value} property which determines whether a subject's
      * certificate chain must contain a proxy certificate.
      */
     public static final String REQUIRE_PROXY_PROP= "requireProxy";
-    
+
     /** Default value of {@value #REQUIRE_PROXY_PROP}: {@value} . */
     public static final boolean DEFAULT_REQUIRE_PROXY= false;
 
@@ -112,10 +113,10 @@ public abstract class AbstractX509PIPIniConfigurationParser implements
                 Files.getFile(vomsInfoDir, false, true, true, false);
                 List<String> vomsInfoDirs= Arrays.asList(vomsInfoDir);
                 // TODO: add update listener!!!!
-                VOMSTrustStore vomsTrustStore= new DefaultUpdatingVOMSTrustStore(vomsInfoDirs, vomsInfoRefresh);
+                VOMSTrustStore vomsTrustStore= VOMSTrustStores.newTrustStore(vomsInfoDirs, vomsInfoRefresh, NullListener.INSTANCE);
                 X509CertChainValidatorExt certChainValidator= configurationBuilder.getCertChainValidator();
                 // TODO: add validation listener!!!!
-                vomsValidator= new DefaultVOMSValidator(vomsTrustStore, certChainValidator);
+                vomsValidator= VOMSValidators.newValidator(vomsTrustStore, certChainValidator);
             } catch (Exception e) {
                 throw new ConfigurationException("Unable to read VOMS AC validation information", e);
             }
@@ -132,12 +133,13 @@ public abstract class AbstractX509PIPIniConfigurationParser implements
     }
 
     /**
-     * @return the default value for requireCertificate: {@value #DEFAULT_REQUIRE_CERTIFICATE}
+     * @return the default value for requireCertificate:
+     *         {@value #DEFAULT_REQUIRE_CERTIFICATE}
      */
     protected boolean getRequireCertificateDefault() {
         return DEFAULT_REQUIRE_CERTIFICATE;
     }
-    
+
     /**
      * Builds the instance of the policy information point given the parsed
      * configuration.
