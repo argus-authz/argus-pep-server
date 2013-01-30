@@ -20,6 +20,7 @@ package org.glite.authz.pep.pip.provider;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
@@ -48,7 +49,9 @@ import org.slf4j.LoggerFactory;
 import eu.emi.security.authn.x509.ValidationError;
 import eu.emi.security.authn.x509.ValidationResult;
 import eu.emi.security.authn.x509.X509CertChainValidator;
+import eu.emi.security.authn.x509.impl.CertificateUtils;
 import eu.emi.security.authn.x509.impl.PEMCredential;
+import eu.emi.security.authn.x509.impl.CertificateUtils.Encoding;
 import eu.emi.security.authn.x509.proxy.ProxyUtils;
 
 /** Base class for PIPs which work with X.509 certificates. */
@@ -373,26 +376,17 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
             return null;
         }
 
-        BufferedInputStream bis= new BufferedInputStream(new ByteArrayInputStream(pemCertChain.getBytes()));
-        PEMCredential subjectCertificate= null;
+        InputStream is= new ByteArrayInputStream(pemCertChain.getBytes());
+        X509Certificate[] certChain= null;
         try {
-            char[] nopass= null;
-            subjectCertificate= new PEMCredential(bis, nopass);
+            // loadCertificateChain also sort the chain!!!
+            certChain= CertificateUtils.loadCertificateChain(is, Encoding.PEM);
         } catch (IOException e) {
-            log.error("Unable to read subject cert chain", e);
-            throw new PIPProcessingException("Unable to read subject cert chain", e);
-        } catch (GeneralSecurityException e) {
-            log.error("Unable to process subject cert chain", e);
-            throw new PIPProcessingException("Unable to process subject cert chain", e);
-        } finally {
-            try {
-                bis.close();
-            } catch (IOException e) {
-                log.warn("Unable to close cert chain inputstream: {}", e.getMessage());
-            }
+            String error= "Failed to load certificate chain from Subject: " + e.getMessage();
+            log.error(error);
+            throw new PIPProcessingException(error, e);
         }
 
-        X509Certificate[] certChain= subjectCertificate.getCertificateChain();
         boolean proxyPresent= false;
         for (X509Certificate cert : certChain) {
             if (cert.getVersion() < 3) {
