@@ -48,6 +48,7 @@ import eu.emi.security.authn.x509.ValidationError;
 import eu.emi.security.authn.x509.ValidationResult;
 import eu.emi.security.authn.x509.X509CertChainValidator;
 import eu.emi.security.authn.x509.impl.CertificateUtils;
+import eu.emi.security.authn.x509.impl.X500NameUtils;
 import eu.emi.security.authn.x509.impl.CertificateUtils.Encoding;
 import eu.emi.security.authn.x509.proxy.ProxyUtils;
 
@@ -237,14 +238,18 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
                 if (!result.isValid()) {
                     StringBuilder sb= new StringBuilder();
                     sb.append("PKIX validation failed: ");
+                    boolean first= true;
                     for (ValidationError validationError : result.getErrors()) {
+                        log.error(validationError.toString());
+                        if (!first) {
+                            sb.append(" | ");
+                        }
+                        String certName= X500NameUtils.getReadableForm(validationError.getChain()[validationError.getPosition()].getSubjectX500Principal());
+                        sb.append(certName).append(": ");
                         sb.append(validationError.getMessage());
-                        sb.append(",");
+                        first= false;
                     }
-
-                    String errorMsg= sb.toString();
-                    log.error(errorMsg);
-                    throw new PIPProcessingException(errorMsg);
+                    throw new PIPProcessingException(sb.toString());
                 }
                 else {
                     // get full certchain from validator
