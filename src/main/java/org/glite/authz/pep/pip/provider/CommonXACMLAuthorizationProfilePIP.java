@@ -499,7 +499,7 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
                         // x509.getSubjectX500Principal().getName());
                         certChain.add(x509);
                     } catch (CertificateException e) {
-                        String error= "Fails to decode X.509 certificate: "
+                        String error= "Fails to generate the X.509 certificate: "
                                 + e.getMessage();
                         log.error(error);
                         throw new PIPProcessingException(error, e);
