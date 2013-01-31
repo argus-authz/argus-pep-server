@@ -480,7 +480,18 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
                                           getCertificateAttributeDatatype())) {
                 // each value is a base64 encoded DER certificate string
                 for (Object value : attribute.getValues()) {
+                    // Base64.decode returns null on error!!!
                     byte[] derBytes= Base64.decode((String) value);
+                    if (derBytes==null) {
+                        String error= "Fails to decode base64 encoded DER certificate block";
+                        if (log.isDebugEnabled()) {
+                            log.error(error + ": " + value.toString());
+                        }
+                        else {
+                            log.error(error);
+                        }
+                        throw new PIPProcessingException(error);                        
+                    }
                     BufferedInputStream bis= new BufferedInputStream(new ByteArrayInputStream(derBytes));
                     try {
                         X509Certificate x509= (X509Certificate) cf_.generateCertificate(bis);
