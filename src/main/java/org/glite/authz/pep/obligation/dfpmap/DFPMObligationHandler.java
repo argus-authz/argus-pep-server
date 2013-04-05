@@ -371,11 +371,7 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
             throw new ObligationProcessingException("Invalid request, subject attribute did not contain any values");
         }
 
-        if (values.size() > 1) {
-            log.warn("Secondary FQAN attribute contains more than one value, only the first will be used");
-        }
-
-        ArrayList<FQAN> secondaryFQANs= new ArrayList<FQAN>();
+        List<FQAN> secondaryFQANs= new ArrayList<FQAN>();
         Iterator<?> valueItr= values.iterator();
         String value= null;
         while (valueItr.hasNext()) {
@@ -389,6 +385,7 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
                 throw new ObligationProcessingException("Invalid request, subject's secondary FQAN attribute value was invalid");
             }
         }
+
         return secondaryFQANs;
     }
 
