@@ -87,7 +87,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
      *            secondary group names or not
      */
     public GridMapDirPoolAccountManager(File gridMapDir,
-            boolean useSecondaryGroupNamesForMapping) {
+                                        boolean useSecondaryGroupNamesForMapping) {
         if (!gridMapDir.exists()) {
             throw new IllegalArgumentException("Grid map directory "
                     + gridMapDir.getAbsolutePath() + " does not exist");
@@ -151,34 +151,31 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
         return null;
     }
 
-    /** 
-     * {@inheritDoc} 
+    /**
+     * {@inheritDoc}
      * <ul>
      * <li>BUG FIX: https://savannah.cern.ch/bugs/index.php?83281
      * <li>BUG FIX: https://savannah.cern.ch/bugs/index.php?84846
      * </ul>
      * */
     public String mapToAccount(String accountNamePrefix,
-            X500Principal subjectDN, String primaryGroup,
-            List<String> secondaryGroups) throws ObligationProcessingException {
-        String subjectIdentifier= buildSubjectIdentifier(subjectDN,
-                                                         primaryGroup,
-                                                         secondaryGroups);
+                               X500Principal subjectDN, String primaryGroup,
+                               List<String> secondaryGroups)
+            throws ObligationProcessingException {
+        String subjectIdentifier= buildSubjectIdentifier(subjectDN, primaryGroup, secondaryGroups);
         File subjectIdentifierFile= new File(buildSubjectIdentifierFilePath(subjectIdentifier));
 
-        log.debug("Checking if there is an existing account mapping for subject {} with primary group {} and secondary groups {}",
-                  new Object[] { subjectDN.getName(), primaryGroup,
-                                secondaryGroups });
-        String accountName= getAccountNameByKey(accountNamePrefix,
-                                                subjectIdentifier);
+        log.debug("Checking if there is an existing account mapping for subject {} with primary group {} and secondary groups {}", new Object[] {
+                subjectDN.getName(), primaryGroup, secondaryGroups });
+        String accountName= getAccountNameByKey(accountNamePrefix, subjectIdentifier);
         if (accountName != null) {
             // BUG FIX: https://savannah.cern.ch/bugs/index.php?83281
             // touch the subjectIdentifierFile every time a mapping is re-done.
             PosixUtil.touchFile(subjectIdentifierFile);
 
-            log.debug("An existing account mapping has mapped subject {} with primary group {} and secondary groups {} to pool account {}",
-                      new Object[] { subjectDN.getName(), primaryGroup,
-                                    secondaryGroups, accountName });
+            log.debug("An existing account mapping has mapped subject {} with primary group {} and secondary groups {} to pool account {}", new Object[] {
+                    subjectDN.getName(), primaryGroup, secondaryGroups,
+                    accountName });
             return accountName;
         }
 
@@ -187,14 +184,13 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
             // BUG FIX: https://savannah.cern.ch/bugs/index.php?84846
             // touch the subjectIdentifierFile the first time a mapping is done.
             PosixUtil.touchFile(subjectIdentifierFile);
-            log.debug("A new account mapping has mapped subject {} with primary group {} and secondary groups {} to pool account {}",
-                      new Object[] { subjectDN.getName(), primaryGroup,
-                                    secondaryGroups, accountName });
+            log.debug("A new account mapping has mapped subject {} with primary group {} and secondary groups {} to pool account {}", new Object[] {
+                    subjectDN.getName(), primaryGroup, secondaryGroups,
+                    accountName });
         }
         else {
-            log.debug("No pool account was available to which subject {} with primary group {} and secondary groups {} could be mapped",
-                      new Object[] { subjectDN.getName(), primaryGroup,
-                                    secondaryGroups });
+            log.debug("No pool account was available to which subject {} with primary group {} and secondary groups {} could be mapped", new Object[] {
+                    subjectDN.getName(), primaryGroup, secondaryGroups });
         }
         return accountName;
     }
@@ -216,7 +212,8 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
      *             account key file is more than 2
      */
     private String getAccountNameByKey(String accountNamePrefix,
-            String subjectIdentifier) throws ObligationProcessingException {
+                                       String subjectIdentifier)
+            throws ObligationProcessingException {
         File subjectIdentifierFile= new File(buildSubjectIdentifierFilePath(subjectIdentifier));
         // the file doesn't exit yet!!!
         if (!subjectIdentifierFile.exists()) {
@@ -225,10 +222,8 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 
         FileStat subjectIdentifierFileStat= PosixUtil.getFileStat(subjectIdentifierFile.getAbsolutePath());
         if (subjectIdentifierFileStat.nlink() != 2) {
-            log.error("The subject identifier file "
-                    + subjectIdentifierFile.getAbsolutePath()
-                    + " has a link count greater than 2.  This mapping is corrupted and can not be used.");
-            throw new ObligationProcessingException("Unable to map subject to a POSIX account");
+            log.error("The subject identifier file {} has a link count different than 2 [nlink: {}]. This mapping is corrupted and can not be used", subjectIdentifierFile.getAbsolutePath(), subjectIdentifierFileStat.nlink());
+            throw new ObligationProcessingException("Unable to map subject to a POSIX account: Corrupted subject identifier file link count");
         }
 
         FileStat accountFileStat;
@@ -236,9 +231,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
             accountFileStat= PosixUtil.getFileStat(accountFile.getAbsolutePath());
             if (accountFileStat.ino() == subjectIdentifierFileStat.ino()) {
                 if (accountFileStat.nlink() != 2) {
-                    log.error("The pool account file "
-                            + accountFile.getAbsolutePath()
-                            + " has a link count greater than 2.  This mapping is corrupted and can not be used.");
+                    log.error("The pool account file {} has a link count different than 2 [nlink: {}]. This mapping is corrupted and should not be used", accountFile.getAbsolutePath(), accountFileStat.nlink());
                 }
 
                 return accountFile.getName();
@@ -261,29 +254,24 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
      *         account was available
      */
     protected String createMapping(String accountNamePrefix,
-            String subjectIdentifier) {
+                                   String subjectIdentifier) {
         FileStat accountFileStat;
         for (File accountFile : getAccountFiles(accountNamePrefix)) {
-            log.debug("Checking if grid map account {} may be linked to subject identifier {}",
-                      accountFile.getName(),
-                      subjectIdentifier);
+            log.debug("Checking if grid map account {} may be linked to subject identifier {}", accountFile.getName(), subjectIdentifier);
             String subjectIdentifierFilePath= buildSubjectIdentifierFilePath(subjectIdentifier);
             accountFileStat= PosixUtil.getFileStat(accountFile.getAbsolutePath());
             if (accountFileStat.nlink() == 1) {
-                PosixUtil.createHardlink(accountFile.getAbsolutePath(),
-                                         subjectIdentifierFilePath);
+                PosixUtil.createHardlink(accountFile.getAbsolutePath(), subjectIdentifierFilePath);
                 accountFileStat= PosixUtil.getFileStat(accountFile.getAbsolutePath());
                 if (accountFileStat.nlink() == 2) {
-                    log.debug("Linked subject identifier {} to pool account file {}",
-                              subjectIdentifier,
-                              accountFile.getName());
+                    log.debug("Linked subject identifier {} to pool account file {}", subjectIdentifier, accountFile.getName());
                     return accountFile.getName();
                 }
                 new File(subjectIdentifierFilePath).delete();
             }
             log.debug("Could not map to account {}", accountFile.getName());
         }
-        log.warn("{} pool account is full. Impossible to map {}", accountNamePrefix,subjectIdentifier);
+        log.error("{} pool account is full. Impossible to map {}", accountNamePrefix, subjectIdentifier);
         return null;
     }
 
@@ -310,7 +298,8 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
      * @return the identifier for the subject
      */
     protected String buildSubjectIdentifier(X500Principal subjectDN,
-            String primaryGroupName, List<String> secondaryGroupNames) {
+                                            String primaryGroupName,
+                                            List<String> secondaryGroupNames) {
         StringBuilder identifier= new StringBuilder();
 
         try {
@@ -322,8 +311,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
             String encodedId= encodeSubjectIdentifier(openSSLSubject);
             identifier.append(encodedId);
         } catch (URIException e) {
-            throw new RuntimeException("Charset required to be supported by JVM but is not available",
-                                       e);
+            throw new RuntimeException("Charset required to be supported by JVM but is not available", e);
         }
 
         if (primaryGroupName != null) {
@@ -453,8 +441,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
      * @param useSecondaryGroupNamesForMapping
      *            the useSecondaryGroupNamesForMapping_ to set
      */
-    protected void setUseSecondaryGroupNamesForMapping(
-            boolean useSecondaryGroupNamesForMapping) {
+    protected void setUseSecondaryGroupNamesForMapping(boolean useSecondaryGroupNamesForMapping) {
         this.useSecondaryGroupNamesForMapping_= useSecondaryGroupNamesForMapping;
     }
 
