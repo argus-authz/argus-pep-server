@@ -222,7 +222,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 
         FileStat subjectIdentifierFileStat= PosixUtil.getFileStat(subjectIdentifierFile.getAbsolutePath());
         if (subjectIdentifierFileStat.nlink() != 2) {
-            log.error("The subject identifier file {} has a link count different than 2 [nlink: {}]. This mapping is corrupted and can not be used", subjectIdentifierFile.getAbsolutePath(), subjectIdentifierFileStat.nlink());
+            log.error("The subject identifier file {} has a link count different than 2 [inode: {} nlink: {}]: This mapping is corrupted and can not be used", new Object[] { subjectIdentifierFile.getAbsolutePath(), subjectIdentifierFileStat.ino(), subjectIdentifierFileStat.nlink()});
             throw new ObligationProcessingException("Unable to map subject to a POSIX account: Corrupted subject identifier file link count");
         }
 
@@ -231,7 +231,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
             accountFileStat= PosixUtil.getFileStat(accountFile.getAbsolutePath());
             if (accountFileStat.ino() == subjectIdentifierFileStat.ino()) {
                 if (accountFileStat.nlink() != 2) {
-                    log.error("The pool account file {} has a link count different than 2 [nlink: {}]. This mapping is corrupted and should not be used", accountFile.getAbsolutePath(), accountFileStat.nlink());
+                    log.error("The pool account file {} has a link count different than 2 [inode: {} nlink: {}]: This mapping is corrupted and should not be used", new Object[] { accountFile.getAbsolutePath(), accountFileStat.ino(), accountFileStat.nlink() });
                 }
 
                 return accountFile.getName();
