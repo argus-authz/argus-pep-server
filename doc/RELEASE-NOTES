@@ -1,3 +1,12 @@
+Changes in Release 1.6.2
+========================
+
+This is a EMI-3 update.
+
+Bug fixes:
+- Account mapping will fail if the pool account file or the subject indicator file have
+  wrong links count.
+
 Changes in Release 1.6.1
 ========================
 

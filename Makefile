@@ -17,8 +17,7 @@
 
 name=argus-pep-server
 
-version=1.6.1
-release=1
+version=1.6.2
 
 prefix=/
 

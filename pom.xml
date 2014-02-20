@@ -12,7 +12,7 @@
     <name>Argus PEP Server</name>
     <groupId>org.glite.authz</groupId>
     <artifactId>argus-pepd</artifactId>
-    <version>1.6.1</version>
+    <version>1.6.2</version>
     <packaging>jar</packaging>
 
     <description>XACML based authorization service</description>
