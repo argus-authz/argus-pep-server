@@ -238,7 +238,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
                     log.debug("Pool account file: {} inode: {} nlink: {}", new Object[] { accountFile.getAbsolutePath(), subjectIdentifierFileStat.ino(), subjectIdentifierFileStat.nlink()});
                 }
                 if (accountFileStat.nlink() != 2) {
-                    log.error("The pool account file {} has a link count different than 2 [inode: {} nlink: {}]: This mapping is corrupted and should not be used", new Object[] { accountFile.getAbsolutePath(), accountFileStat.ino(), accountFileStat.nlink() });
+                    log.error("The pool account file {} has a link count different than 2 [inode: {} nlink: {}]: This mapping is corrupted and can not be used", new Object[] { accountFile.getAbsolutePath(), accountFileStat.ino(), accountFileStat.nlink() });
                     throw new ObligationProcessingException("Unable to map subject to a POSIX account: Corrupted pool account file link count");
                 }
 
