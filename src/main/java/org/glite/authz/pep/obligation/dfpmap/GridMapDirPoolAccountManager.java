@@ -167,7 +167,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 
         log.debug("Checking if there is an existing account mapping for subject {} with primary group {} and secondary groups {}", new Object[] {
                 subjectDN.getName(), primaryGroup, secondaryGroups });
-        String accountName= getAccountNameByKey(accountNamePrefix, subjectIdentifier);
+        String accountName= getExistingMapping(accountNamePrefix, subjectIdentifier);
         if (accountName != null) {
             // BUG FIX: https://savannah.cern.ch/bugs/index.php?83281
             // touch the subjectIdentifierFile every time a mapping is re-done.
@@ -204,14 +204,14 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
      * @param subjectIdentifier
      *            key identifying the subject
      * 
-     * @return account to which the subject was mapped or null if not map
+     * @return account to which the subject was mapped or <code>null</code> if not mapping
      *         currently exists
      * 
      * @throws ObligationProcessingException
-     *             thrown if the link count on the pool account name file or the
-     *             account key file is more than 2
+     *             thrown if the link count on the pool account file or the
+     *             subject identifier file is different than 2
      */
-    private String getAccountNameByKey(String accountNamePrefix,
+    private String getExistingMapping(String accountNamePrefix,
                                        String subjectIdentifier)
             throws ObligationProcessingException {
         File subjectIdentifierFile= new File(buildSubjectIdentifierFilePath(subjectIdentifier));
@@ -220,18 +220,27 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
             return null;
         }
 
+        // if the file exists, it is already mapped and the link count MUST be 2!
         FileStat subjectIdentifierFileStat= PosixUtil.getFileStat(subjectIdentifierFile.getAbsolutePath());
+        if (log.isDebugEnabled()) {
+            log.debug("Subject identifier file: {} inode: {} nlink: {}", new Object[] { subjectIdentifierFile.getAbsolutePath(), subjectIdentifierFileStat.ino(), subjectIdentifierFileStat.nlink()});
+        }
         if (subjectIdentifierFileStat.nlink() != 2) {
             log.error("The subject identifier file {} has a link count different than 2 [inode: {} nlink: {}]: This mapping is corrupted and can not be used", new Object[] { subjectIdentifierFile.getAbsolutePath(), subjectIdentifierFileStat.ino(), subjectIdentifierFileStat.nlink()});
             throw new ObligationProcessingException("Unable to map subject to a POSIX account: Corrupted subject identifier file link count");
         }
 
-        FileStat accountFileStat;
+        // search the matching (same inode#) pool account file
         for (File accountFile : getAccountFiles(accountNamePrefix)) {
-            accountFileStat= PosixUtil.getFileStat(accountFile.getAbsolutePath());
+            FileStat accountFileStat= PosixUtil.getFileStat(accountFile.getAbsolutePath());
             if (accountFileStat.ino() == subjectIdentifierFileStat.ino()) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Pool account file: {} inode: {} nlink: {}", new Object[] { accountFile.getAbsolutePath(), subjectIdentifierFileStat.ino(), subjectIdentifierFileStat.nlink()});
+                }
                 if (accountFileStat.nlink() != 2) {
                     log.error("The pool account file {} has a link count different than 2 [inode: {} nlink: {}]: This mapping is corrupted and should not be used", new Object[] { accountFile.getAbsolutePath(), accountFileStat.ino(), accountFileStat.nlink() });
+                    // TODO: throw new ObligationProcessingException("Unable to map subject to a POSIX account: Corrupted pool account file link count");
+
                 }
 
                 return accountFile.getName();
@@ -255,11 +264,10 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
      */
     protected String createMapping(String accountNamePrefix,
                                    String subjectIdentifier) {
-        FileStat accountFileStat;
         for (File accountFile : getAccountFiles(accountNamePrefix)) {
             log.debug("Checking if grid map account {} may be linked to subject identifier {}", accountFile.getName(), subjectIdentifier);
             String subjectIdentifierFilePath= buildSubjectIdentifierFilePath(subjectIdentifier);
-            accountFileStat= PosixUtil.getFileStat(accountFile.getAbsolutePath());
+            FileStat accountFileStat= PosixUtil.getFileStat(accountFile.getAbsolutePath());
             if (accountFileStat.nlink() == 1) {
                 PosixUtil.createHardlink(accountFile.getAbsolutePath(), subjectIdentifierFilePath);
                 accountFileStat= PosixUtil.getFileStat(accountFile.getAbsolutePath());
