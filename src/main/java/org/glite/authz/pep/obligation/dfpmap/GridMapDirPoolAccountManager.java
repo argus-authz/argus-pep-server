@@ -239,8 +239,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
                 }
                 if (accountFileStat.nlink() != 2) {
                     log.error("The pool account file {} has a link count different than 2 [inode: {} nlink: {}]: This mapping is corrupted and should not be used", new Object[] { accountFile.getAbsolutePath(), accountFileStat.ino(), accountFileStat.nlink() });
-                    // TODO: throw new ObligationProcessingException("Unable to map subject to a POSIX account: Corrupted pool account file link count");
-
+                    throw new ObligationProcessingException("Unable to map subject to a POSIX account: Corrupted pool account file link count");
                 }
 
                 return accountFile.getName();
