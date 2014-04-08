@@ -34,19 +34,14 @@
 # Author(s): Valery Tschopp <argus-support@cern.ch>
 #            Joel Casutt <argus-support@cern.ch>
 #
-# Version: V2.2
-# Date: 28/09/2012
+# Version: V2.3
+# Date: 2014-04-07
 ###############################################################################
 # set -x
 
 # PEP server control script and name of the script
 PEPDCTL="/usr/sbin/pepdctl"
 NAME="argus-pepd"
-
-if [ `id -u` -ne 0 ]; then
-    echo "You need root privileges to run this script"
-    exit 1
-fi 
 
 # Source functions Library
 if [ -r "/lib/lsb/init-functions" ]; then
@@ -85,8 +80,16 @@ elif [ -r "/etc/default/$NAME" ]; then
     source "/etc/default/$NAME"
 fi
 
+function _check_root_user() {
+    if [ `id -u` -ne 0 ]; then
+        echo "ERROR: You need root privileges to run this command"
+        exit 1
+    fi 
+}
+
 # Function to start the PEPD daemon
 function start() {
+    _check_root_user
     echo -n "Starting $PEPD_PROG... "
     # get the current state of the program, this also creates appropriate pid and lock files
     # if the program is running but the files are missing.
@@ -118,6 +121,7 @@ function start() {
 
 # Function to stop the PEPD
 function stop() {
+    _check_root_user
     echo -n "Stopping $PEPD_PROG... "
     _current_state
     state=$?
@@ -162,6 +166,7 @@ function status() {
 
 # Function to read the info of the PEPD
 function info() {
+    _check_root_user
     _current_state
     state=$?
     if [ $state -eq 5 ]; then
@@ -174,6 +179,7 @@ function info() {
 
 # Function to clear the cache of the PEPD
 function clearcache() {
+    _check_root_user
     _current_state
     state=$?
     if [ $state -eq 5 ]; then
@@ -186,7 +192,8 @@ function clearcache() {
 
 # Function to read the version of the PEPD
 function version() {
-     _current_state
+    _check_root_user
+    _current_state
     $PEPDCTL version
 }
 
