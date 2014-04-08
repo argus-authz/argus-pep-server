@@ -158,7 +158,7 @@ function status() {
     state=$?
     if [ $state -eq 5 ]; then
         echo "$PEPD_PROG is not running..."
-        return $state
+        return 1
     else
         echo "$PEPD_PROG is running..."
     fi
