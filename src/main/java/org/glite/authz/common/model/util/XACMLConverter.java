@@ -52,6 +52,7 @@ import org.opensaml.xacml.policy.EffectType;
 import org.opensaml.xacml.policy.ObligationType;
 import org.opensaml.xacml.policy.ObligationsType;
 import org.opensaml.xml.XMLObjectBuilder;
+import java.util.List;
 
 /**
  * A helper class for converting to/from XACML objects.
@@ -324,6 +325,7 @@ public class XACMLConverter {
         }
 
         Obligation obligation = new Obligation();
+	List<AttributeAssignment> obligationAttributeAssignments = obligation.getAttributeAssignments();
 
         AttributeAssignment attributeAssignment;
         if (xacmlObligation.getAttributeAssignments() != null) {
@@ -333,6 +335,8 @@ public class XACMLConverter {
                         .getAttributeId()));
                 attributeAssignment.setDataType(Strings.safeTrimOrNullString(xacmlAttributeAssignment.getDataType()));
                 attributeAssignment.setValue(Strings.safeTrimOrNullString(xacmlAttributeAssignment.getValue()));
+		// Add attributeAssignments to obligation
+		obligationAttributeAssignments.add(attributeAssignment);
             }
         }
 
