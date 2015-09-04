@@ -46,7 +46,7 @@ dist:
 
 package:
 	@echo "Build package with maven"
-	mvn -B package
+	mvn -B -U package
 
 
 install:
