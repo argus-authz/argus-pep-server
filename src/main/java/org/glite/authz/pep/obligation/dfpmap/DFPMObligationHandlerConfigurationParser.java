@@ -353,22 +353,26 @@ public class DFPMObligationHandlerConfigurationParser implements
             throws ConfigurationException {
         File gridMapDir= new File(gridMapDirPath);
         if (!gridMapDir.exists()) {
+          
             String errMsg= MessageFormatter.format("Grid map directory {} does not exist",
-                                                   gridMapDir.getAbsolutePath());
+                                                   gridMapDir.getAbsolutePath())
+                                                   .getMessage();
             log.error(errMsg);
             throw new ConfigurationException(errMsg);
         }
 
         if (!gridMapDir.canRead()) {
             String errMsg= MessageFormatter.format("Grid map directory {} is not readable by this process",
-                                                   gridMapDir.getAbsolutePath());
+                                                   gridMapDir.getAbsolutePath())
+                                                   .getMessage();
             log.error(errMsg);
             throw new ConfigurationException(errMsg);
         }
 
         if (!gridMapDir.canWrite()) {
             String errMsg= MessageFormatter.format("Grid map directory {} is not writable by this process",
-                                                   gridMapDir.getAbsolutePath());
+                                                   gridMapDir.getAbsolutePath())
+                                                   .getMessage();
             log.error(errMsg);
             throw new ConfigurationException(errMsg);
         }
