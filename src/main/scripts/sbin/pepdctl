@@ -66,17 +66,18 @@ if [ "$PEPD_USE_OS_CANL" = "false" ] ; then
         fi
     done
 else
-    LOCALCLASSPATH="$LOCALCLASSPATH:/usr/share/java/canl.jar"
+    LOCALCLASSPATH="$LOCALCLASSPATH:/usr/share/java/canl-*.jar"
 fi
 if [ "$PEPD_USE_OS_BCPROV" = "false" ] ; then
-    for jar in $PEPD_PROVIDEDDIR/bcprov-*.jar
+    for jar in $PEPD_PROVIDEDDIR/bcprov-*.jar $PEPD_PROVIDEDDIR/bcpkix-*.jar
+
     do
         if [ -f "$jar" ] ; then
             LOCALCLASSPATH="$LOCALCLASSPATH:$jar"
         fi
     done
 else
-    LOCALCLASSPATH="$LOCALCLASSPATH:/usr/share/java/bcprov-1.46.jar"
+    LOCALCLASSPATH="$LOCALCLASSPATH:/usr/share/java/bcprov-*.jar:/usr/share/java/bcpkix-*.jar"
 fi
 if [ "$PEPD_USE_OS_VOMS" = "false" ] ; then
     for jar in $PEPD_PROVIDEDDIR/voms-api-java-*.jar
@@ -86,17 +87,7 @@ if [ "$PEPD_USE_OS_VOMS" = "false" ] ; then
         fi
     done
 else
-    LOCALCLASSPATH="$LOCALCLASSPATH:/usr/share/java/voms-api-java3.jar"
-fi
-if [ "$PEPD_USE_OS_BCMAIL" = "false" ] ; then
-    for jar in $PEPD_PROVIDEDDIR/bcmail-*.jar
-    do
-        if [ -f "$jar" ] ; then
-            LOCALCLASSPATH="$LOCALCLASSPATH:$jar"
-        fi
-    done
-else
-    LOCALCLASSPATH="$LOCALCLASSPATH:/usr/share/java/bcmail-1.46.jar"
+    LOCALCLASSPATH="$LOCALCLASSPATH:/usr/share/java/voms-api-java-*.jar"
 fi
 
 # include all embedded jar
@@ -154,9 +145,9 @@ function executeAdminCommand {
     if [ -z "$ADMIN_PORT" ] ; then
        ADMIN_PORT="8155"
     fi
-    
+
     ADMIN_PASS=`sed 's/ //g' $PEPD_CONF | grep "^adminPassword" | awk 'BEGIN {FS="="}{print $2}'`
-    
+
     $JAVACMD $PEPD_JOPTS 'org.glite.authz.common.http.JettyAdminServiceCLI' $ADMIN_HOST $ADMIN_PORT $1 $ADMIN_PASS
 }
 
@@ -172,7 +163,6 @@ function version {
     # Print currently used Version of the PEPd
     $JAVACMD $PEPD_JOPTS 'org.glite.authz.pep.server.Version'
 }
-    
 
 
 function print_help {
@@ -190,20 +180,20 @@ case "$1" in
         start
         ;;
     stop)
-        executeAdminCommand 'shutdown' 
+        executeAdminCommand 'shutdown'
         ;;
-    status) 
+    status)
         executeAdminCommand 'status'
         ;;
     version)
         version
         ;;
-    clearResponseCache) 
+    clearResponseCache)
         executeAdminCommand 'clearResponseCache'
         ;;
-    *) 
-        print_help 
+    *)
+        print_help
         exit 1
         ;;
 esac
-exit $? 
+exit $?
