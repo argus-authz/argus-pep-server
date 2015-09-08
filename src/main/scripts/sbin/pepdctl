@@ -66,7 +66,7 @@ if [ "$PEPD_USE_OS_CANL" = "false" ] ; then
         fi
     done
 else
-    LOCALCLASSPATH="$LOCALCLASSPATH:/usr/share/java/canl-*.jar"
+    LOCALCLASSPATH="$LOCALCLASSPATH:/usr/share/java/canl-java/canl.jar"
 fi
 if [ "$PEPD_USE_OS_BCPROV" = "false" ] ; then
     for jar in $PEPD_PROVIDEDDIR/bcprov-*.jar $PEPD_PROVIDEDDIR/bcpkix-*.jar
@@ -77,7 +77,7 @@ if [ "$PEPD_USE_OS_BCPROV" = "false" ] ; then
         fi
     done
 else
-    LOCALCLASSPATH="$LOCALCLASSPATH:/usr/share/java/bcprov-*.jar:/usr/share/java/bcpkix-*.jar"
+    LOCALCLASSPATH="$LOCALCLASSPATH:/usr/share/java/bcprov.jar:/usr/share/java/bcpkix.jar"
 fi
 if [ "$PEPD_USE_OS_VOMS" = "false" ] ; then
     for jar in $PEPD_PROVIDEDDIR/voms-api-java-*.jar
@@ -87,7 +87,7 @@ if [ "$PEPD_USE_OS_VOMS" = "false" ] ; then
         fi
     done
 else
-    LOCALCLASSPATH="$LOCALCLASSPATH:/usr/share/java/voms-api-java-*.jar"
+    LOCALCLASSPATH="$LOCALCLASSPATH:/usr/share/java/voms-api-java/voms-api-java.jar"
 fi
 
 # include all embedded jar
