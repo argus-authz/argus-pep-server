@@ -390,8 +390,10 @@ public class DFPMObligationHandler extends AbstractObligationHandler {
     }
 
     /**
-     * Adds a {@link WorkerNodeProfileV1Constants#OBL_POSIX_ENV_MAP} to the
-     * result.
+     * 
+     * Adds a 
+     * {@link GLiteAuthorizationProfileConstants#ID_OBLIGATION_POSIX_ENV_MAP} 
+     * to the result.
      * 
      * @param result
      *            current result

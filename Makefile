@@ -17,7 +17,7 @@
 
 name=argus-pep-server
 
-version=1.6.2
+version=1.7.0
 
 prefix=/
 
@@ -36,7 +36,7 @@ dist:
 	@echo "Package the sources..."
 	test ! -d $(tmp_dir) || rm -fr $(tmp_dir)
 	mkdir -p $(tmp_dir)/$(name)-$(version)
-	cp .classpath .project Makefile README.md pom.xml $(tmp_dir)/$(name)-$(version)
+	cp Makefile README.md pom.xml $(tmp_dir)/$(name)-$(version)
 	cp -r project $(tmp_dir)/$(name)-$(version)
 	cp -r doc $(tmp_dir)/$(name)-$(version)
 	cp -r src $(tmp_dir)/$(name)-$(version)

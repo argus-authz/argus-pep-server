@@ -5,13 +5,12 @@
     <parent>
         <groupId>org.glite.authz</groupId>
         <artifactId>argus-parent</artifactId>
-        <version>1.6</version>
+        <version>1.7-SNAPSHOT</version>
     </parent>
 
     <name>Argus PEP Server</name>
-    <groupId>org.glite.authz</groupId>
     <artifactId>argus-pepd</artifactId>
-    <version>1.6.2</version>
+    <version>1.7.0</version>
     <packaging>jar</packaging>
 
     <description>XACML based authorization service</description>
@@ -29,24 +28,12 @@
             <artifactId>pdp-pep-common</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.italiangrid</groupId>
-            <artifactId>voms-api-java</artifactId>
-        </dependency>
-        <dependency>
             <groupId>net.sf.ehcache</groupId>
             <artifactId>ehcache-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.mortbay.jetty</groupId>
-            <artifactId>jetty</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.mortbay.jetty</groupId>
-            <artifactId>jetty-sslengine</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.mortbay.jetty</groupId>
-            <artifactId>jetty-java5-threadpool</artifactId>
+            <groupId>org.italiangrid</groupId>
+            <artifactId>jetty-utils</artifactId>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -276,10 +263,7 @@
                                     <executable>/bin/sh</executable>
                                     <arguments>
                                         <argument>${basedir}/src/main/build/emi-binary-tarball.sh</argument>
-<!--
                                         <argument>${project.build.finalName}-${project.version}</argument>
--->
-                                        <argument>${project.build.finalName}-1.6.2</argument>
                                    </arguments>
                                 </configuration>
                             </execution>

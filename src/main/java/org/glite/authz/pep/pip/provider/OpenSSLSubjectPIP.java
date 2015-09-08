@@ -41,8 +41,6 @@ import eu.emi.security.authn.x509.impl.OpensslNameUtils;
  * converted to their {@value GLiteAuthorizationProfileConstants#DATATYPE_X500_NAME}
  * data type.
  * 
- * @see DNHandler
- * @see DN
  */
 public final class OpenSSLSubjectPIP extends AbstractPolicyInformationPoint {
 

@@ -568,9 +568,6 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
      * @param certChain
      *            the sorted certificate chain to complete
      * @return the completed cert chain
-     * @throws PIPProcessingException
-     *             if PKIX validation is enabled and an error occurs while
-     *             building the complete cert chain
      */
     protected X509Certificate[] completeCertificateChain(X509Certificate[] certChain) {
         log.debug("implemented in caNl validator...");

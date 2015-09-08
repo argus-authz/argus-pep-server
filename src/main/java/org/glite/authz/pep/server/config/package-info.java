@@ -18,6 +18,6 @@
 /** 
  * Classes used to create and hold a PEP daemon configuration. 
  * 
- * @see <a href="https://twiki.cern.ch/twiki/bin/view/EGEE/AuthZPEP#Policy_Enforcement_Point_Daemon>PEP configuration and usage documentation</a>
+ * @see <a href="https://twiki.cern.ch/twiki/bin/view/EGEE/AuthZPEP#Policy_Enforcement_Point_Daemon">PEP configuration and usage documentation</a>
  */
 package org.glite.authz.pep.server.config;

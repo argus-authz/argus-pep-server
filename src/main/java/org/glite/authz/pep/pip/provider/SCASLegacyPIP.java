@@ -147,13 +147,10 @@ public class SCASLegacyPIP extends AbstractX509PIP {
      * @param requireProxy
      *            whether a subject's certificate chain must require a proxy in
      *            order to be valid
-     * @param eeTrustMaterial
-     *            trust material used to validate the subject's end entity
-     *            certificate
-     * @param acTrustMaterial
-     *            trust material used to validate the subject's attribute
-     *            certificate certificate, may be null of AC support is not
-     *            desired
+     * @param x509Validator 
+     *            the certificate validator
+     * @param vomsACValidator 
+     *            the voms validator
      * 
      * @throws ConfigurationException
      *             thrown if the configuration of the PIP fails

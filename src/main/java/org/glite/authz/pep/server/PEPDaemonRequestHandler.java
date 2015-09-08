@@ -423,6 +423,7 @@ public class PEPDaemonRequestHandler {
      * @param messageIssuerId
      *            The entityID of the message issuer
      * @return
+     *        a decision
      */
     protected PEPDaemonDecisionRequestContext buildMessageContext(String messageIssuerId) {
         PEPDaemonDecisionRequestContext messageContext= new PEPDaemonDecisionRequestContext();

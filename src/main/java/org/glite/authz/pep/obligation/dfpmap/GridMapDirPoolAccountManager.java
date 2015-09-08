@@ -367,7 +367,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
      * @param unescaped
      *            The unescaped user DN
      * @return encoded, escaped, user DN, compatible with gLExec
-     * @throws URIException
+     * @throws URIException in case of URI encoding errors
      */
     protected String encodeSubjectIdentifier(String unescaped)
             throws URIException {

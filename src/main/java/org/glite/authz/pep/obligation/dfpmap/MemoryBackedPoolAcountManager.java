@@ -50,7 +50,7 @@ public class MemoryBackedPoolAcountManager implements PoolAccountManager {
     /**
      * Constructor.
      * 
-     * @param managedAccounts pool accounts to be managed
+     * @param poolAccounts pool accounts to be managed
      */
     public MemoryBackedPoolAcountManager(List<String> poolAccounts) {
         managedAccounts = new HashMap<String, List<String>>();

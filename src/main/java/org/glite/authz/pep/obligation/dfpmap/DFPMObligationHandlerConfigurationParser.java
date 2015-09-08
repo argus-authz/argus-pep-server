@@ -27,9 +27,9 @@ import org.glite.authz.common.config.IniConfigUtil;
 import org.glite.authz.common.config.IniSectionConfigurationParser;
 import org.glite.authz.common.fqan.FQAN;
 import org.glite.authz.common.profile.GLiteAuthorizationProfileConstants;
+import org.glite.authz.pep.obligation.IniOHConfigurationParserHelper;
 import org.glite.authz.pep.obligation.ObligationHandler;
 import org.glite.authz.pep.obligation.dfpmap.UpdatingDFPM.DFPMFactory;
-
 import org.ini4j.Ini;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,8 +118,7 @@ public class DFPMObligationHandlerConfigurationParser implements
     public static final boolean NO_PRIMARY_GROUP_NAME_IS_ERROR_DEFAULT= false;
 
     /**
-     * The default value of the
-     * {@value IniOHConfigurationParser#PRECEDENCE_PROP} property: {@value}
+     * The default value of the precedence property: {@value}
      */
     public static final int PRECENDENCE_DEFAULT= 0;
 
