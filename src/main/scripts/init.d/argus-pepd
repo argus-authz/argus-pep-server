@@ -231,7 +231,7 @@ function _current_state() {
             return 4
         fi
     else
-        if [! -f "$PEPD_PID" ]; then
+        if [ ! -f "$PEPD_PID" ]; then
             touch $PEPD_PID 2>&1
             echo $pid > $PEPD_PID
             return 2
