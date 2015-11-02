@@ -18,7 +18,6 @@
 package org.glite.authz.pep.obligation.dfpmap;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -148,13 +147,6 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 	return null;
     }
 
-    /**
-     * {@inheritDoc}
-     * <ul>
-     * <li>BUG FIX: https://savannah.cern.ch/bugs/index.php?83281
-     * <li>BUG FIX: https://savannah.cern.ch/bugs/index.php?84846
-     * </ul>
-     */
     public String mapToAccount(final String accountNamePrefix, final X500Principal subjectDN, final String primaryGroup,
 	    final List<String> secondaryGroups) throws ObligationProcessingException {
 
@@ -164,7 +156,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 
 	try {
 	    log.debug(
-		    "Checking if there is an existing account mapping for subject {} with primary group {} and secondary groups {}",
+		    "mapToAccount: Checking if there is an existing account mapping for subject {} with primary group {} and secondary groups {}",
 		    subjectDN.getName(), primaryGroup, secondaryGroups);
 
 	    if (!subjectIdentifierFile.exists()) {
@@ -175,15 +167,16 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 
 	    if (accountName != null) {
 		PosixUtil.touchFile(subjectIdentifierFile);
-		log.debug("Account mapped subject {} with primary group {} and secondary groups {} to pool account {}",
+		log.debug(
+			"mapToAccount: Account mapped subject {} with primary group {} and secondary groups {} to pool account {}",
 			subjectDN.getName(), primaryGroup, secondaryGroups, accountName);
 	    } else {
 		log.debug(
-			"No pool account was available to which subject {} with primary group {} and secondary groups {} could be mapped",
+			"mapToAccount: No pool account was available to which subject {} with primary group {} and secondary groups {} could be mapped",
 			subjectDN.getName(), primaryGroup, secondaryGroups);
 	    }
 	} catch (Exception e) {
-	    String lMessage = "Error managing account mapping";
+	    String lMessage = "mapToAccount: Error managing account mapping";
 	    log.error(lMessage, e);
 	    throw new ObligationProcessingException(e);
 	}
@@ -193,78 +186,46 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 
     private String getMapping(final String accountNamePrefix, final String subjectIdentifier)
 	    throws ObligationProcessingException {
+
 	File subjectIdentifierFile = new File(buildSubjectIdentifierFilePath(subjectIdentifier));
-	// the file doesn't exit yet!!!
-	if (!subjectIdentifierFile.exists()) {
-	    return null;
+	long lThreadId = Thread.currentThread().getId();
+	String lAccountName = null;
+
+	FileStat subjectIdentifierFileStat = PosixUtil.getFileStat(subjectIdentifierFile.getAbsolutePath());
+	int lNumLink = subjectIdentifierFileStat.nlink();
+
+	if (lNumLink < 2) {
+	    log.error(
+		    "getMapping: The subject identifier file {} has a link count different than 2 [inode: {} nlink: {} thread-id: {}]: This mapping is corrupted and can not be used",
+		    subjectIdentifierFile.getAbsolutePath(), subjectIdentifierFileStat.ino(),
+		    subjectIdentifierFileStat.nlink(), lThreadId);
+	    throw new ObligationProcessingException(
+		    "Unable to map subject to a POSIX account: Corrupted subject identifier file link count");
 	}
 
-	String lLockFileName = String.format(".lock_%s", subjectIdentifier);
-	File lLockFile = new File(gridMapDirectory_.getAbsolutePath(), lLockFileName);
-	Long lThreadId = Thread.currentThread().getId();
-
-	RandomAccessFile lFile = null;
-	FileChannel lFileChannel = null;
-
-	try {
-	    try {
-		lFile = new RandomAccessFile(lLockFile, "r");
-		lFileChannel = lFile.getChannel();
-	    } catch (FileNotFoundException e) {
-		// TIP: lock file doesn't exist: not a problem
-	    }
-
-	    FileStat subjectIdentifierFileStat = PosixUtil.getFileStat(subjectIdentifierFile.getAbsolutePath());
-	    int lNumLink = subjectIdentifierFileStat.nlink();
-
-	    if (lNumLink < 2) {
-		log.error(
-			"The subject identifier file {} has a link count different than 2 [inode: {} nlink: {} thread-id: {}]: This mapping is corrupted and can not be used",
-			subjectIdentifierFile.getAbsolutePath(), subjectIdentifierFileStat.ino(),
-			subjectIdentifierFileStat.nlink(), lThreadId);
-		throw new ObligationProcessingException(
-			"Unable to map subject to a POSIX account: Corrupted subject identifier file link count");
-	    }
-
-	    // search the matching (same inode#) pool account file
-	    for (File accountFile : getAccountFiles(accountNamePrefix)) {
-		FileStat accountFileStat = PosixUtil.getFileStat(accountFile.getAbsolutePath());
-		long lAccountFileINo = accountFileStat.ino();
-		long lSubjectIdentifierFileINo = subjectIdentifierFileStat.ino();
-		if (lAccountFileINo == lSubjectIdentifierFileINo) {
-		    if (log.isDebugEnabled()) {
-			log.debug("Pool account file: {} inode: {} nlink: {}",
-				new Object[] { accountFile.getAbsolutePath(), lSubjectIdentifierFileINo,
-					subjectIdentifierFileStat.nlink() });
-		    }
-		    if (accountFileStat.nlink() != 2) {
-			log.error(
-				"The pool account file {} has a link count different than 2 [inode: {} nlink: {} thread-id: {}]: This mapping is corrupted and can not be used",
-				accountFile.getAbsolutePath(), lAccountFileINo, accountFileStat.nlink(), lThreadId);
-			throw new ObligationProcessingException(
-				"Unable to map subject to a POSIX account: Corrupted pool account file link count");
-		    }
-
-		    return accountFile.getName();
+	// search the matching (same inode#) pool account file
+	for (File accountFile : getAccountFiles(accountNamePrefix)) {
+	    FileStat accountFileStat = PosixUtil.getFileStat(accountFile.getAbsolutePath());
+	    long lAccountFileINo = accountFileStat.ino();
+	    long lSubjectIdentifierFileINo = subjectIdentifierFileStat.ino();
+	    if (lAccountFileINo == lSubjectIdentifierFileINo) {
+		if (log.isDebugEnabled()) {
+		    log.debug("Pool account file: {} inode: {} nlink: {}", new Object[] { accountFile.getAbsolutePath(),
+			    lSubjectIdentifierFileINo, subjectIdentifierFileStat.nlink() });
 		}
-	    }
-	} catch (Exception e) {
-	    log.error("getExistingMapping: error creating mapping thread-id: {}", lThreadId);
-	} finally {
-	    if (lFile != null) {
-		try {
-		    lFile.close();
-		} catch (IOException e) {
+		if (accountFileStat.nlink() != 2) {
+		    log.error(
+			    "getMapping: The pool account file {} has a link count different than 2 [inode: {} nlink: {} thread-id: {}]: This mapping is corrupted and can not be used",
+			    accountFile.getAbsolutePath(), lAccountFileINo, accountFileStat.nlink(), lThreadId);
+		    throw new ObligationProcessingException(
+			    "Unable to map subject to a POSIX account: Corrupted pool account file link count");
 		}
-	    }
-	    if (lFileChannel != null) {
-		try {
-		    lFileChannel.close();
-		} catch (IOException e) {
-		}
+
+		lAccountName = accountFile.getName();
+		break;
 	    }
 	}
-	return null;
+	return lAccountName;
     }
 
     /**
