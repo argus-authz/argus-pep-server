@@ -18,17 +18,15 @@
 package org.glite.authz.pep.obligation.dfpmap;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.PrintStream;
 
 import org.jruby.ext.posix.FileStat;
 import org.jruby.ext.posix.POSIX;
+import org.jruby.ext.posix.POSIX.ERRORS;
 import org.jruby.ext.posix.POSIXFactory;
 import org.jruby.ext.posix.POSIXHandler;
-import org.jruby.ext.posix.POSIX.ERRORS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,11 +34,10 @@ import org.slf4j.LoggerFactory;
 public class PosixUtil {
 
     /** POSIX bridge implementation. */
-    private static POSIX posix= POSIXFactory.getPOSIX(new BasicPOSIXHandler(),
-                                                      true);
+    private static POSIX posix = POSIXFactory.getPOSIX(new BasicPOSIXHandler(), true);
 
     /** Class logger. */
-    private static Logger log= LoggerFactory.getLogger(PosixUtil.class);
+    private static Logger log = LoggerFactory.getLogger(PosixUtil.class);
 
     /**
      * Gets the stats about the given file.
@@ -50,8 +47,8 @@ public class PosixUtil {
      * 
      * @return the stats on the file
      */
-    public static FileStat getFileStat(String file) {
-        return posix.stat(file);
+    public static FileStat getFileStat(final String file) {
+	return posix.stat(file);
     }
 
     /**
@@ -66,14 +63,12 @@ public class PosixUtil {
      *            true if the link should be a symbolic or false if it should be
      *            a hard link
      */
-    public static void createLink(String currenPath, String newPath,
-            boolean symbolic) {
-        if (symbolic) {
-            posix.symlink(currenPath, newPath);
-        }
-        else {
-            posix.link(currenPath, newPath);
-        }
+    public static void createLink(final String currenPath, final String newPath, final boolean symbolic) {
+	if (symbolic) {
+	    posix.symlink(currenPath, newPath);
+	} else {
+	    posix.link(currenPath, newPath);
+	}
     }
 
     /**
@@ -84,8 +79,8 @@ public class PosixUtil {
      * @param targetPath
      *            absolute target path
      */
-    public static void createSymlink(String sourcePath, String targetPath) {
-        createLink(sourcePath, targetPath, true);
+    public static void createSymlink(final String sourcePath, final String targetPath) {
+	createLink(sourcePath, targetPath, true);
     }
 
     /**
@@ -96,8 +91,8 @@ public class PosixUtil {
      * @param targetPath
      *            absolute target path
      */
-    public static void createHardlink(String sourcePath, String targetPath) {
-        createLink(sourcePath, targetPath, false);
+    public static void createHardlink(final String sourcePath, final String targetPath) {
+	createLink(sourcePath, targetPath, false);
     }
 
     /**
@@ -107,87 +102,74 @@ public class PosixUtil {
      * @param file
      *            the file to "touch"
      */
-    public static void touchFile(File file) {
-        try {
-            log.debug("touch {}", file.getAbsolutePath());
-            if (!file.exists()) {
-                OutputStream out= new FileOutputStream(file);
-                out.close();
-            }
-            boolean success= file.setLastModified(System.currentTimeMillis());
-            if (!success) {
-                throw new IOException("Unable to set the last modification time for "
-                        + file);
-            }
-        } catch (IOException e) {
-            log.warn("touch {} failed: {}",
-                     file.getAbsolutePath(),
-                     e.getMessage());
-        }
+    public static void touchFile(final File file) {
+	try {
+	    log.debug("touch {}", file.getAbsolutePath());
+	    if (!file.exists()) {
+		file.createNewFile();
+	    }
+	    boolean success = file.setLastModified(System.currentTimeMillis());
+	    if (!success) {
+		throw new IOException("Unable to set the last modification time for " + file);
+	    }
+	} catch (IOException e) {
+	    log.warn("touch {} failed: {}", file.getAbsolutePath(), e.getMessage());
+	}
 
     }
 
     /** A basic handler for logging and stream handling. */
     public static class BasicPOSIXHandler implements POSIXHandler {
 
-        /** {@inheritDoc} */
-        public void error(ERRORS error, String extraData) {
-            log.error("Error performing POSIX operation. Error: "
-                    + error.toString() + ", additional data: " + extraData);
-        }
+	public void error(final ERRORS error, final String extraData) {
+	    log.error(
+		    "Error performing POSIX operation. Error: " + error.toString() + ", additional data: " + extraData);
+	}
 
-        /** {@inheritDoc} */
-        public void unimplementedError(String methodName) {
-            log.error("Error performing POSIX operation.  Operation "
-                    + methodName + " is not supported");
-        }
+	public void unimplementedError(final String methodName) {
+	    log.error("Error performing POSIX operation.  Operation " + methodName + " is not supported");
+	}
 
-        /** {@inheritDoc} */
-        public void warn(WARNING_ID id, String message, Object... data) {
-            log.warn(message);
-        }
+	public void warn(final WARNING_ID id, final String message, final Object... data) {
+	    log.warn(message);
+	}
 
-        /** {@inheritDoc} */
-        public boolean isVerbose() {
-            return false;
-        }
+	public boolean isVerbose() {
+	    return false;
+	}
 
-        /** {@inheritDoc} */
-        public File getCurrentWorkingDirectory() {
-            return new File("/tmp");
-        }
+	public File getCurrentWorkingDirectory() {
+	    return new File("/tmp");
+	}
 
-        /**
-         * {@inheritDoc}
-         * 
-         * This operation is <strong>not</strong> supported.
-         */
-        public String[] getEnv() {
-            throw new UnsupportedOperationException("Not supported yet.");
-        }
+	/**
+	 * {@inheritDoc}
+	 * 
+	 * This operation is <strong>not</strong> supported.
+	 */
+	public String[] getEnv() {
+	    throw new UnsupportedOperationException("Not supported yet.");
+	}
 
-        /** {@inheritDoc} */
-        public InputStream getInputStream() {
-            return System.in;
-        }
+	public InputStream getInputStream() {
+	    return System.in;
+	}
 
-        /** {@inheritDoc} */
-        public PrintStream getOutputStream() {
-            return System.out;
-        }
+	public PrintStream getOutputStream() {
+	    return System.out;
+	}
 
-        /**
-         * {@inheritDoc}
-         * 
-         * This operation is <strong>not</strong> supported.
-         */
-        public int getPID() {
-            throw new UnsupportedOperationException("Not supported yet.");
-        }
+	/**
+	 * {@inheritDoc}
+	 * 
+	 * This operation is <strong>not</strong> supported.
+	 */
+	public int getPID() {
+	    throw new UnsupportedOperationException("Not supported yet.");
+	}
 
-        /** {@inheritDoc} */
-        public PrintStream getErrorStream() {
-            return System.err;
-        }
+	public PrintStream getErrorStream() {
+	    return System.err;
+	}
     }
 }
