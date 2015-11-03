@@ -147,6 +147,20 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 	return null;
     }
 
+    /***
+     * @param accountNamePrefix
+     *            Posix account name prefix.
+     * @param subjectDN
+     *            User's subject DN.
+     * @param primaryGroup
+     *            User's primary group.
+     * @param secondaryGroups
+     *            List of user's secondary groups.
+     * @throws ObligationProcessingException
+     *             Raised if mapping fail.
+     * @return The Posix account if the operation end successfully,
+     *         <code>null</code> otherwise.
+     */
     public String mapToAccount(final String accountNamePrefix, final X500Principal subjectDN, final String primaryGroup,
 	    final List<String> secondaryGroups) throws ObligationProcessingException {
 
@@ -163,7 +177,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 		createMapping(accountNamePrefix, subjectIdentifier);
 	    }
 
-	    accountName = getMapping(accountNamePrefix, subjectIdentifier);
+	    accountName = getExistingMapping(accountNamePrefix, subjectIdentifier);
 
 	    if (accountName != null) {
 		PosixUtil.touchFile(subjectIdentifierFile);
@@ -180,14 +194,25 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 	    log.error(lMessage, e);
 	    throw new ObligationProcessingException(e);
 	}
-	return accountName;
 
+	return accountName;
     }
 
-    private String getMapping(final String accountNamePrefix, final String subjectIdentifier)
+    /***
+     * Get account of name of already mapped subject DN.
+     * 
+     * @param pAccountNamePrefix
+     *            Posix account prefix.
+     * @param pSubjectIdentifier
+     *            User subject DN
+     * @return Posix account name
+     * @throws ObligationProcessingException
+     *             Raised if the mapping is corrupted.
+     */
+    protected String getExistingMapping(final String pAccountNamePrefix, final String pSubjectIdentifier)
 	    throws ObligationProcessingException {
 
-	File subjectIdentifierFile = new File(buildSubjectIdentifierFilePath(subjectIdentifier));
+	File subjectIdentifierFile = new File(buildSubjectIdentifierFilePath(pSubjectIdentifier));
 	long lThreadId = Thread.currentThread().getId();
 	String lAccountName = null;
 
@@ -204,14 +229,14 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 	}
 
 	// search the matching (same inode#) pool account file
-	for (File accountFile : getAccountFiles(accountNamePrefix)) {
+	for (File accountFile : getAccountFiles(pAccountNamePrefix)) {
 	    FileStat accountFileStat = PosixUtil.getFileStat(accountFile.getAbsolutePath());
 	    long lAccountFileINo = accountFileStat.ino();
 	    long lSubjectIdentifierFileINo = subjectIdentifierFileStat.ino();
 	    if (lAccountFileINo == lSubjectIdentifierFileINo) {
 		if (log.isDebugEnabled()) {
-		    log.debug("Pool account file: {} inode: {} nlink: {}", new Object[] { accountFile.getAbsolutePath(),
-			    lSubjectIdentifierFileINo, subjectIdentifierFileStat.nlink() });
+		    log.debug("Pool account file: {} inode: {} nlink: {}", accountFile.getAbsolutePath(),
+			    lSubjectIdentifierFileINo, subjectIdentifierFileStat.nlink());
 		}
 		if (accountFileStat.nlink() != 2) {
 		    log.error(
@@ -240,9 +265,9 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
      * @return the account to which the subject was mapped or null if not
      *         account was available
      */
-    protected synchronized String createMapping(final String accountNamePrefix, final String subjectIdentifier) {
+    protected synchronized String createMapping(final String pAccountNamePrefix, final String pSubjectIdentifier) {
 
-	String lLockFileName = String.format(".lock_%s", subjectIdentifier);
+	String lLockFileName = String.format(".lock_%s", pSubjectIdentifier);
 	File lLockFile = new File(gridMapDirectory_.getAbsolutePath(), lLockFileName);
 	Long lThreadId = Thread.currentThread().getId();
 
@@ -256,13 +281,14 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 	    lFileChannel = lFile.getChannel();
 	    lLock = lFileChannel.lock();
 
-	    String subjectIdentifierFilePath = buildSubjectIdentifierFilePath(subjectIdentifier);
+	    String subjectIdentifierFilePath = buildSubjectIdentifierFilePath(pSubjectIdentifier);
 	    File lSubjectFile = new File(subjectIdentifierFilePath);
+
 	    if (!lSubjectFile.exists()) {
 
-		for (File accountFile : getAccountFiles(accountNamePrefix)) {
+		for (File accountFile : getAccountFiles(pAccountNamePrefix)) {
 		    log.debug("Checking if grid map account {} may be linked to subject identifier {}",
-			    accountFile.getName(), subjectIdentifier);
+			    accountFile.getName(), pSubjectIdentifier);
 
 		    FileStat accountFileStat = PosixUtil.getFileStat(accountFile.getAbsolutePath());
 		    if (accountFileStat.nlink() == 1) {
@@ -270,7 +296,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 			accountFileStat = PosixUtil.getFileStat(accountFile.getAbsolutePath());
 			if (accountFileStat.nlink() == 2) {
 			    lAccountName = accountFile.getName();
-			    log.debug("Linked subject identifier {} to pool account file {}", subjectIdentifier,
+			    log.debug("Linked subject identifier {} to pool account file {}", pSubjectIdentifier,
 				    lAccountName);
 			    break;
 
@@ -283,7 +309,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 		}
 	    }
 	} catch (Exception e) {
-	    // TODO: manage
+	    // TODO: manage better?
 	    log.error("createMapping: error creating mapping [thread-id: {}]", lThreadId);
 	    lAccountName = null;
 	} finally {
@@ -304,8 +330,8 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 	    }
 	}
 	if (lAccountName == null) {
-	    log.error("createMapping: {} pool account is full. Impossible to map {} [thread-id: {}]", accountNamePrefix,
-		    subjectIdentifier, lThreadId);
+	    log.error("createMapping: {} pool account is full. Impossible to map {} [thread-id: {}]",
+		    pAccountNamePrefix, pSubjectIdentifier, lThreadId);
 	}
 	return lAccountName;
     }
