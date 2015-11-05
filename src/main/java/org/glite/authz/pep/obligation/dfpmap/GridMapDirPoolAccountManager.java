@@ -174,10 +174,12 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 		    subjectDN.getName(), primaryGroup, secondaryGroups);
 
 	    if (!subjectIdentifierFile.exists()) {
-		createMapping(accountNamePrefix, subjectIdentifier);
+		accountName = createMapping(accountNamePrefix, subjectIdentifier);
 	    }
 
-	    accountName = getExistingMapping(accountNamePrefix, subjectIdentifier);
+	    if (accountName == null) {
+		accountName = getExistingMapping(accountNamePrefix, subjectIdentifier);
+	    }
 
 	    if (accountName != null) {
 		PosixUtil.touchFile(subjectIdentifierFile);
@@ -299,7 +301,6 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 			    log.debug("Linked subject identifier {} to pool account file {}", pSubjectIdentifier,
 				    lAccountName);
 			    break;
-
 			}
 			if (PosixUtil.getFileStat(subjectIdentifierFilePath).nlink() < 2) {
 			    new File(subjectIdentifierFilePath).delete();
@@ -307,9 +308,16 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 		    }
 		    log.debug("Could not map to account {}", accountFile.getName());
 		}
+		if (lAccountName == null) {
+		    log.error("createMapping: {} pool account is full. Impossible to map {} [thread-id: {}]",
+			    pAccountNamePrefix, pSubjectIdentifier, lThreadId);
+		}
+	    } else {
+		if (PosixUtil.getFileStat(subjectIdentifierFilePath).nlink() < 2) {
+		    new File(subjectIdentifierFilePath).delete();
+		}
 	    }
-	} catch (Exception e) {
-	    // TODO: manage better?
+	} catch (Throwable t) {
 	    log.error("createMapping: error creating mapping [thread-id: {}]", lThreadId);
 	    lAccountName = null;
 	} finally {
@@ -329,10 +337,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 		lLockFile.delete();
 	    }
 	}
-	if (lAccountName == null) {
-	    log.error("createMapping: {} pool account is full. Impossible to map {} [thread-id: {}]",
-		    pAccountNamePrefix, pSubjectIdentifier, lThreadId);
-	}
+
 	return lAccountName;
     }
 
