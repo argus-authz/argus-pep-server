@@ -153,7 +153,7 @@ function executeAdminCommand {
 
 function start {
     # Run the PEP Server (background)
-    $JAVACMD $PEPD_JOPTS 'org.glite.authz.pep.server.PEPDaemon' $PEPD_CONF &
+    $JAVACMD $PEPD_JOPTS $PEPD_START_JOPTS 'org.glite.authz.pep.server.PEPDaemon' $PEPD_CONF &
     if [ -n "$PEPD_PID" ]; then
       echo $! > $PEPD_PID
     fi
