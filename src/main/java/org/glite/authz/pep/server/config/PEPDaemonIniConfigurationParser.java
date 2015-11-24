@@ -297,7 +297,7 @@ public class PEPDaemonIniConfigurationParser extends
     if (keyManager != null && trustManager != null) {
       log.debug("adding configured X509 key & trust manager to SOAP client");
       TLSProtocolSocketFactory factory = new TLSProtocolSocketFactory(
-        keyManager, trustManager);
+        keyManager, trustManager, new StrictHostnameVerifier());
       httpClientBuilder.setHttpsProtocolSocketFactory(factory);
     }
 
