@@ -117,6 +117,12 @@ public final class PEPDaemon {
    *           thrown if there is a problem starting the daemon
    */
   public static void main(String[] args) throws Exception {
+    
+    // Tell OpenSAML that it should not mess with our 
+    // HttpClient hostname verification configuration
+    System.setProperty(
+      DefaultBootstrap.SYSPROP_HTTPCLIENT_HTTPS_DISABLE_HOSTNAME_VERIFICATION,
+      "true");
 
     if (args.length < 1 || args.length > 1) {
       errorAndExit("Missing configuration file argument", null);

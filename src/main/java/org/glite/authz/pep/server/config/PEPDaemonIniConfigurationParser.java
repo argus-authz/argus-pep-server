@@ -21,6 +21,9 @@ import java.io.Reader;
 import java.util.List;
 import java.util.StringTokenizer;
 
+import javax.net.ssl.X509KeyManager;
+import javax.net.ssl.X509TrustManager;
+
 import net.jcip.annotations.ThreadSafe;
 
 import org.glite.authz.common.config.AbstractIniServiceConfigurationParser;
@@ -33,7 +36,9 @@ import org.glite.authz.pep.pip.PolicyInformationPoint;
 import org.ini4j.Ini;
 import org.opensaml.ws.soap.client.http.HttpClientBuilder;
 import org.opensaml.ws.soap.client.http.HttpSOAPClient;
+import org.opensaml.ws.soap.client.http.TLSProtocolSocketFactory;
 import org.opensaml.xml.parse.BasicParserPool;
+import org.opensaml.xml.security.x509.tls.StrictHostnameVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,194 +47,260 @@ import org.slf4j.LoggerFactory;
  */
 @ThreadSafe
 public class PEPDaemonIniConfigurationParser extends
-        AbstractIniServiceConfigurationParser<PEPDaemonConfiguration> {
+  AbstractIniServiceConfigurationParser<PEPDaemonConfiguration> {
 
-    /**
-     * The name of the {@value} INI header which contains the property for
-     * configuring the PDP interaction.
-     */
-    public static final String PDP_SECTION_HEADER= "PDP";
+  /**
+   * The name of the {@value} INI header which contains the property for
+   * configuring the PDP interaction.
+   */
+  public static final String PDP_SECTION_HEADER = "PDP";
 
-    /**
-     * The name of the {@value} property which gives the space-delimited PDP
-     * endpoint URLs.
-     */
-    public static final String PDP_PROP= "pdps";
+  /**
+   * The name of the {@value} property which gives the space-delimited PDP
+   * endpoint URLs.
+   */
+  public static final String PDP_PROP = "pdps";
 
-    /**
-     * The name of the {@value} property which gives the maximum number of
-     * responses that will be cached. A value of zero will disable caching.
-     */
-    public static final String MAX_CACHED_RESP_PROP= "maximumCachedResponses";
+  /**
+   * The name of the {@value} property which gives the maximum number of
+   * responses that will be cached. A value of zero will disable caching.
+   */
+  public static final String MAX_CACHED_RESP_PROP = "maximumCachedResponses";
 
-    /**
-     * The name of the {@value} property which gives the time-to-live, in
-     * seconds, for a cached item.
-     */
-    public static final String CACHED_RESP_TTL_PROP= "cachedResponseTTL";
+  /**
+   * The name of the {@value} property which gives the time-to-live, in seconds,
+   * for a cached item.
+   */
+  public static final String CACHED_RESP_TTL_PROP = "cachedResponseTTL";
 
-    /**
-     * Default value of the
-     * {@value AbstractIniServiceConfigurationParser#PORT_PROP} property,
-     * {@value} .
-     */
-    public static final int DEFAULT_PORT= 8154;
+  /**
+   * Default value of the
+   * {@value AbstractIniServiceConfigurationParser#PORT_PROP} property, * *
+   * {@value} .
+   */
+  public static final int DEFAULT_PORT = 8154;
 
-    /**
-     * Default value of the
-     * {@value AbstractIniServiceConfigurationParser#ADMIN_PORT_PROP} property,
-     * {@value} .
-     */
-    public static final int DEFAULT_ADMIN_PORT= 8155;
+  /**
+   * Default value of the
+   * {@value AbstractIniServiceConfigurationParser#ADMIN_PORT_PROP} property, *
+   * * {@value} .
+   */
+  public static final int DEFAULT_ADMIN_PORT = 8155;
 
-    /** Default value of the {@value #MAX_CACHED_RESP_PROP} property, {@value} . */
-    public static final int DEFAULT_MAX_CACHED_RESP= 500;
+  /** Default value of the {@value #MAX_CACHED_RESP_PROP} property, {@value} . */
+  public static final int DEFAULT_MAX_CACHED_RESP = 500;
 
-    /** Default value of the {@value #CACHED_RESP_TTL_PROP} property, {@value} . */
-    public static final int DEFAULT_CACHED_RESP_TTL= 10 * 60;
+  /** Default value of the {@value #CACHED_RESP_TTL_PROP} property, {@value} . */
+  public static final int DEFAULT_CACHED_RESP_TTL = 10 * 60;
 
-    /** Class logger. */
-    private final Logger log= LoggerFactory.getLogger(PEPDaemonIniConfigurationParser.class);
+  /** Class logger. */
+  private final Logger log = LoggerFactory
+    .getLogger(PEPDaemonIniConfigurationParser.class);
 
-    /** Constructor. */
-    public PEPDaemonIniConfigurationParser() {
-        super();
+  /** Constructor. */
+  public PEPDaemonIniConfigurationParser() {
+
+    super();
+  }
+
+  /**
+   * {@inheritDoc}
+   * 
+   * @return the port value, or the default port {@value #DEFAULT_PORT} if it is
+   *         not set
+   */
+  protected int getPort(Ini.Section configSection) {
+
+    return IniConfigUtil.getInt(configSection, PORT_PROP, DEFAULT_PORT, 1,
+      65535);
+  }
+
+  /**
+   * {@inheritDoc}
+   * 
+   * @return the admin port value, or the default admin port
+   *         {@value #DEFAULT_ADMIN_PORT} if it is not set
+   */
+  protected int getAdminPort(Ini.Section configSection) {
+
+    return IniConfigUtil.getInt(configSection, ADMIN_PORT_PROP,
+      DEFAULT_ADMIN_PORT, 1, 65535);
+  }
+
+  /**
+   * Gets the value of the {@value #CACHED_RESP_TTL_PROP} property from the
+   * configuration section. If the property is not present or is not valid the
+   * default value of {@value #DEFAULT_CACHED_RESP_TTL} will be used.
+   * 
+   * @param configSection
+   *          configuration section from which to extract the value
+   * 
+   * @return the value
+   */
+  protected int getCacheResponseTTL(Ini.Section configSection) {
+
+    return IniConfigUtil.getInt(configSection, CACHED_RESP_TTL_PROP,
+      DEFAULT_CACHED_RESP_TTL, 1, Integer.MAX_VALUE);
+  }
+
+  /**
+   * Gets the value of the {@value #MAX_CACHED_RESP_PROP} property from the
+   * configuration section. If the property is not present or is not valid the
+   * default value of {@value #DEFAULT_MAX_CACHED_RESP} will be used.
+   * 
+   * @param configSection
+   *          configuration section from which to extract the value
+   * 
+   * @return the value
+   */
+  protected int getMaxCachedResponses(Ini.Section configSection) {
+
+    return IniConfigUtil.getInt(configSection, MAX_CACHED_RESP_PROP,
+      DEFAULT_MAX_CACHED_RESP, 0, Integer.MAX_VALUE);
+  }
+
+  /**
+   * Parses a configuration.
+   * 
+   * @param iniReader
+   *          INI to parse
+   * 
+   * @return the daemon configuration
+   * 
+   * @throws ConfigurationException
+   *           thrown if there is a problem configuring the system
+   */
+  protected PEPDaemonConfiguration parseIni(Reader iniReader)
+    throws ConfigurationException {
+
+    Ini iniFile = new Ini();
+    try {
+      log.info("Loading and parsing INI configuration file");
+      iniFile.load(iniReader);
+    } catch (Exception e) {
+      log.error("Unable to load and parse the INI configuration file", e);
+      throw new ConfigurationException(
+        "Unable to parse INI configuration file", e);
     }
 
-    /**
-     * {@inheritDoc}
-     * 
-     * @return the port value, or the default port {@value #DEFAULT_PORT} if it
-     *         is not set
-     */
-    protected int getPort(Ini.Section configSection) {
-        return IniConfigUtil.getInt(configSection, PORT_PROP, DEFAULT_PORT, 1, 65535);
+    PEPDaemonConfigurationBuilder configBuilder = new PEPDaemonConfigurationBuilder();
+
+    log.info("Processing PEP Server {} configuration section",
+      SECURITY_SECTION_HEADER);
+    processSecuritySection(iniFile, configBuilder);
+
+    log.info("Processing PEP Server {} configuration section",
+      SERVICE_SECTION_HEADER);
+    processServiceSection(iniFile, configBuilder);
+
+    Ini.Section configSection = iniFile.get(SERVICE_SECTION_HEADER);
+    List<PolicyInformationPoint> pips = IniPIPConfigurationParserHelper
+      .processPolicyInformationPoints(iniFile, configSection, configBuilder);
+    log.info("Total policy information points: {}", pips.size());
+    configBuilder.getPolicyInformationPoints().addAll(pips);
+
+    ObligationService service = IniOHConfigurationParserHelper
+      .processObligationHandlers(iniFile, configSection, configBuilder);
+    log.info("Total obligation handlers: {}", service.getObligationHandlers()
+      .size());
+    configBuilder.setObligationService(service);
+
+    log.info("Processing PEP Server {} configuration section",
+      PDP_SECTION_HEADER);
+    processPDPConfiguration(iniFile, configBuilder);
+
+    return configBuilder.build();
+  }
+
+  /**
+   * Processes the PDP configuration section.
+   * 
+   * @param iniFile
+   *          the INI configuration file
+   * @param configBuilder
+   *          the daemon configuration builder
+   * 
+   * @throws ConfigurationException
+   *           thrown if the communication to the PDP can be configured
+   */
+  private void processPDPConfiguration(Ini iniFile,
+    PEPDaemonConfigurationBuilder configBuilder) throws ConfigurationException {
+
+    Ini.Section configSection = iniFile.get(PDP_SECTION_HEADER);
+    if (configSection == null) {
+      String errorMsg = "INI configuration does not contain the required '"
+        + PDP_SECTION_HEADER + "' INI section";
+      log.error(errorMsg);
+      throw new ConfigurationException(errorMsg);
+    }
+    String name = configSection.getName();
+    String pdpEndpointStr = IniConfigUtil.getString(configSection, PDP_PROP);
+    log.info("{}: PDP endpoints: {}", name, pdpEndpointStr);
+    StringTokenizer pdpEndpoints = new StringTokenizer(pdpEndpointStr, " ");
+    while (pdpEndpoints.hasMoreTokens()) {
+      configBuilder.getPDPEndpoints().add(pdpEndpoints.nextToken());
     }
 
-    /**
-     * {@inheritDoc}
-     * 
-     * @return the admin port value, or the default admin port
-     *         {@value #DEFAULT_ADMIN_PORT} if it is not set
-     */
-    protected int getAdminPort(Ini.Section configSection) {
-        return IniConfigUtil.getInt(configSection, ADMIN_PORT_PROP, DEFAULT_ADMIN_PORT, 1, 65535);
+    int maxCachedResponses = getMaxCachedResponses(configSection);
+    log.info("{}: max cached responses: {}", name, maxCachedResponses);
+    configBuilder.setMaxCachedResponses(maxCachedResponses);
+
+    int cachedResponseTTL = getCacheResponseTTL(configSection) * 1000;
+    log.info("{}: cached response TTL: {}ms", name, cachedResponseTTL);
+    configBuilder.setCachedResponseTTL(cachedResponseTTL);
+
+    HttpClientBuilder soapClientBuilder = buildSOAPClientBuilder(configSection,
+      configBuilder.getKeyManager(), configBuilder.getTrustManager());
+    
+    BasicParserPool parserPool = new BasicParserPool();
+    parserPool.setMaxPoolSize(soapClientBuilder.getMaxTotalConnections());
+
+    configBuilder.setSoapClient(new HttpSOAPClient(soapClientBuilder
+      .buildClient(), parserPool));
+  }
+
+  /**
+   * Builds a SOAP client builder from the information contained in the
+   * configuration section.
+   * 
+   * @param configSection
+   *          client configuration
+   * 
+   * @return the SOAP client builder
+   */
+  protected HttpClientBuilder buildSOAPClientBuilder(Ini.Section configSection,
+    X509KeyManager keyManager, X509TrustManager trustManager) {
+
+    String name = configSection.getName();
+    log.info("{}: building SOAP client ({})", name,
+      (keyManager != null && trustManager != null) ? "SSL" : "plain");
+
+    HttpClientBuilder httpClientBuilder = new HttpClientBuilder();
+    httpClientBuilder.setContentCharSet("UTF-8");
+    int conTimeout = getConnectionTimeout(configSection);
+    log.info("{}: connection timeout: {}ms", name, conTimeout);
+    httpClientBuilder.setConnectionTimeout(conTimeout);
+
+    int maxRequests = getMaximumRequests(configSection);
+    log.info("{}: maximum requests: {}", name, maxRequests);
+    httpClientBuilder.setMaxTotalConnections(maxRequests);
+    httpClientBuilder.setMaxConnectionsPerHost(maxRequests);
+
+    int recBuffSize = getSendBufferSize(configSection);
+    log.info("{}: recieve buffer size: {} bytes", name, recBuffSize);
+    httpClientBuilder.setReceiveBufferSize(recBuffSize);
+
+    int sendBuffSize = getSendBufferSize(configSection);
+    log.info("{}: send buffer size: {} bytes", name, sendBuffSize);
+    httpClientBuilder.setSendBufferSize(sendBuffSize);
+
+    if (keyManager != null && trustManager != null) {
+      log.debug("adding configured X509 key & trust manager to SOAP client");
+      TLSProtocolSocketFactory factory = new TLSProtocolSocketFactory(
+        keyManager, trustManager, new StrictHostnameVerifier());
+      httpClientBuilder.setHttpsProtocolSocketFactory(factory);
     }
 
-    /**
-     * Gets the value of the {@value #CACHED_RESP_TTL_PROP} property from the
-     * configuration section. If the property is not present or is not valid the
-     * default value of {@value #DEFAULT_CACHED_RESP_TTL} will be used.
-     * 
-     * @param configSection
-     *            configuration section from which to extract the value
-     * 
-     * @return the value
-     */
-    protected int getCacheResponseTTL(Ini.Section configSection) {
-        return IniConfigUtil.getInt(configSection, CACHED_RESP_TTL_PROP, DEFAULT_CACHED_RESP_TTL, 1, Integer.MAX_VALUE);
-    }
-
-    /**
-     * Gets the value of the {@value #MAX_CACHED_RESP_PROP} property from the
-     * configuration section. If the property is not present or is not valid the
-     * default value of {@value #DEFAULT_MAX_CACHED_RESP} will be used.
-     * 
-     * @param configSection
-     *            configuration section from which to extract the value
-     * 
-     * @return the value
-     */
-    protected int getMaxCachedResponses(Ini.Section configSection) {
-        return IniConfigUtil.getInt(configSection, MAX_CACHED_RESP_PROP, DEFAULT_MAX_CACHED_RESP, 0, Integer.MAX_VALUE);
-    }
-
-    /**
-     * Parses a configuration.
-     * 
-     * @param iniReader
-     *            INI to parse
-     * 
-     * @return the daemon configuration
-     * 
-     * @throws ConfigurationException
-     *             thrown if there is a problem configuring the system
-     */
-    protected PEPDaemonConfiguration parseIni(Reader iniReader)
-            throws ConfigurationException {
-
-        Ini iniFile= new Ini();
-        try {
-            log.info("Loading and parsing INI configuration file");
-            iniFile.load(iniReader);
-        } catch (Exception e) {
-            log.error("Unable to load and parse the INI configuration file", e);
-            throw new ConfigurationException("Unable to parse INI configuration file", e);
-        }
-
-        PEPDaemonConfigurationBuilder configBuilder= new PEPDaemonConfigurationBuilder();
-
-        log.info("Processing PEP Server {} configuration section", SECURITY_SECTION_HEADER);
-        processSecuritySection(iniFile, configBuilder);
-
-        log.info("Processing PEP Server {} configuration section", SERVICE_SECTION_HEADER);
-        processServiceSection(iniFile, configBuilder);
-
-        Ini.Section configSection= iniFile.get(SERVICE_SECTION_HEADER);
-        List<PolicyInformationPoint> pips= IniPIPConfigurationParserHelper.processPolicyInformationPoints(iniFile, configSection, configBuilder);
-        log.info("Total policy information points: {}", pips.size());
-        configBuilder.getPolicyInformationPoints().addAll(pips);
-
-        ObligationService service= IniOHConfigurationParserHelper.processObligationHandlers(iniFile, configSection, configBuilder);
-        log.info("Total obligation handlers: {}", service.getObligationHandlers().size());
-        configBuilder.setObligationService(service);
-
-        log.info("Processing PEP Server {} configuration section", PDP_SECTION_HEADER);
-        processPDPConfiguration(iniFile, configBuilder);
-
-        return configBuilder.build();
-    }
-
-    /**
-     * Processes the PDP configuration section.
-     * 
-     * @param iniFile
-     *            the INI configuration file
-     * @param configBuilder
-     *            the daemon configuration builder
-     * 
-     * @throws ConfigurationException
-     *             thrown if the communication to the PDP can be configured
-     */
-    private void processPDPConfiguration(Ini iniFile,
-                                         PEPDaemonConfigurationBuilder configBuilder)
-            throws ConfigurationException {
-        Ini.Section configSection= iniFile.get(PDP_SECTION_HEADER);
-        if (configSection == null) {
-            String errorMsg= "INI configuration does not contain the required '"
-                    + PDP_SECTION_HEADER + "' INI section";
-            log.error(errorMsg);
-            throw new ConfigurationException(errorMsg);
-        }
-        String name= configSection.getName();
-        String pdpEndpointStr= IniConfigUtil.getString(configSection, PDP_PROP);
-        log.info("{}: PDP endpoints: {}", name, pdpEndpointStr);
-        StringTokenizer pdpEndpoints= new StringTokenizer(pdpEndpointStr, " ");
-        while (pdpEndpoints.hasMoreTokens()) {
-            configBuilder.getPDPEndpoints().add(pdpEndpoints.nextToken());
-        }
-
-        int maxCachedResponses= getMaxCachedResponses(configSection);
-        log.info("{}: max cached responses: {}", name, maxCachedResponses);
-        configBuilder.setMaxCachedResponses(maxCachedResponses);
-
-        int cachedResponseTTL= getCacheResponseTTL(configSection) * 1000;
-        log.info("{}: cached response TTL: {}ms", name, cachedResponseTTL);
-        configBuilder.setCachedResponseTTL(cachedResponseTTL);
-
-        HttpClientBuilder soapClientBuilder= buildSOAPClientBuilder(configSection, configBuilder.getKeyManager(), configBuilder.getTrustManager());
-        BasicParserPool parserPool= new BasicParserPool();
-        parserPool.setMaxPoolSize(soapClientBuilder.getMaxTotalConnections());
-        configBuilder.setSoapClient(new HttpSOAPClient(soapClientBuilder.buildClient(), parserPool));
-    }
+    return httpClientBuilder;
+  }
 }
