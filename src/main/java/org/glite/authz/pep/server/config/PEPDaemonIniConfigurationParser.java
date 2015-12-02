@@ -258,49 +258,4 @@ public class PEPDaemonIniConfigurationParser extends
     configBuilder.setSoapClient(new HttpSOAPClient(soapClientBuilder
       .buildClient(), parserPool));
   }
-
-  /**
-   * Builds a SOAP client builder from the information contained in the
-   * configuration section.
-   * 
-   * @param configSection
-   *          client configuration
-   * 
-   * @return the SOAP client builder
-   */
-  protected HttpClientBuilder buildSOAPClientBuilder(Ini.Section configSection,
-    X509KeyManager keyManager, X509TrustManager trustManager) {
-
-    String name = configSection.getName();
-    log.info("{}: building SOAP client ({})", name,
-      (keyManager != null && trustManager != null) ? "SSL" : "plain");
-
-    HttpClientBuilder httpClientBuilder = new HttpClientBuilder();
-    httpClientBuilder.setContentCharSet("UTF-8");
-    int conTimeout = getConnectionTimeout(configSection);
-    log.info("{}: connection timeout: {}ms", name, conTimeout);
-    httpClientBuilder.setConnectionTimeout(conTimeout);
-
-    int maxRequests = getMaximumRequests(configSection);
-    log.info("{}: maximum requests: {}", name, maxRequests);
-    httpClientBuilder.setMaxTotalConnections(maxRequests);
-    httpClientBuilder.setMaxConnectionsPerHost(maxRequests);
-
-    int recBuffSize = getSendBufferSize(configSection);
-    log.info("{}: recieve buffer size: {} bytes", name, recBuffSize);
-    httpClientBuilder.setReceiveBufferSize(recBuffSize);
-
-    int sendBuffSize = getSendBufferSize(configSection);
-    log.info("{}: send buffer size: {} bytes", name, sendBuffSize);
-    httpClientBuilder.setSendBufferSize(sendBuffSize);
-
-    if (keyManager != null && trustManager != null) {
-      log.debug("adding configured X509 key & trust manager to SOAP client");
-      TLSProtocolSocketFactory factory = new TLSProtocolSocketFactory(
-        keyManager, trustManager, new StrictHostnameVerifier());
-      httpClientBuilder.setHttpsProtocolSocketFactory(factory);
-    }
-
-    return httpClientBuilder;
-  }
 }
