@@ -18,15 +18,18 @@
 package org.glite.authz.pep.obligation.dfpmap;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -51,9 +54,18 @@ import eu.emi.security.authn.x509.impl.OpensslNameUtils;
  */
 public class GridMapDirPoolAccountManager implements PoolAccountManager {
 
+  public enum MappingResult {
+    SUCCESS,
+    INDETERMINATE,
+    LINK_ERROR,
+    POOL_ACCOUNT_BUSY
+  }
+
   /** Class logger. */
   private Logger log = LoggerFactory
     .getLogger(GridMapDirPoolAccountManager.class);
+
+  private final Random random = new Random();
 
   /** Directory containing the grid mappings. */
   private final File gridMapDirectory_;
@@ -176,33 +188,39 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 
     String subjectIdentifier = buildSubjectIdentifier(subjectDN, primaryGroup,
       secondaryGroups);
+
     File subjectIdentifierFile = new File(
       buildSubjectIdentifierFilePath(subjectIdentifier));
+
     String accountName = null;
 
     try {
+
       log.debug(
         "mapToAccount: Checking if there is an existing account mapping for subject {} with primary group {} and secondary groups {}",
         subjectDN.getName(), primaryGroup, secondaryGroups);
 
       if (!subjectIdentifierFile.exists()) {
+
         accountName = createMapping(accountNamePrefix, subjectIdentifier);
+
+      } else {
+
+        accountName = getExistingMapping(accountNamePrefix, subjectIdentifier);
+
       }
 
       if (accountName == null) {
-        accountName = getExistingMapping(accountNamePrefix, subjectIdentifier);
-      }
-
-      if (accountName != null) {
+        log.debug(
+          "mapToAccount: No pool account was available to which subject {} with primary group {} and secondary groups {} could be mapped",
+          subjectDN.getName(), primaryGroup, secondaryGroups);
+      } else {
         PosixUtil.touchFile(subjectIdentifierFile);
         log.debug(
           "mapToAccount: Account mapped subject {} with primary group {} and secondary groups {} to pool account {}",
           subjectDN.getName(), primaryGroup, secondaryGroups, accountName);
-      } else {
-        log.debug(
-          "mapToAccount: No pool account was available to which subject {} with primary group {} and secondary groups {} could be mapped",
-          subjectDN.getName(), primaryGroup, secondaryGroups);
       }
+
     } catch (Exception e) {
       String lMessage = "mapToAccount: Error managing account mapping";
       log.error(lMessage, e);
@@ -274,6 +292,163 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
   }
 
   /**
+   * Creates a mapping between a subject identifier and a pool account file.
+   * 
+   * It relies on {@link PosixUtil#createHardlink(String, String)}
+   * 
+   * @param subjectIdentifier
+   *          the subject identifier
+   * @param accountFile
+   *          the pool account file
+   * @param subjectFile
+   *          the file created from the subject identifier
+   * 
+   * @return a {@link MappingResult} telling the outcome of the linking
+   *         operation
+   */
+  private MappingResult linkSubjectToPoolAccount(String subjectIdentifier,
+    File accountFile, File subjectFile) {
+
+    log.debug("Linking {} -> {}", accountFile.getName(), subjectIdentifier);
+
+    int retval = PosixUtil.createHardlink(accountFile.getAbsolutePath(),
+      subjectFile.getAbsolutePath());
+
+    if (retval != 0) {
+
+      if (retval == Errno.EEXIST.value) {
+
+        log.debug(
+          "Pool account {} already bound to THIS subject identifier {}.",
+          accountFile.getName(), subjectIdentifier);
+
+        return MappingResult.SUCCESS;
+      }
+
+      log.error("Link error while creating mapping {} -> {}: error code {}.",
+        accountFile.getName(), subjectIdentifier, retval);
+
+      return MappingResult.LINK_ERROR;
+
+    } else { // retval == 0, hardlink creation successful
+
+      FileStat accountFileStat = PosixUtil
+        .getFileStat(accountFile.getAbsolutePath());
+
+      if (accountFileStat.nlink() == 2) {
+
+        log.debug("Mapping CREATED: {} -> {}", accountFile.getName(),
+          subjectIdentifier);
+
+        return MappingResult.SUCCESS;
+      }
+
+      if (accountFileStat.nlink() > 2) {
+
+        log.debug("NLINK == {}! Removing just created link {} -> {}",
+          accountFileStat.nlink(), accountFile.getName(), subjectIdentifier);
+
+        subjectFile.delete();
+
+        return MappingResult.POOL_ACCOUNT_BUSY;
+      }
+
+      // Should never happen
+      return MappingResult.INDETERMINATE;
+    }
+  }
+
+  /**
+   * Returns a random integer between a specified range
+   * 
+   * @param lowerBound
+   *          the range lower bound
+   * @param upperBound
+   *          the range upper bound
+   * 
+   * @return the random integer
+   */
+  private long getRandomInteger(int lowerBound, int upperBound) {
+
+    int sleepTime = random.nextInt((upperBound - lowerBound) + 1) + lowerBound;
+    return (long) sleepTime;
+
+  }
+
+  /**
+   * Acquires a lock on a pool account file. This method will cycle and sleep
+   * until a lock is acquired on a pool account file.
+   * 
+   * @param lockFile
+   *          the lock file linked to the pool account file
+   * @param accountFile
+   *          the pool account file
+   * @return the acquired lock
+   */
+  private FileLock acquireLock(RandomAccessFile lockFile, File accountFile) {
+
+    // The following times are in msecs
+    final int SLEEP_TIME_LOWER_BOUND = 10;
+    final int SLEEP_TIME_UPPER_BOUND = 100;
+
+    FileLock lock = null;
+
+    do {
+      try {
+
+        lock = lockFile.getChannel().tryLock();
+
+      } catch (OverlappingFileLockException e) {
+        // This is normal when multiple threads in the same JVM
+        // compete for a lock
+      } catch (IOException e) {
+
+        log.error("Error acquiring lock", e);
+        return null;
+
+      }
+
+      if (lock == null) {
+
+        try {
+
+          long randomSleepTime = getRandomInteger(SLEEP_TIME_LOWER_BOUND,
+            SLEEP_TIME_UPPER_BOUND);
+
+          log.debug("Failed to acquire lock on account {}, sleeping {} msecs",
+            accountFile.getName(), randomSleepTime);
+
+          Thread.currentThread().sleep(randomSleepTime);
+
+        } catch (InterruptedException e) {
+
+        }
+      }
+    } while (lock == null);
+
+    return lock;
+  }
+
+  /**
+   * Creates a lock file for a given account file
+   * 
+   * @param accountFile
+   *          the pool account file for which the lock is created
+   * @return a {@link RandomAccessFile} lock file
+   * 
+   * @throws FileNotFoundException
+   *           should never happen
+   */
+  private RandomAccessFile createLockFile(File accountFile)
+    throws FileNotFoundException {
+
+    File lockFileName = new File(gridMapDirectory_.getAbsolutePath(),
+      String.format(".lock.%s", accountFile.getName()));
+
+    return new RandomAccessFile(lockFileName, "rw");
+  }
+
+  /**
    * Creates a mapping between an account and a subject identified by the
    * account key.
    * 
@@ -284,103 +459,120 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
    * 
    * @return the account to which the subject was mapped or null if not account
    *         was available
+   * 
    */
-  protected synchronized String createMapping(final String accountNamePrefix,
+  protected String createMapping(final String accountNamePrefix,
     final String subjectIdentifier) {
 
-    String lLockFileName = String.format(".lock_%s", subjectIdentifier);
-    File lLockFile = new File(gridMapDirectory_.getAbsolutePath(),
-      lLockFileName);
-    Long lThreadId = Thread.currentThread().getId();
+    String subjectIdentifierFilePath = buildSubjectIdentifierFilePath(
+      subjectIdentifier);
 
-    RandomAccessFile lFile = null;
-    FileChannel lFileChannel = null;
-    FileLock lLock = null;
-    String lAccountName = null;
+    File subjectFile = new File(subjectIdentifierFilePath);
+    
+    FileLock lock = null;
+    RandomAccessFile lockFile = null;
 
     try {
-      
-      lFile = new RandomAccessFile(lLockFile, "rw");
-      lFileChannel = lFile.getChannel();
-      lLock = lFileChannel.lock();
 
-      String subjectIdentifierFilePath = buildSubjectIdentifierFilePath(
-        subjectIdentifier);
-      File lSubjectFile = new File(subjectIdentifierFilePath);
+      for (File accountFile : getAccountFiles(accountNamePrefix)) {
 
-      if (!lSubjectFile.exists()) {
+        log.debug(
+          "Checking if grid map account {} may be linked to subject identifier {}",
+          accountFile.getName(), subjectIdentifier);
 
-        for (File accountFile : getAccountFiles(accountNamePrefix)) {
-          
-          log.debug(
-            "Checking if grid map account {} may be linked to subject identifier {}",
-            accountFile.getName(), subjectIdentifier);
+        lockFile = createLockFile(accountFile);
 
-          FileStat accountFileStat = PosixUtil
-            .getFileStat(accountFile.getAbsolutePath());
-          
-          if (accountFileStat.nlink() == 1) {
-          
-            PosixUtil.createHardlink(accountFile.getAbsolutePath(),
-              subjectIdentifierFilePath);
-            
-            accountFileStat = PosixUtil
-              .getFileStat(accountFile.getAbsolutePath());
-            
-            if (accountFileStat.nlink() == 2) {
-            
-              lAccountName = accountFile.getName();
-              
-              log.debug("Linked subject identifier {} to pool account file {}",
-                subjectIdentifier, lAccountName);
-              
-              break;
-            }
-            
-            if (PosixUtil.getFileStat(subjectIdentifierFilePath).nlink() < 2) {
-              new File(subjectIdentifierFilePath).delete();
-            }
+        if (lockFile == null) {
+          log.error("Error creating lock file");
+          return null;
+        }
+
+        lock = acquireLock(lockFile, accountFile);
+
+        if (lock == null) {
+          log.error("Error acquiring lock");
+          return null;
+        }
+
+        FileStat accountFileStat = PosixUtil
+          .getFileStat(accountFile.getAbsolutePath());
+
+        if (subjectFile.exists()) {
+
+          String existingMapping = null;
+
+          try {
+            existingMapping = getExistingMapping(accountNamePrefix,
+              subjectIdentifier);
+          } catch (ObligationProcessingException e) {
+            log.error(
+              "Error resolving existing mapping for subject identifier {}",
+              subjectIdentifier, e);
           }
+
+          return existingMapping;
+
+        }
+
+        if (accountFileStat.nlink() >= 2) {
+          log.debug("Pool account {} already allocated, moving on",
+            accountFile.getName());
+          lock.release();
+          continue;
+        }
+
+        MappingResult result = linkSubjectToPoolAccount(subjectIdentifier,
+          accountFile, subjectFile);
+
+        switch (result) {
+
+        case POOL_ACCOUNT_BUSY:
+          log.error("Pool account {} busy. Backing off for subject {}",
+            accountFile.getName(), subjectIdentifier);
           
-          log.debug("Could not map to account {}", accountFile.getName());
-        }
-        
-        if (lAccountName == null) {
-        
+          lock.release();
+          continue;
+
+        case SUCCESS:
+          return accountFile.getName();
+
+        case INDETERMINATE:
           log.error(
-            "createMapping: {} pool account is full. Impossible to map {} [thread-id: {}]",
-            accountNamePrefix, subjectIdentifier, lThreadId);
+            "Indeterminate mapping result for subject {} and pool account {}",
+            subjectIdentifier, accountFile.getName());
+          return null;
+
+        case LINK_ERROR:
+          log.error("Error link subject {} to pool account {}",
+            subjectIdentifier, accountFile.getName());
+          return null;
         }
+      }
+
+      log.error(
+        "Pool account {} fully allocated. Impossible to return a mapping for subject {}",
+        accountNamePrefix, subjectIdentifier);
+      return null;
+
+    } catch (IOException e) {
       
-      } else {
-        
-        if (PosixUtil.getFileStat(subjectIdentifierFilePath).nlink() < 2) {
-          new File(subjectIdentifierFilePath).delete();
-        }
-      }
-    } catch (Throwable t) {
-      log.error("createMapping: error creating mapping [thread-id: {}]",
-        lThreadId);
-      lAccountName = null;
+      log.error("Error creating lock file: {}", e.getMessage(), e);
+      return null;
+
     } finally {
-      if (lLock != null) {
-        try {
-          lLock.release();
-        } catch (IOException e) {
+
+      try {
+
+        if (lockFile != null) {
+          lockFile.close();
         }
-      }
-      if (lFile != null) {
-        try {
-          lFile.close();
-        } catch (IOException e) {
+
+        if (lock != null) {
+          lock.release();
         }
-      }
-      if (lLockFile != null) {
-        lLockFile.delete();
+      } catch (IOException e) {
       }
     }
-
-    return lAccountName;
   }
 
   /**
