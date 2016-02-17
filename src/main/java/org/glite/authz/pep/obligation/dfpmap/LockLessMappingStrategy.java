@@ -161,6 +161,9 @@ public class LockLessMappingStrategy implements GridmapDirGetMappingStrategy {
         }
 
         if (retval != 0) {
+          LOG.error("Link error when linking {} to {}.",
+            subjectFile.getName(), account.getName());
+          
           return LookupResult.linkError();
         }
 
