@@ -18,17 +18,11 @@
 package org.glite.authz.pep.obligation.dfpmap;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.channels.FileLock;
-import java.nio.channels.OverlappingFileLockException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
-import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -52,19 +46,9 @@ import eu.emi.security.authn.x509.impl.OpensslNameUtils;
  */
 public class GridMapDirPoolAccountManager implements PoolAccountManager {
 
-  public enum MappingResult {
-    SUCCESS,
-    SUBJECT_ALREADY_MAPPED,
-    LINK_ERROR,
-    POOL_ACCOUNT_BUSY,
-    INDETERMINATE
-  }
-
   /** Class logger. */
   private Logger log = LoggerFactory
     .getLogger(GridMapDirPoolAccountManager.class);
-
-  private final Random random = new Random();
 
   /** Directory containing the grid mappings. */
   private final File gridMapDirectory_;
@@ -125,9 +109,8 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
   public GridMapDirPoolAccountManager(final File gridMapDir,
     final boolean useSecondaryGroupNamesForMapping) {
 
-    this(LockLessMappingStrategy.createWithAccountShuffling(gridMapDir), 
-      gridMapDir,
-      useSecondaryGroupNamesForMapping);
+    this(LockLessMappingStrategy.createWithAccountShuffling(gridMapDir),
+      gridMapDir, useSecondaryGroupNamesForMapping);
 
   }
 
@@ -229,8 +212,8 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
         "Checking if there is an existing account mapping for subject {} with primary group {} and secondary groups {}",
         subjectDN.getName(), primaryGroup, secondaryGroups);
 
-      mappedAccount = mappingStrategy.getMapping(accountNamePrefix,
-        subjectDN, subjectIdentifierFile);
+      mappedAccount = mappingStrategy.getMapping(accountNamePrefix, subjectDN,
+        subjectIdentifierFile);
 
       if (mappedAccount == null) {
 
@@ -241,7 +224,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
       } else {
         accountName = mappedAccount.getName();
 
-        PosixUtil.touchFile(subjectIdentifierFile);
+        mappedAccount.touch();
 
         log.debug(
           "Mapped subject {} with primary group {} and secondary groups {} to pool account {}",

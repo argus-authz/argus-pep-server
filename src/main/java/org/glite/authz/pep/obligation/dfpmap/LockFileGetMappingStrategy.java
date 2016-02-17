@@ -30,12 +30,19 @@ import java.util.regex.Pattern;
 
 import javax.security.auth.x500.X500Principal;
 
-import org.glite.authz.pep.obligation.dfpmap.GridMapDirPoolAccountManager.MappingResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class LockFileGetMappingStrategy
   implements GridmapDirGetMappingStrategy {
+  
+  public enum MappingResult {
+    SUCCESS,
+    SUBJECT_ALREADY_MAPPED,
+    LINK_ERROR,
+    POOL_ACCOUNT_BUSY,
+    INDETERMINATE
+  }
 
   public static final Logger LOG = LoggerFactory
     .getLogger(LockFileGetMappingStrategy.class);
