@@ -209,11 +209,11 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
       }
 
       if (accountName == null) {
-        
+
         log.debug(
           "No pool account was available to which subject {} with primary group {} and secondary groups {} could be mapped",
           subjectDN.getName(), primaryGroup, secondaryGroups);
-        
+
       } else {
         PosixUtil.touchFile(subjectIdentifierFile);
         log.debug(
@@ -221,12 +221,12 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
           subjectDN.getName(), primaryGroup, secondaryGroups, accountName);
       }
 
-    } catch (Exception e) {
+    } catch (Throwable t) {
 
-      String msg = String.format("Error mapping account: %s", e.getMessage());
-      log.error(msg, e);
-      
-      throw new ObligationProcessingException(e);
+      String msg = String.format("Error mapping account: %s", t.getMessage());
+      log.error(msg, t);
+
+      throw new ObligationProcessingException(new Exception(t));
     }
 
     return accountName;
@@ -336,7 +336,8 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 
     log.debug("Linking {} -> {}", accountFile.getName(), subjectIdentifier);
 
-    int retval = PosixUtil.createHardlink(accountFile.getFile(), subjectFile.getFile());
+    int retval = PosixUtil.createHardlink(accountFile.getFile(),
+      subjectFile.getFile());
 
     if (retval != 0) {
 
@@ -493,7 +494,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
    * @param subjectIdentifier
    *          key identifying the subject mapped to the account
    * 
-   * @return the account to which the subject was mapped or null if not account
+   * @return the account to which the subject was mapped or null if no account
    *         was available
    * 
    */
@@ -505,16 +506,41 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 
     File subjectFile = new File(subjectIdentifierFilePath);
 
-    FileLock lock = null;
-    RandomAccessFile lockFile = null;
+    for (File accountFile : getAccountFiles(accountNamePrefix)) {
 
-    try {
+      FileLock lock = null;
+      RandomAccessFile lockFile = null;
 
-      for (File accountFile : getAccountFiles(accountNamePrefix)) {
+      try {
 
         log.debug(
           "Checking if grid map account {} may be linked to subject identifier {}",
           accountFile.getName(), subjectIdentifier);
+
+        // At every cycle check if in the meanwhile another thread/process
+        // has created a mapping suitable for this subject identifier
+        if (subjectFile.exists()) {
+
+          UnixFile linkedPoolAccountFile = lookupPoolAccountLinkedToSubject(
+            accountNamePrefix, UnixFile.from(subjectFile));
+
+          if (linkedPoolAccountFile.nlink() != 2) {
+            log.error(
+              "Found mapped pool account {} for subject id {} with link count != 2. inode: {}. The corrupt mapping should be cleaned up",
+              linkedPoolAccountFile.getName(), subjectIdentifier,
+              linkedPoolAccountFile.ino());
+
+            // There's not much we can do now
+            return null;
+          }
+
+          log.debug(
+            "Found existing pool account {} for subject id {} with link count 2. inode: {}",
+            linkedPoolAccountFile.getName(), subjectIdentifier,
+            linkedPoolAccountFile.ino());
+
+          return linkedPoolAccountFile.getName();
+        }
 
         lockFile = createLockFile(accountFile);
 
@@ -530,43 +556,29 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
           return null;
         }
 
-        if (subjectFile.exists()) {
-
-          String existingMapping = null;
-
-          try {
-            existingMapping = getExistingMapping(accountNamePrefix,
-              subjectIdentifier);
-          } catch (ObligationProcessingException e) {
-            log.error(
-              "Error resolving existing mapping for subject identifier {}",
-              subjectIdentifier, e);
-          }
-
-          return existingMapping;
-
-        }
-
         UnixFile accountUnixFile = UnixFile.from(accountFile);
 
         if (accountUnixFile.nlink() >= 2) {
-          lock.release();
 
           if (accountUnixFile.nlink() > 2) {
-            log.warn("Pool account {} currently bound to more than one subject",
-              accountUnixFile.getName());
+            // Warn about corrupted pool accounts, we cannot do more than this
+
+            log.error(
+              "Pool account {} corrupted and currently bound to more than one subject [inode: {}, nlinks: {}]",
+              accountUnixFile.getName(), accountUnixFile.ino(),
+              accountUnixFile.nlink());
 
           } else {
+            
             log.debug("Pool account {} already allocated, moving on",
               accountFile.getName());
           }
 
           continue;
         }
-        
+
         MappingResult result = linkSubjectToPoolAccount(subjectIdentifier,
-          accountUnixFile, 
-          UnixFile.from(subjectFile));
+          accountUnixFile, UnixFile.from(subjectFile));
 
         switch (result) {
 
@@ -574,7 +586,6 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
           log.error("Pool account {} busy. Backing off for subject {}",
             accountFile.getName(), subjectIdentifier);
 
-          lock.release();
           continue;
 
         case SUCCESS:
@@ -591,30 +602,33 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
             subjectIdentifier, accountFile.getName());
           return null;
         }
-      }
-
-      log.error(
-        "Pool account {} fully allocated. Impossible to return a mapping for subject {}",
-        accountNamePrefix, subjectIdentifier);
-      return null;
-
-    } catch (IOException e) {
-
-      log.error("Error creating lock file: {}", e.getMessage(), e);
-      return null;
-
-    } finally {
-
-      try {
-
-        if (lockFile != null) {
-          lockFile.close();
-        }
-
-        if (lock != null) {
-          lock.release();
-        }
       } catch (IOException e) {
+
+        log.error("Error creating lock file: {}", e.getMessage(), e);
+        return null;
+
+      } finally {
+
+        // Closing the lock file releases the lock
+        safeCloseLockFile(lockFile);
+
+      }
+    }
+
+    log.error(
+      "Pool account {} fully allocated. Impossible to return a mapping for subject {}",
+      accountNamePrefix, subjectIdentifier);
+    return null;
+
+  }
+
+  private void safeCloseLockFile(RandomAccessFile f) {
+
+    if (f != null) {
+      try {
+        f.close();
+      } catch (IOException e) {
+
       }
     }
   }
