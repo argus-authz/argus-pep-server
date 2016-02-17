@@ -54,9 +54,10 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 
   public enum MappingResult {
     SUCCESS,
-    INDETERMINATE,
+    SUBJECT_ALREADY_MAPPED,
     LINK_ERROR,
-    POOL_ACCOUNT_BUSY
+    POOL_ACCOUNT_BUSY,
+    INDETERMINATE
   }
 
   /** Class logger. */
@@ -190,6 +191,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
     File subjectIdentifierFile = new File(
       buildSubjectIdentifierFilePath(subjectIdentifier));
 
+    UnixFile mappedAccount = null;
     String accountName = null;
 
     try {
@@ -200,22 +202,25 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 
       if (!subjectIdentifierFile.exists()) {
 
-        accountName = createMapping(accountNamePrefix, subjectIdentifier);
+        mappedAccount = createMapping(accountNamePrefix, subjectIdentifier);
 
       } else {
 
-        accountName = getExistingMapping(accountNamePrefix, subjectIdentifier);
+        mappedAccount = getExistingMapping(accountNamePrefix, subjectIdentifier);
 
       }
 
-      if (accountName == null) {
+      if (mappedAccount == null) {
 
         log.debug(
           "No pool account was available to which subject {} with primary group {} and secondary groups {} could be mapped",
           subjectDN.getName(), primaryGroup, secondaryGroups);
 
       } else {
+        accountName = mappedAccount.getName();
+        
         PosixUtil.touchFile(subjectIdentifierFile);
+        
         log.debug(
           "Mapped subject {} with primary group {} and secondary groups {} to pool account {}",
           subjectDN.getName(), primaryGroup, secondaryGroups, accountName);
@@ -233,17 +238,17 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
   }
 
   /***
-   * Get account of name of already mapped subject DN.
+   * Get account of the already mapped subject DN.
    * 
    * @param accountNamePrefix
    *          Posix account prefix.
    * @param subjectIdentifier
    *          User subject DN
-   * @return Posix account name
+   * @return the unix file for the account that is mapped Posix account name
    * @throws ObligationProcessingException
    *           Raised if the mapping is corrupted.
    */
-  protected String getExistingMapping(final String accountNamePrefix,
+  protected UnixFile getExistingMapping(final String accountNamePrefix,
     final String subjectIdentifier) throws ObligationProcessingException {
 
     File subjectIdentifierFile = new File(
@@ -281,7 +286,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
           + accountFile.nlink());
     }
 
-    return accountFile.getName();
+    return accountFile;
 
   }
 
@@ -358,8 +363,10 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
         }
 
         log.debug(
-          "Pool account {} bound to different subject identifier. Backing off");
-        return MappingResult.POOL_ACCOUNT_BUSY;
+          "Subject identifier {} is now linked to a different pool account. Backing off",
+          subjectIdentifier);
+
+        return MappingResult.SUBJECT_ALREADY_MAPPED;
       }
 
       log.error("Link error while creating mapping {} -> {}: error code {}.",
@@ -381,7 +388,8 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 
       if (accountFile.nlink() > 2) {
 
-        log.debug("NLINK == {}! Removing just created link {} -> {}",
+        log.debug(
+          "Pool account has become busy. NLINK == {}! Removing just created link {} -> {}",
           accountFile.nlink(), accountFile.getName(), subjectIdentifier);
 
         subjectFile.delete();
@@ -486,6 +494,42 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
   }
 
   /**
+   * Search for the first account file in a pool account whose inode is equal to
+   * the subjectfile. This relies on {@link #lookupPoolAccountLinkedToSubject(String, UnixFile)} 
+   * but performs additional checks.
+   * 
+   * @param accountNamePrefix
+   *          the pool account name prefix
+   * @param subjectFile
+   *          the subject file
+   * @return a {@link UnixFile} for the pool account whose inode matches,
+   *         <code>null</code> if no account is found, the number of link is invalid or the file passed as
+   *         argument does not exist
+   */
+  private UnixFile lookupAndCheckLinkedPoolAccount(String accountNamePrefix,
+    UnixFile subjectFile) {
+
+    UnixFile linkedPoolAccountFile = lookupPoolAccountLinkedToSubject(
+      accountNamePrefix, subjectFile);
+
+    if (linkedPoolAccountFile.nlink() != 2) {
+      log.error(
+        "Found mapped pool account {} for subject id {} with link count != 2. inode: {}. The corrupt mapping should be cleaned up",
+        linkedPoolAccountFile.getName(), subjectFile.getName(),
+        linkedPoolAccountFile.ino());
+
+      return null;
+    }
+
+    log.debug(
+      "Found existing pool account {} for subject id {} with link count 2. inode: {}",
+      linkedPoolAccountFile.getName(), subjectFile.getName(),
+      linkedPoolAccountFile.ino());
+
+    return linkedPoolAccountFile;
+  }
+
+  /**
    * Creates a mapping between an account and a subject identified by the
    * account key.
    * 
@@ -494,11 +538,11 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
    * @param subjectIdentifier
    *          key identifying the subject mapped to the account
    * 
-   * @return the account to which the subject was mapped or null if no account
+   * @return the unix file for account to which the subject was mapped or null if no account
    *         was available
    * 
    */
-  protected String createMapping(final String accountNamePrefix,
+  protected UnixFile createMapping(final String accountNamePrefix,
     final String subjectIdentifier) {
 
     String subjectIdentifierFilePath = buildSubjectIdentifierFilePath(
@@ -521,25 +565,10 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
         // has created a mapping suitable for this subject identifier
         if (subjectFile.exists()) {
 
-          UnixFile linkedPoolAccountFile = lookupPoolAccountLinkedToSubject(
-            accountNamePrefix, UnixFile.from(subjectFile));
-
-          if (linkedPoolAccountFile.nlink() != 2) {
-            log.error(
-              "Found mapped pool account {} for subject id {} with link count != 2. inode: {}. The corrupt mapping should be cleaned up",
-              linkedPoolAccountFile.getName(), subjectIdentifier,
-              linkedPoolAccountFile.ino());
-
-            // There's not much we can do now
-            return null;
-          }
-
-          log.debug(
-            "Found existing pool account {} for subject id {} with link count 2. inode: {}",
-            linkedPoolAccountFile.getName(), subjectIdentifier,
-            linkedPoolAccountFile.ino());
-
-          return linkedPoolAccountFile.getName();
+          UnixFile linkedPoolAccountFile = lookupAndCheckLinkedPoolAccount(accountNamePrefix, 
+            UnixFile.from(subjectFile));
+            
+          return linkedPoolAccountFile;
         }
 
         lockFile = createLockFile(accountFile);
@@ -569,7 +598,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
               accountUnixFile.nlink());
 
           } else {
-            
+
             log.debug("Pool account {} already allocated, moving on",
               accountFile.getName());
           }
@@ -577,19 +606,35 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
           continue;
         }
 
+        UnixFile subjectUnixFile = UnixFile.from(subjectFile);
+        
         MappingResult result = linkSubjectToPoolAccount(subjectIdentifier,
-          accountUnixFile, UnixFile.from(subjectFile));
+          accountUnixFile, subjectUnixFile);
 
         switch (result) {
 
+        case SUBJECT_ALREADY_MAPPED:
+          log.warn(
+            "Found mapping for subject {} while attempting mapping creation on pool account {}.",
+            subjectIdentifier, accountFile.getName());
+          
+          // Release the lock before looking for the already mapped pool account
+          lock.release();
+          
+          // Let's find out which mapping was created under our nose
+          UnixFile mappedAccount = lookupAndCheckLinkedPoolAccount(accountNamePrefix, 
+            subjectUnixFile);
+          
+          return mappedAccount;
+
         case POOL_ACCOUNT_BUSY:
-          log.error("Pool account {} busy. Backing off for subject {}",
+          log.error("Pool account {} become busy. Backing off for subject {}",
             accountFile.getName(), subjectIdentifier);
 
           continue;
 
         case SUCCESS:
-          return accountFile.getName();
+          return accountUnixFile;
 
         case INDETERMINATE:
           log.error(
@@ -598,7 +643,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
           return null;
 
         case LINK_ERROR:
-          log.error("Error link subject {} to pool account {}",
+          log.error("Error linking subject {} to pool account {}",
             subjectIdentifier, accountFile.getName());
           return null;
         }

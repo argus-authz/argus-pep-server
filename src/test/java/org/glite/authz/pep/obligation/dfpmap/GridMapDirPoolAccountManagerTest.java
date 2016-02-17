@@ -152,7 +152,7 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
     System.out.println("------------testCreateMapping------------");
     String prefix = "dteam";
     String identifier = "%2fcn%3djohn%20doe:dteam";
-    String accountName = gridmapPool.createMapping(prefix, identifier);
+    String accountName = gridmapPool.createMapping(prefix, identifier).getName();
     System.out
       .println("Identifier '" + identifier + "' mapped to: " + accountName);
     assertTrue(accountName + " doesn't match dteam pool",
