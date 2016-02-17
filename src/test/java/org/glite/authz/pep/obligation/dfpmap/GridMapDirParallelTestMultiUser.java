@@ -18,7 +18,6 @@
 package org.glite.authz.pep.obligation.dfpmap;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -34,15 +33,13 @@ import java.util.concurrent.Future;
 
 import javax.security.auth.x500.X500Principal;
 
-import org.apache.commons.io.FileUtils;
-
 import junit.framework.Assert;
 import junit.framework.TestCase;
 
 public class GridMapDirParallelTestMultiUser extends TestCase {
 
-  public static final int NUM_THREADS = 10;
-  public static final int NUM_ACCOUNTS = 20;
+  public static final int NUM_THREADS = 50;
+  public static final int NUM_ACCOUNTS = 50;
   public static final int NUM_ITERATIONS = 1;
 
   File gridmapdir = null;
@@ -55,50 +52,20 @@ public class GridMapDirParallelTestMultiUser extends TestCase {
   final String subjectPrefix = "C=IT, O=IGI, CN=test";
   X500Principal[] principals = new X500Principal[NUM_THREADS];
 
-  private File createTempGridMapDir() throws IOException {
-
-    File temp = File.createTempFile("test-gridmapdir", ".junit");
-    if (!(temp.delete())) {
-      throw new IOException(
-        "Could not delete temp file: " + temp.getAbsolutePath());
-    }
-
-    if (!(temp.mkdir())) {
-      throw new IOException(
-        "Could not create temp directory: " + temp.getAbsolutePath());
-    }
-
-    temp.deleteOnExit();
-
-    for (int idx = 1; idx <= NUM_ACCOUNTS; idx++) {
-      String lFileName = String.format("%s%02d", accountPrefix, idx);
-      File f = new File(temp, lFileName);
-      f.createNewFile();
-      f.deleteOnExit();
-    }
-
-    return temp;
-  }
-
-  private boolean deleteTempGridMapDir(final File path) {
-
-    boolean lRetVal = false;
-    try {
-      FileUtils.deleteDirectory(path);
-      lRetVal = true;
-    } catch (IOException e) {
-      lRetVal = false;
-    }
-    return lRetVal;
-  }
-
   @Override
   protected void setUp() throws Exception {
 
     super.setUp();
-    gridmapdir = createTempGridMapDir();
+    gridmapdir = TestUtils.createTempGridMapDir(accountPrefix, NUM_ACCOUNTS);
 
-    poolAccountManager = new GridMapDirPoolAccountManager(gridmapdir, true);
+    GridmapDirGetMappingStrategy locklessMappingStragy = LockLessMappingStrategy
+      .createWithAccountShuffling(gridmapdir);
+
+    GridmapDirGetMappingStrategy lockFileMappingStrategy = new LockFileGetMappingStrategy(
+      gridmapdir);
+
+    poolAccountManager = new GridMapDirPoolAccountManager(
+      locklessMappingStragy, gridmapdir, true);
 
     for (int i = 0; i < NUM_THREADS; i++) {
       String subject = String.format("%s%d", subjectPrefix, i);
@@ -112,7 +79,7 @@ public class GridMapDirParallelTestMultiUser extends TestCase {
 
     super.tearDown();
     assertTrue("Failed to delete temp gridmapdir: " + gridmapdir,
-      deleteTempGridMapDir(gridmapdir));
+      TestUtils.deleteTempGridMapDir(gridmapdir));
   }
 
   public void testParallelMappingForMultipleUsers() {
@@ -191,7 +158,7 @@ public class GridMapDirParallelTestMultiUser extends TestCase {
       } catch (InterruptedException e) {
 
       }
-      
+
       return manager.mapToAccount(accountNamePrefix, subject, primaryGroup,
         secondaryGroups);
 

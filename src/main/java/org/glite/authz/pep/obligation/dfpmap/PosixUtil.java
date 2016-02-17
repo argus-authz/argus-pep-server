@@ -121,7 +121,7 @@ public class PosixUtil {
   public static void touchFile(final File file) {
 
     try {
-      log.debug("touch {}", file.getAbsolutePath());
+      log.trace("touch {}", file.getAbsolutePath());
       if (!file.exists()) {
         file.createNewFile();
       }

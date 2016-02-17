@@ -35,8 +35,14 @@ public class UnixFile {
 
   private final File file;
   private FileStat stat;
+  
+  public static UnixFile forNonExistingFile(File f){
+    
+    UnixFile uf = new UnixFile(f);
+    return uf;
+  }
 
-  public static UnixFile from(File f) {
+  public static UnixFile forExistingFile(File f) {
 
     UnixFile uf = new UnixFile(f);
     uf.stat();

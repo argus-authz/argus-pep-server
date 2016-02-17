@@ -20,14 +20,18 @@ package org.glite.authz.pep.obligation.dfpmap;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.security.auth.x500.X500Principal;
 
 import org.apache.commons.httpclient.URIException;
 import org.apache.commons.io.FileUtils;
+import org.glite.authz.pep.obligation.ObligationProcessingException;
 
 import eu.emi.security.authn.x509.impl.OpensslNameUtils;
+import junit.framework.Assert;
 import junit.framework.TestCase;
 
 /**
@@ -108,6 +112,85 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
       deleteTempGridMapDir(gridmapdir));
   }
 
+  public void testMappingPersistency() {
+
+    String prefix = "dteam";
+    String subjectPrefix = "C=IT, O=IGI, CN=test";
+
+    Map<X500Principal, String> mappings = new HashMap<X500Principal, String>();
+
+    for (int i = 0; i < 3; i++) {
+      X500Principal subject = new X500Principal(
+        String.format("%s%d", subjectPrefix, i));
+
+      try {
+        String accountName = gridmapPool.mapToAccount(prefix, subject, null,
+          null);
+
+        Assert.assertNotNull(accountName);
+        mappings.put(subject, accountName);
+
+      } catch (ObligationProcessingException e) {
+        Assert.fail(e.getMessage());
+      }
+    }
+
+    for (Map.Entry<X500Principal, String> e : mappings.entrySet()) {
+
+      try {
+        String accountName = gridmapPool.mapToAccount(prefix, e.getKey(), null,
+          null);
+        Assert.assertEquals(e.getValue(), accountName);
+
+      } catch (ObligationProcessingException ex) {
+        Assert.fail(ex.getMessage());
+      }
+
+    }
+  }
+
+  public void testSaturatedPool() {
+
+    String prefix = "dteam";
+    String subjectPrefix = "C=IT, O=IGI, CN=test";
+
+    String account0 = null;
+    X500Principal subject0 = null;
+
+    for (int i = 0; i < 3; i++) {
+      X500Principal subject = new X500Principal(
+        String.format("%s%d", subjectPrefix, i));
+      try {
+        String accountName = gridmapPool.mapToAccount(prefix, subject, null,
+          null);
+
+        Assert.assertNotNull(accountName);
+
+        if (i == 0) {
+          subject0 = subject;
+          account0 = accountName;
+        }
+
+      } catch (ObligationProcessingException e) {
+        Assert.fail(e.getMessage());
+      }
+    }
+
+    try {
+
+      X500Principal subject = new X500Principal(
+        String.format("%s4", subjectPrefix));
+
+      Assert.assertNull(gridmapPool.mapToAccount(prefix, subject, null, null));
+      Assert.assertEquals(account0,
+        gridmapPool.mapToAccount(prefix, subject0, null, null));
+
+    } catch (ObligationProcessingException e) {
+
+    }
+
+  }
+
   public void testPoolAccountNamesPrefixed() {
 
     System.out.println("------------testPoolAccountNamesPrefixed------------");
@@ -144,19 +227,6 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
     System.out.println("poolAccountNames: " + accountNames);
     assertTrue("Empty pool account names", accountNames.size() > 0);
     assertEquals(prefixes.size() * N_POOL, accountNames.size());
-    System.out.println("TEST PASSED");
-  }
-
-  public void testCreateMapping() {
-
-    System.out.println("------------testCreateMapping------------");
-    String prefix = "dteam";
-    String identifier = "%2fcn%3djohn%20doe:dteam";
-    String accountName = gridmapPool.createMapping(prefix, identifier).getName();
-    System.out
-      .println("Identifier '" + identifier + "' mapped to: " + accountName);
-    assertTrue(accountName + " doesn't match dteam pool",
-      accountName.matches(prefix + "\\d+"));
     System.out.println("TEST PASSED");
   }
 

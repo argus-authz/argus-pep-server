@@ -33,7 +33,7 @@ import junit.framework.TestCase;
 
 public class GridMapDirParallelTestSingleUser extends TestCase {
 
-  static int N_THREAD = 10;
+  static int N_THREAD = 20;
 
   final int N_POOL = 20;
 
