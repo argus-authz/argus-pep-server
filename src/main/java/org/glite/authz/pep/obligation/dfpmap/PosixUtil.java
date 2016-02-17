@@ -53,7 +53,6 @@ public class PosixUtil {
     return posix.stat(file);
   }
 
-
   /**
    * Creates a symbolic link, where targetPath point to sourcePath.
    * 
@@ -91,6 +90,25 @@ public class PosixUtil {
     }
 
     return 0;
+  }
+
+  /**
+   * Creates a hard link, where targetFile points to sourceFile. This method is
+   * a shortcut for {@link #createHardlink(String, String)}, which takes two
+   * paths. The paths are from file using {@link File#getAbsolutePath()}
+   * 
+   * @param sourceFile
+   *          the source file
+   * @param targetFile
+   *          the target file
+   * 
+   * @return 0 if the call is succesful, the ERRNO value in case of errors
+   */
+  public static int createHardlink(final File sourceFile,
+    final File targetFile) {
+
+    return createHardlink(sourceFile.getAbsolutePath(),
+      targetFile.getAbsolutePath());
   }
 
   /**

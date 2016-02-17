@@ -29,7 +29,6 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,7 +38,6 @@ import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.glite.authz.common.util.Strings;
 import org.glite.authz.pep.obligation.ObligationProcessingException;
-import org.jruby.ext.posix.FileStat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -197,7 +195,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
     try {
 
       log.debug(
-        "mapToAccount: Checking if there is an existing account mapping for subject {} with primary group {} and secondary groups {}",
+        "Checking if there is an existing account mapping for subject {} with primary group {} and secondary groups {}",
         subjectDN.getName(), primaryGroup, secondaryGroups);
 
       if (!subjectIdentifierFile.exists()) {
@@ -211,19 +209,23 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
       }
 
       if (accountName == null) {
+        
         log.debug(
-          "mapToAccount: No pool account was available to which subject {} with primary group {} and secondary groups {} could be mapped",
+          "No pool account was available to which subject {} with primary group {} and secondary groups {} could be mapped",
           subjectDN.getName(), primaryGroup, secondaryGroups);
+        
       } else {
         PosixUtil.touchFile(subjectIdentifierFile);
         log.debug(
-          "mapToAccount: Account mapped subject {} with primary group {} and secondary groups {} to pool account {}",
+          "Mapped subject {} with primary group {} and secondary groups {} to pool account {}",
           subjectDN.getName(), primaryGroup, secondaryGroups, accountName);
       }
 
     } catch (Exception e) {
-      String lMessage = "mapToAccount: Error managing account mapping";
-      log.error(lMessage, e);
+
+      String msg = String.format("Error mapping account: %s", e.getMessage());
+      log.error(msg, e);
+      
       throw new ObligationProcessingException(e);
     }
 
@@ -233,62 +235,85 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
   /***
    * Get account of name of already mapped subject DN.
    * 
-   * @param pAccountNamePrefix
+   * @param accountNamePrefix
    *          Posix account prefix.
-   * @param pSubjectIdentifier
+   * @param subjectIdentifier
    *          User subject DN
    * @return Posix account name
    * @throws ObligationProcessingException
    *           Raised if the mapping is corrupted.
    */
-  protected String getExistingMapping(final String pAccountNamePrefix,
-    final String pSubjectIdentifier) throws ObligationProcessingException {
+  protected String getExistingMapping(final String accountNamePrefix,
+    final String subjectIdentifier) throws ObligationProcessingException {
 
     File subjectIdentifierFile = new File(
-      buildSubjectIdentifierFilePath(pSubjectIdentifier));
-    long lThreadId = Thread.currentThread().getId();
-    String lAccountName = null;
+      buildSubjectIdentifierFilePath(subjectIdentifier));
 
-    FileStat subjectIdentifierFileStat = PosixUtil
-      .getFileStat(subjectIdentifierFile.getAbsolutePath());
-    int lNumLink = subjectIdentifierFileStat.nlink();
+    UnixFile subjectIdFile = UnixFile.from(subjectIdentifierFile);
 
-    if (lNumLink < 2) {
+    if (subjectIdFile.nlink() < 2) {
+
       log.error(
-        "getMapping: The subject identifier file {} has a link count different than 2 [inode: {} nlink: {} thread-id: {}]: This mapping is corrupted and can not be used",
-        subjectIdentifierFile.getAbsolutePath(),
-        subjectIdentifierFileStat.ino(), subjectIdentifierFileStat.nlink(),
-        lThreadId);
+        "The subject identifier file {} has link count 1. This mapping is corrupted, cleaning it up.",
+        subjectIdFile.getAbsolutePath());
+
+      subjectIdFile.delete();
+
       throw new ObligationProcessingException(
-        "Unable to map subject to a POSIX account: Corrupted subject identifier file link count");
+        "Unable to map subject to a POSIX account: subject identifier file link count == 1");
+
     }
 
-    // search the matching (same inode#) pool account file
-    for (File accountFile : getAccountFiles(pAccountNamePrefix)) {
-      FileStat accountFileStat = PosixUtil
-        .getFileStat(accountFile.getAbsolutePath());
-      long lAccountFileINo = accountFileStat.ino();
-      long lSubjectIdentifierFileINo = subjectIdentifierFileStat.ino();
-      if (lAccountFileINo == lSubjectIdentifierFileINo) {
-        if (log.isDebugEnabled()) {
-          log.debug("Pool account file: {} inode: {} nlink: {}",
-            accountFile.getAbsolutePath(), lSubjectIdentifierFileINo,
-            subjectIdentifierFileStat.nlink());
-        }
-        if (accountFileStat.nlink() != 2) {
-          log.error(
-            "getMapping: The pool account file {} has a link count different than 2 [inode: {} nlink: {} thread-id: {}]: This mapping is corrupted and can not be used",
-            accountFile.getAbsolutePath(), lAccountFileINo,
-            accountFileStat.nlink(), lThreadId);
-          throw new ObligationProcessingException(
-            "Unable to map subject to a POSIX account: Corrupted pool account file link count");
-        }
+    UnixFile accountFile = lookupPoolAccountLinkedToSubject(accountNamePrefix,
+      subjectIdFile);
 
-        lAccountName = accountFile.getName();
-        break;
+    if (accountFile == null) {
+      log.debug("No mapping found for subject {}", subjectIdentifier);
+      return null;
+    }
+
+    if (accountFile.nlink() != 2) {
+      log.error(
+        "Pool account file {} has link count != 2 ! [inode: {}, nlink: {}]: This mapping is corrupted.",
+        accountFile.getName(), accountFile.ino(), accountFile.nlink());
+      throw new ObligationProcessingException(
+        "Unable to map subject to a POSIX account: Corrupted pool account file link count == "
+          + accountFile.nlink());
+    }
+
+    return accountFile.getName();
+
+  }
+
+  /**
+   * Returns the first account file in a pool account whose inode is equal to
+   * the subjectfile
+   * 
+   * @param accountNamePrefix
+   *          the pool account name prefix
+   * @param subjectFile
+   *          the subject file
+   * @return a {@link UnixFile} for the pool account whose inode matches,
+   *         <code>null</code> if no account is found or the file passed as
+   *         argument does not exist
+   */
+  private UnixFile lookupPoolAccountLinkedToSubject(String accountNamePrefix,
+    UnixFile subjectFile) {
+
+    if (!subjectFile.exists()) {
+      return null;
+    }
+
+    for (File accountFile : getAccountFiles(accountNamePrefix)) {
+
+      UnixFile accountUnixFile = UnixFile.from(accountFile);
+
+      if (accountUnixFile.inodeEquals(subjectFile)) {
+        return accountUnixFile;
       }
     }
-    return lAccountName;
+
+    return null;
   }
 
   /**
@@ -307,22 +332,33 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
    *         operation
    */
   private MappingResult linkSubjectToPoolAccount(String subjectIdentifier,
-    File accountFile, File subjectFile) {
+    UnixFile accountFile, UnixFile subjectFile) {
 
     log.debug("Linking {} -> {}", accountFile.getName(), subjectIdentifier);
 
-    int retval = PosixUtil.createHardlink(accountFile.getAbsolutePath(),
-      subjectFile.getAbsolutePath());
+    int retval = PosixUtil.createHardlink(accountFile.getFile(), subjectFile.getFile());
 
     if (retval != 0) {
 
       if (retval == Errno.EEXIST.value) {
 
         log.debug(
-          "Pool account {} already bound to THIS subject identifier {}.",
-          accountFile.getName(), subjectIdentifier);
+          "Subject identifier file {} already exists. "
+            + "Check if is bound to pool account {}",
+          subjectIdentifier, accountFile.getName());
 
-        return MappingResult.SUCCESS;
+        subjectFile.stat();
+
+        if (subjectFile.inodeEquals(accountFile)) {
+          log.debug("Pool account {} already bound to subject {}",
+            accountFile.getName(), subjectIdentifier);
+
+          return MappingResult.SUCCESS;
+        }
+
+        log.debug(
+          "Pool account {} bound to different subject identifier. Backing off");
+        return MappingResult.POOL_ACCOUNT_BUSY;
       }
 
       log.error("Link error while creating mapping {} -> {}: error code {}.",
@@ -332,10 +368,9 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 
     } else { // retval == 0, hardlink creation successful
 
-      FileStat accountFileStat = PosixUtil
-        .getFileStat(accountFile.getAbsolutePath());
+      accountFile.stat();
 
-      if (accountFileStat.nlink() == 2) {
+      if (accountFile.nlink() == 2) {
 
         log.debug("Mapping CREATED: {} -> {}", accountFile.getName(),
           subjectIdentifier);
@@ -343,10 +378,10 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
         return MappingResult.SUCCESS;
       }
 
-      if (accountFileStat.nlink() > 2) {
+      if (accountFile.nlink() > 2) {
 
         log.debug("NLINK == {}! Removing just created link {} -> {}",
-          accountFileStat.nlink(), accountFile.getName(), subjectIdentifier);
+          accountFile.nlink(), accountFile.getName(), subjectIdentifier);
 
         subjectFile.delete();
 
@@ -356,6 +391,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
       // Should never happen
       return MappingResult.INDETERMINATE;
     }
+
   }
 
   /**
@@ -418,7 +454,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
           log.debug("Failed to acquire lock on account {}, sleeping {} msecs",
             accountFile.getName(), randomSleepTime);
 
-          Thread.currentThread().sleep(randomSleepTime);
+          Thread.sleep(randomSleepTime);
 
         } catch (InterruptedException e) {
 
@@ -468,7 +504,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
       subjectIdentifier);
 
     File subjectFile = new File(subjectIdentifierFilePath);
-    
+
     FileLock lock = null;
     RandomAccessFile lockFile = null;
 
@@ -494,9 +530,6 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
           return null;
         }
 
-        FileStat accountFileStat = PosixUtil
-          .getFileStat(accountFile.getAbsolutePath());
-
         if (subjectFile.exists()) {
 
           String existingMapping = null;
@@ -514,22 +547,33 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
 
         }
 
-        if (accountFileStat.nlink() >= 2) {
-          log.debug("Pool account {} already allocated, moving on",
-            accountFile.getName());
+        UnixFile accountUnixFile = UnixFile.from(accountFile);
+
+        if (accountUnixFile.nlink() >= 2) {
           lock.release();
+
+          if (accountUnixFile.nlink() > 2) {
+            log.warn("Pool account {} currently bound to more than one subject",
+              accountUnixFile.getName());
+
+          } else {
+            log.debug("Pool account {} already allocated, moving on",
+              accountFile.getName());
+          }
+
           continue;
         }
-
+        
         MappingResult result = linkSubjectToPoolAccount(subjectIdentifier,
-          accountFile, subjectFile);
+          accountUnixFile, 
+          UnixFile.from(subjectFile));
 
         switch (result) {
 
         case POOL_ACCOUNT_BUSY:
           log.error("Pool account {} busy. Backing off for subject {}",
             accountFile.getName(), subjectIdentifier);
-          
+
           lock.release();
           continue;
 
@@ -555,7 +599,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
       return null;
 
     } catch (IOException e) {
-      
+
       log.error("Error creating lock file: {}", e.getMessage(), e);
       return null;
 
