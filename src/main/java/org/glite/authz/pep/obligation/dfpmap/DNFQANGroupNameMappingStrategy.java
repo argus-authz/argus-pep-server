@@ -107,7 +107,8 @@ public class DNFQANGroupNameMappingStrategy
       new Object[] { subjectDN.getName(), primaryFQAN, secondaryFQANs });
 
     List<String> dnGroupNames = new ArrayList<String>();
-    List<String> fqanGroupNames = new ArrayList<String>();
+    List<String> fqanPrimaryGroupNames = new ArrayList<String>();
+    List<String> fqanSecondaryGroupNames = new ArrayList<String>();
 
     for (String mapKey : groupNameMapping.keySet()) {
       if (groupNameMapping.isDNMapEntry(mapKey)) {
@@ -121,7 +122,7 @@ public class DNFQANGroupNameMappingStrategy
         if (primaryFQAN != null) {
           if (fqanMatchStrategy.isMatch(mapKey, primaryFQAN)) {
             List<String> grNames = groupNameMapping.get(mapKey);
-            fqanGroupNames.addAll(grNames);
+            fqanPrimaryGroupNames.addAll(grNames);
           }
         }
       }
@@ -132,7 +133,7 @@ public class DNFQANGroupNameMappingStrategy
           for (FQAN secondaryFQAN : secondaryFQANs) {
             if (fqanMatchStrategy.isMatch(mapKey, secondaryFQAN)) {
               List<String> grNames = groupNameMapping.get(mapKey);
-              fqanGroupNames.addAll(grNames);
+              fqanSecondaryGroupNames.addAll(grNames);
             }
           }
         }
@@ -140,17 +141,22 @@ public class DNFQANGroupNameMappingStrategy
     }
 
     removeDuplicates(dnGroupNames);
-    removeDuplicates(fqanGroupNames);
+    removeDuplicates(fqanPrimaryGroupNames);
+    removeDuplicates(fqanSecondaryGroupNames);
 
     List<String> groupNames = new ArrayList<String>();
     if (log.isTraceEnabled()) {
-      log.trace("DN groups: {} FQAN groups: {}", dnGroupNames, fqanGroupNames);
+      log.trace(
+        "DN groups: {} FQAN primary groups: {} FQAN secondary groups: {}",
+        dnGroupNames, fqanPrimaryGroupNames, fqanSecondaryGroupNames);
     }
     if (preferDNForPrimaryGroupName) {
       groupNames.addAll(dnGroupNames);
-      groupNames.addAll(fqanGroupNames);
+      groupNames.addAll(fqanPrimaryGroupNames);
+      groupNames.addAll(fqanSecondaryGroupNames);
     } else {
-      groupNames.addAll(fqanGroupNames);
+      groupNames.addAll(fqanPrimaryGroupNames);
+      groupNames.addAll(fqanSecondaryGroupNames);
       groupNames.addAll(dnGroupNames);
     }
 
