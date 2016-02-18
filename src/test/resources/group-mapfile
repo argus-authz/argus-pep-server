@@ -3,3 +3,5 @@
 "/switch"   switch
 "/dteam/*/Role=*"  dteam
 "/CN=Batman/OU=Grid User" batman
+"/cms/Role=pilot"  zh
+"/cms/*/Role=*"  zh
