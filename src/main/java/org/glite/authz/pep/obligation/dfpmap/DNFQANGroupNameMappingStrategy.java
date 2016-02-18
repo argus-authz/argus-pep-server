@@ -18,9 +18,9 @@
 package org.glite.authz.pep.obligation.dfpmap;
 
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.security.auth.x500.X500Principal;
 
@@ -106,9 +106,9 @@ public class DNFQANGroupNameMappingStrategy
       "Mapping group names for subject {} with primary FQAN {} and secondary FQANs {}",
       new Object[] { subjectDN.getName(), primaryFQAN, secondaryFQANs });
 
-    List<String> dnGroupNames = new ArrayList<String>();
-    List<String> fqanPrimaryGroupNames = new ArrayList<String>();
-    List<String> fqanSecondaryGroupNames = new ArrayList<String>();
+    Set<String> dnGroupNames = new LinkedHashSet<String>();
+    Set<String> fqanPrimaryGroupNames = new LinkedHashSet<String>();
+    Set<String> fqanSecondaryGroupNames = new LinkedHashSet<String>();
 
     for (String mapKey : groupNameMapping.keySet()) {
       if (groupNameMapping.isDNMapEntry(mapKey)) {
@@ -140,10 +140,6 @@ public class DNFQANGroupNameMappingStrategy
       }
     }
 
-    removeDuplicates(dnGroupNames);
-    removeDuplicates(fqanPrimaryGroupNames);
-    removeDuplicates(fqanSecondaryGroupNames);
-
     List<String> groupNames = new ArrayList<String>();
     if (log.isTraceEnabled()) {
       log.trace(
@@ -167,25 +163,4 @@ public class DNFQANGroupNameMappingStrategy
     return groupNames;
   }
 
-  /**
-   * Removes duplicates names from the list. The first occurrence is retained.
-   * 
-   * @param groupNames
-   *          list of names from which duplicates should be removed.
-   */
-  private void removeDuplicates(final List<String> groupNames) {
-
-    HashSet<String> alreadySeen = new HashSet<String>();
-
-    String name;
-    Iterator<String> nameItr = groupNames.iterator();
-    while (nameItr.hasNext()) {
-      name = nameItr.next();
-      if (alreadySeen.contains(name)) {
-        nameItr.remove();
-      } else {
-        alreadySeen.add(name);
-      }
-    }
-  }
 }
