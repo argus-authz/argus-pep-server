@@ -25,34 +25,73 @@ import javax.security.auth.x500.X500Principal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LockLessMappingStrategy implements GridmapDirGetMappingStrategy {
+/**
+ * A lock free gridmap dir mapping strategy.
+ */
+public class LockFreeMappingStrategy implements GridmapDirGetMappingStrategy {
 
+  private static final Logger LOG = LoggerFactory
+    .getLogger(LockFreeMappingStrategy.class);
+
+  /** Internal RNG **/
   private final Random random = new Random();
 
-  public static final Logger LOG = LoggerFactory
-    .getLogger(LockLessMappingStrategy.class);
+  private final PoolAccountResolver accountResolver;
+  private final boolean shuffleAccounts;
+  private final int maxLookupIterations;
 
-  final PoolAccountResolver accountResolver;
-  final File gridmapDir;
-  final boolean shuffleAccounts;
+  public static class Builder {
 
-  public static LockLessMappingStrategy createWithAccountShuffling(
-    File gridmapDir) {
+    File gridmapDir;
+    boolean shuffleAccounts = true;
+    int maxLookupIterations = 10;
+    PoolAccountResolver resolver;
 
-    return new LockLessMappingStrategy(gridmapDir, true);
+    private Builder(File gridmapDir) {
+      this.gridmapDir = gridmapDir;
+    }
+
+    public Builder withPoolAccountResolver(PoolAccountResolver resolver) {
+
+      this.resolver = resolver;
+      return this;
+    }
+
+    public Builder withShuffleAccounts(boolean shuffleAccounts) {
+
+      this.shuffleAccounts = shuffleAccounts;
+      return this;
+    }
+
+    public Builder withMaxLookupIterations(int maxLookupIterations) {
+
+      this.maxLookupIterations = maxLookupIterations;
+      return this;
+    }
+
+    public LockFreeMappingStrategy build() {
+
+      if (resolver == null) {
+        resolver = new DefaultPoolAccountResolver(gridmapDir);
+      }
+
+      return new LockFreeMappingStrategy(resolver, shuffleAccounts,
+        maxLookupIterations);
+    }
+
   }
 
-  public static LockLessMappingStrategy create(File gridmapDir) {
+  public static Builder forGridmapDir(File gridmapDir) {
 
-    return new LockLessMappingStrategy(gridmapDir, false);
+    return new Builder(gridmapDir);
   }
 
-  private LockLessMappingStrategy(final File gridmapDir,
-    boolean shuffleAccounts) {
+  private LockFreeMappingStrategy(PoolAccountResolver resolver,
+    boolean shuffleAccounts, int maxLookupIterations) {
 
-    this.gridmapDir = gridmapDir;
-    this.accountResolver = new PoolAccountResolver(gridmapDir);
+    this.accountResolver = resolver;
     this.shuffleAccounts = shuffleAccounts;
+    this.maxLookupIterations = maxLookupIterations;
   }
 
   private long getRandomInteger(int lowerBound, int upperBound) {
@@ -62,7 +101,10 @@ public class LockLessMappingStrategy implements GridmapDirGetMappingStrategy {
 
   }
 
-  private void shuffleAccounts(File[] accounts) {
+  private File[] shuffleAccounts(File[] a) {
+
+    File[] accounts = new File[a.length];
+    System.arraycopy(a, 0, accounts, 0, a.length);
 
     for (int i = accounts.length - 1; i > 0; i--) {
       int index = random.nextInt(i + 1);
@@ -71,15 +113,22 @@ public class LockLessMappingStrategy implements GridmapDirGetMappingStrategy {
       accounts[index] = accounts[i];
       accounts[i] = tmp;
     }
+
+    return accounts;
   }
 
   private File[] resolveAccounts(String accountNamePrefix) {
 
-    File[] accounts = accountResolver.getAccountFiles(accountNamePrefix);
+    File[] files = accountResolver.getAccountFiles(accountNamePrefix);
+
     if (shuffleAccounts) {
-      shuffleAccounts(accounts);
+
+      return shuffleAccounts(files);
+
     }
-    return accounts;
+
+    return files;
+
   }
 
   private LookupResult lookup(String accountNamePrefix, UnixFile subjectFile) {
@@ -92,11 +141,11 @@ public class LockLessMappingStrategy implements GridmapDirGetMappingStrategy {
 
         if (account.nlink() != 2) {
 
-          LOG.error(
-            "Found mapped pool account {} for subject id {} with link count != 2. inode: {}. The corrupt mapping should be cleaned up",
+          LOG.warn(
+            "Found mapped pool account {} for subject id {} with link count != 2. inode: {}. Corrupt pool account?",
             account.getName(), subjectFile.getName(), account.ino());
 
-          return LookupResult.corruptedPoolAccount();
+          continue;
 
         }
 
@@ -142,7 +191,7 @@ public class LockLessMappingStrategy implements GridmapDirGetMappingStrategy {
           }
 
           if (subjectFile.nlink() == 1) {
-            LOG.debug("Cleaning up stale handle {}", subjectFile.getName());
+            LOG.warn("Cleaning up stale handle {}", subjectFile.getName());
             subjectFile.delete();
             return LookupResult.continueLookup();
           }
@@ -151,7 +200,7 @@ public class LockLessMappingStrategy implements GridmapDirGetMappingStrategy {
             return LookupResult.success(account);
           }
 
-          LOG.debug(
+          LOG.warn(
             "Pool account {} linked to {} is currently corrupted. inode: {}. link count: {}",
             account.getName(), subjectFile.getName(), account.ino(),
             account.nlink());
@@ -161,9 +210,9 @@ public class LockLessMappingStrategy implements GridmapDirGetMappingStrategy {
         }
 
         if (retval != 0) {
-          LOG.error("Link error when linking {} to {}.",
-            subjectFile.getName(), account.getName());
-          
+          LOG.error("Link error when linking {} to {}.", subjectFile.getName(),
+            account.getName());
+
           return LookupResult.linkError();
         }
 
@@ -176,7 +225,7 @@ public class LockLessMappingStrategy implements GridmapDirGetMappingStrategy {
 
         if (account.nlink() > 2) {
           LOG.debug(
-            "Conflict on account {}. link count {}. dropping link from {} and backing off",
+            "Conflict on account {}. link count {}. Dropping link from {} and backing off",
             account.getName(), account.nlink(), subjectFile.getName());
 
           subjectFile.delete();
@@ -196,7 +245,7 @@ public class LockLessMappingStrategy implements GridmapDirGetMappingStrategy {
 
     int iterations = 0;
 
-    while (true) {
+    while (iterations++ < maxLookupIterations) {
 
       if (subjectFile.exists()) {
 
@@ -208,6 +257,14 @@ public class LockLessMappingStrategy implements GridmapDirGetMappingStrategy {
           LOG.debug("Found mapping for {}: {} -> {}", subjectDN,
             r.account.getName(), subjectFile.getName());
           return r.account;
+        }
+
+        if (subjectFile.exists()) {
+          LOG.warn(
+            "Subject file {} exists but mapping NOT found. Corrupt pool account?",
+            subjectFile.getName());
+
+          continue;
         }
 
         return null;
@@ -223,8 +280,7 @@ public class LockLessMappingStrategy implements GridmapDirGetMappingStrategy {
         }
 
         if (r.isContinue()) {
-          LOG.debug("Attempting new lookup for {}. Iterations {}", subjectDN,
-            ++iterations);
+          LOG.debug("Attempting new lookup for {}.", subjectDN);
           continue;
         }
 
@@ -233,6 +289,9 @@ public class LockLessMappingStrategy implements GridmapDirGetMappingStrategy {
       }
 
     }
+
+    LOG.warn("Giving up lookup after {} iterations", iterations);
+    return null;
 
   }
 
