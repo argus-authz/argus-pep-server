@@ -30,6 +30,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import javax.security.auth.x500.X500Principal;
 
@@ -38,9 +39,9 @@ import junit.framework.TestCase;
 
 public class GridMapDirParallelTestMultiUser extends TestCase {
 
-  public static final int NUM_THREADS = 50;
-  public static final int NUM_ACCOUNTS = 50;
-  public static final int NUM_ITERATIONS = 1;
+  public static final int NUM_THREADS = 30;
+  public static final int NUM_ACCOUNTS = 30;
+  public static final int NUM_ITERATIONS = 10;
 
   File gridmapdir = null;
 
@@ -57,15 +58,18 @@ public class GridMapDirParallelTestMultiUser extends TestCase {
 
     super.setUp();
     gridmapdir = TestUtils.createTempGridMapDir(accountPrefix, NUM_ACCOUNTS);
+    
+    PoolAccountResolver resolver = new CachingPoolAccountResolver(gridmapdir,
+      10, TimeUnit.SECONDS);
 
-    GridmapDirGetMappingStrategy locklessMappingStragy = LockLessMappingStrategy
-      .createWithAccountShuffling(gridmapdir);
+    GridmapDirGetMappingStrategy lockFreeMappingStragy = LockFreeMappingStrategy
+      .forGridmapDir(gridmapdir)
+      .withShuffleAccounts(true)
+      .withPoolAccountResolver(resolver)
+      .withMaxLookupIterations(2).build();
 
-    GridmapDirGetMappingStrategy lockFileMappingStrategy = new LockFileGetMappingStrategy(
-      gridmapdir);
-
-    poolAccountManager = new GridMapDirPoolAccountManager(
-      locklessMappingStragy, gridmapdir, true);
+    poolAccountManager = new GridMapDirPoolAccountManager(lockFreeMappingStragy,
+      gridmapdir, true);
 
     for (int i = 0; i < NUM_THREADS; i++) {
       String subject = String.format("%s%d", subjectPrefix, i);
@@ -86,6 +90,9 @@ public class GridMapDirParallelTestMultiUser extends TestCase {
 
     for (int iter = 0; iter < NUM_ITERATIONS; iter++) {
 
+      System.out.println("#####################");
+      System.out.println("ITERATION "+iter);
+      System.out.println("#####################");
       ExecutorService executorService = Executors
         .newFixedThreadPool(NUM_THREADS + 1);
 
@@ -158,11 +165,22 @@ public class GridMapDirParallelTestMultiUser extends TestCase {
       } catch (InterruptedException e) {
 
       }
-
-      return manager.mapToAccount(accountNamePrefix, subject, primaryGroup,
+      String result = manager.mapToAccount(accountNamePrefix, subject, primaryGroup,
         secondaryGroups);
+      
+     
+      return result; 
 
     }
 
+  }
+  
+  public static void main(String[] args) throws Exception {
+
+    GridMapDirParallelTestMultiUser test = new GridMapDirParallelTestMultiUser();
+    
+    test.setUp();
+    test.testParallelMappingForMultipleUsers();
+    test.tearDown();
   }
 }

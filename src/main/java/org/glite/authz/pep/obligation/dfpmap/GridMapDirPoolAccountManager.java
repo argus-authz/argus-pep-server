@@ -109,7 +109,7 @@ public class GridMapDirPoolAccountManager implements PoolAccountManager {
   public GridMapDirPoolAccountManager(final File gridMapDir,
     final boolean useSecondaryGroupNamesForMapping) {
 
-    this(LockLessMappingStrategy.createWithAccountShuffling(gridMapDir),
+    this(LockFreeMappingStrategy.forGridmapDir(gridMapDir).build(),
       gridMapDir, useSecondaryGroupNamesForMapping);
 
   }
