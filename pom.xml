@@ -12,7 +12,7 @@
 
   <name>Argus PEP Server</name>
   <artifactId>argus-pepd</artifactId>
-  <version>1.7.0</version>
+  <version>1.7.1</version>
   <packaging>jar</packaging>
 
   <description>XACML based authorization service</description>
@@ -65,7 +65,7 @@
       <groupId>org.slf4j</groupId>
       <artifactId>log4j-over-slf4j</artifactId>
     </dependency>
-    
+
     <!-- Provided Dependencies -->
     <dependency>
       <groupId>net.jcip</groupId>
