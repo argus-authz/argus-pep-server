@@ -17,12 +17,12 @@
 
 package org.glite.authz.pep.obligation.dfpmap;
 
-import java.util.ArrayList;
-
 import javax.security.auth.x500.X500Principal;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import eu.emi.security.authn.x509.impl.OpensslNameUtils;
 
 /** A matching strategy for {@link X500Principal}. */
 public class X509MatchStrategy implements DFPMMatchStrategy<X500Principal> {
@@ -44,44 +44,22 @@ public class X509MatchStrategy implements DFPMMatchStrategy<X500Principal> {
     }
 
     /**
-     * Converts an key in to a DN. If the key starts with a "/" it assumed to be in the openssl DN format, otherwise it
-     * is assumed to be in RFC2253 format.
+     * Converts a key to a DN. If key starts with "/" it assumes key format is openssl DN format, otherwise it
+     * assumes key format is RFC2253 format.
      * 
      * @param key the key to convert
      * 
      * @return the constructed DN or null if the key is not a valid DN
      */
-    private X500Principal keyToDN(String key) {
+    @SuppressWarnings("deprecation")
+	private X500Principal keyToDN(String key) {
+
         String rfc2253DN;
+
         if (key.startsWith("/")) {
-            ArrayList<String> rdns = new ArrayList<String>();
-            StringBuilder rdnBuilder = new StringBuilder();
-            char character;
-            for (int i = 1; i < key.length(); i++) {
-                character = key.charAt(i);
-                if (character != '/') {
-                    rdnBuilder.append(character);
-                    continue;
-                }
-
-                if (key.charAt(i - 1) == '\\') {
-                    rdnBuilder.deleteCharAt(rdnBuilder.length() - 1);
-                    rdnBuilder.append("/");
-                } else {
-                    rdns.add(rdnBuilder.toString());
-                    rdnBuilder = new StringBuilder();
-                }
-            }
-            rdns.add(rdnBuilder.toString());
-
-            StringBuilder dn = new StringBuilder();
-            for (int i = rdns.size() - 1; i >= 0; i--) {
-                dn.append(rdns.get(i));
-                if (i > 0) {
-                    dn.append(",");
-                }
-            }
-            rfc2253DN = dn.toString();
+            // Workaround to support gridmap-file's DN with escaped slashes 
+            key = key.replace("\\", "");
+            rfc2253DN = OpensslNameUtils.opensslToRfc2253(key);
         } else {
             rfc2253DN = key;
         }
@@ -89,7 +67,7 @@ public class X509MatchStrategy implements DFPMMatchStrategy<X500Principal> {
         try {
             return new X500Principal(rfc2253DN);
         } catch (Exception e) {
-            log.debug("Failed to convert '" + key + "' to X500Principal(" + rfc2253DN + ")", e);
+            log.debug("Failed to convert '" + rfc2253DN + "' to X500Principal", e);
             return null;
         }
     }
