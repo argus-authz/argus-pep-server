@@ -140,7 +140,8 @@ public class DNFQANGroupNameMappingStrategy
       }
     }
 
-    List<String> groupNames = new ArrayList<String>();
+    Set<String> groupNames = new LinkedHashSet<String>();
+    
     if (log.isTraceEnabled()) {
       log.trace(
         "DN groups: {} FQAN primary groups: {} FQAN secondary groups: {}",
@@ -160,7 +161,9 @@ public class DNFQANGroupNameMappingStrategy
       "Subject {} with primary FQAN {} and secondary FQANs {} mapped to group names: {}",
       new Object[] { subjectDN.getName(), primaryFQAN, secondaryFQANs,
         groupNames });
-    return groupNames;
+    
+    List<String> result = new ArrayList<String>(groupNames);
+    return result;
   }
 
 }

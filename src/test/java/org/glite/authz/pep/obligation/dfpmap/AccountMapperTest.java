@@ -360,7 +360,7 @@ public class AccountMapperTest extends TestCase {
 
     assertTrue(account.getLoginName().startsWith("cmsplt"));
     assertTrue("zh".equals(account.getPrimaryGroup()));
-    assertTrue(account.getSecondaryGroups().contains("zh"));
+    assertTrue(account.getSecondaryGroups().isEmpty());
 
     File subjectIdentifierFile = followHardLink(account);
 
@@ -375,6 +375,32 @@ public class AccountMapperTest extends TestCase {
     X500Principal subjectDN = new X500Principal("OU=Test User,CN=Tester");
     FQAN primaryFQAN = new FQAN("/cms");
     List<FQAN> secondaryFQANs = null;
+
+    System.out.println("mapping (DN/FQANs) subject: " + subjectDN + " FQAN: "
+      + primaryFQAN + " FQANs: " + secondaryFQANs);
+
+    PosixAccount account = mapToPosixAccount(subjectDN, primaryFQAN,
+      secondaryFQANs, true, true, false);
+
+    System.out.println("mapped to POSIX account: " + account);
+
+    assertTrue(account.getLoginName().matches("cms(\\d+)"));
+    assertTrue("zh".equals(account.getPrimaryGroup()));
+    assertTrue(account.getSecondaryGroups().isEmpty());
+
+    File subjectIdentifierFile = followHardLink(account);
+
+    String subjIdFileName = subjectIdentifierFile.getName();
+    String suffix = buildSubjectIdentifierFileSuffix(account);
+
+    assertTrue(subjIdFileName.endsWith(suffix));
+  }
+  
+  public void testEmptySecondaryGroupsWithPrimaryFqanInSecondaryFqans() throws Exception {
+
+    X500Principal subjectDN = new X500Principal("OU=Test User,CN=Tester");
+    FQAN primaryFQAN = new FQAN("/cms");
+    List<FQAN> secondaryFQANs = Arrays.asList(primaryFQAN);
 
     System.out.println("mapping (DN/FQANs) subject: " + subjectDN + " FQAN: "
       + primaryFQAN + " FQANs: " + secondaryFQANs);
