@@ -59,7 +59,7 @@ public class DNFQANGroupNameMappingStrategy
 
   /**
    * Constructor.
-   * 
+   *
    * @param groupMappings
    *          DN/FQAN to POSIX group name mappings, may not be null
    * @param dnMatching
@@ -100,7 +100,7 @@ public class DNFQANGroupNameMappingStrategy
   /** {@inheritDoc} */
   public List<String> mapToGroupNames(final X500Principal subjectDN,
     final FQAN primaryFQAN, final List<FQAN> secondaryFQANs)
-      throws ObligationProcessingException {
+    throws ObligationProcessingException {
 
     log.debug(
       "Mapping group names for subject {} with primary FQAN {} and secondary FQANs {}",
@@ -131,7 +131,8 @@ public class DNFQANGroupNameMappingStrategy
       if (groupNameMapping.isFQANMapEntry(mapKey)) {
         if (secondaryFQANs != null) {
           for (FQAN secondaryFQAN : secondaryFQANs) {
-            if (fqanMatchStrategy.isMatch(mapKey, secondaryFQAN)) {
+            if (!secondaryFQAN.equals(primaryFQAN)
+              && fqanMatchStrategy.isMatch(mapKey, secondaryFQAN)) {
               List<String> grNames = groupNameMapping.get(mapKey);
               fqanSecondaryGroupNames.addAll(grNames);
             }
@@ -140,8 +141,8 @@ public class DNFQANGroupNameMappingStrategy
       }
     }
 
-    Set<String> groupNames = new LinkedHashSet<String>();
-    
+    List<String> groupNames = new ArrayList<String>();
+
     if (log.isTraceEnabled()) {
       log.trace(
         "DN groups: {} FQAN primary groups: {} FQAN secondary groups: {}",
@@ -161,7 +162,7 @@ public class DNFQANGroupNameMappingStrategy
       "Subject {} with primary FQAN {} and secondary FQANs {} mapped to group names: {}",
       new Object[] { subjectDN.getName(), primaryFQAN, secondaryFQANs,
         groupNames });
-    
+
     List<String> result = new ArrayList<String>(groupNames);
     return result;
   }

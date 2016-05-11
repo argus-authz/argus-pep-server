@@ -92,7 +92,7 @@ public class AccountMapperTest extends TestCase {
   /**
    * Returns the {@link InputStream} for the given filePath by searching in the
    * classpath and on the file system.
-   * 
+   *
    * @param filePath
    *          Path to the file (absolute or within classpath)
    * @return The file InputStream
@@ -145,7 +145,7 @@ public class AccountMapperTest extends TestCase {
     final boolean preferDNForLoginName,
     final boolean preferDNForPrimaryGroupName,
     final boolean noPrimaryGroupNameIsError) throws FileNotFoundException,
-      ConfigurationException, ObligationProcessingException {
+    ConfigurationException, ObligationProcessingException {
 
     DFPM accountIndicatorDFPM = createDFPM("/grid-mapfile");
     DFPM groupDFPM = createDFPM("/group-mapfile");
@@ -360,7 +360,7 @@ public class AccountMapperTest extends TestCase {
 
     assertTrue(account.getLoginName().startsWith("cmsplt"));
     assertTrue("zh".equals(account.getPrimaryGroup()));
-    assertTrue(account.getSecondaryGroups().isEmpty());
+    assertTrue(account.getSecondaryGroups().contains("zh"));
 
     File subjectIdentifierFile = followHardLink(account);
 
@@ -395,8 +395,9 @@ public class AccountMapperTest extends TestCase {
 
     assertTrue(subjIdFileName.endsWith(suffix));
   }
-  
-  public void testEmptySecondaryGroupsWithPrimaryFqanInSecondaryFqans() throws Exception {
+
+  public void testEmptySecondaryGroupsWithPrimaryFqanInSecondaryFqans()
+    throws Exception {
 
     X500Principal subjectDN = new X500Principal("OU=Test User,CN=Tester");
     FQAN primaryFQAN = new FQAN("/cms");
