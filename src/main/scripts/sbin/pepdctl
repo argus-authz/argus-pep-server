@@ -29,7 +29,7 @@ while [ -h "$PRG" ]; do
     fi
 done
 PRGDIR=`dirname "$PRG"`
-[ -z "$PEPD_HOME" ] && PEPD_HOME=`cd "$PRGDIR/.." ; pwd`    
+[ -z "$PEPD_HOME" ] && PEPD_HOME=`cd "$PRGDIR/.." ; pwd`
 
 # config, log and lib directories
 PEPD_CONFDIR=${PEPD_CONFDIR:-"$PEPD_HOME/conf"}
@@ -56,39 +56,27 @@ if [ ! -x "$JAVACMD" ] ; then
 fi
 
 # uses pep-common and pdp-pep-common from the installed packages
-# uses canl, voms-api-java and bouncycastle from the install RPM packages or provided
+# uses canl, voms-api-java and bouncycastle from the provided libs.
 LOCALCLASSPATH="/usr/share/java/argus-pdp-pep-common.jar:/usr/share/java/argus-pep-common.jar"
-if [ "$PEPD_USE_OS_CANL" = "false" ] ; then
-    for jar in $PEPD_PROVIDEDDIR/canl-*.jar
-    do
-        if [ -f "$jar" ] ; then
-            LOCALCLASSPATH="$LOCALCLASSPATH:$jar"
-        fi
-    done
-else
-    LOCALCLASSPATH="$LOCALCLASSPATH:/usr/share/java/canl-java/canl.jar"
-fi
-if [ "$PEPD_USE_OS_BCPROV" = "false" ] ; then
-    for jar in $PEPD_PROVIDEDDIR/bcprov-*.jar $PEPD_PROVIDEDDIR/bcpkix-*.jar
 
-    do
-        if [ -f "$jar" ] ; then
-            LOCALCLASSPATH="$LOCALCLASSPATH:$jar"
-        fi
-    done
-else
-    LOCALCLASSPATH="$LOCALCLASSPATH:/usr/share/java/bcprov.jar:/usr/share/java/bcpkix.jar"
-fi
-if [ "$PEPD_USE_OS_VOMS" = "false" ] ; then
-    for jar in $PEPD_PROVIDEDDIR/voms-api-java-*.jar
-    do
-        if [ -f "$jar" ] ; then
-            LOCALCLASSPATH="$LOCALCLASSPATH:$jar"
-        fi
-    done
-else
-    LOCALCLASSPATH="$LOCALCLASSPATH:/usr/share/java/voms-api-java/voms-api-java.jar"
-fi
+for jar in $PEPD_PROVIDEDDIR/canl-*.jar; do
+    if [ -f "$jar" ] ; then
+        LOCALCLASSPATH="$LOCALCLASSPATH:$jar"
+    fi
+done
+
+for jar in $PEPD_PROVIDEDDIR/bcprov-*.jar $PEPD_PROVIDEDDIR/bcpkix-*.jar; do
+    if [ -f "$jar" ] ; then
+        LOCALCLASSPATH="$LOCALCLASSPATH:$jar"
+    fi
+done
+
+for jar in $PEPD_PROVIDEDDIR/voms-api-java-*.jar; do
+    if [ -f "$jar" ] ; then
+        LOCALCLASSPATH="$LOCALCLASSPATH:$jar"
+    fi
+done
+
 
 # include all embedded jar
 jarfiles="$PEPD_LIBDIR/*.jar"
@@ -169,7 +157,7 @@ function print_help {
    echo "PEP Server control script"
    echo "Usage:"
    echo "  $0 start   - to start the service"
-   echo "  $0 stop    - to stop the service" 
+   echo "  $0 stop    - to stop the service"
    echo "  $0 status  - print PEP daemon status"
    echo "  $0 version - print PEP daemon version"
    echo "  $0 clearResponseCache - clears the PEP Server PDP response cache"

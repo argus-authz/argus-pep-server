@@ -16,9 +16,3 @@ PEPD_JOPTS="-Xmx256M -Djdk.tls.trustNameService=true"
 #PEPD_PROVIDEDDIR="/var/lib/argus/pepd/lib/provided"
 #PEPD_PID="/var/run/argus-pepd.pid"
 
-# OS provided dependencies (false to use embedded) 
-#PEPD_USE_OS_CANL="false"
-#PEPD_USE_OS_BCPROV="false"
-#PEPD_USE_OS_VOMS="false"
-#PEPD_USE_OS_BCMAIL="false"
-
