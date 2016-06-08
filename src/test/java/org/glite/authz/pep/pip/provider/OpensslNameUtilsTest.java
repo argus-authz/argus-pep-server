@@ -17,6 +17,11 @@
 package org.glite.authz.pep.pip.provider;
 
 import junit.framework.TestCase;
+
+import javax.security.auth.x500.X500Principal;
+
+import org.glite.authz.pep.obligation.dfpmap.X509MatchStrategy;
+
 import eu.emi.security.authn.x509.impl.OpensslNameUtils;
 
 /**
@@ -26,6 +31,10 @@ public class OpensslNameUtilsTest extends TestCase {
 
     static String opensslDN= "/C=ch/O=SWITCH/CN=Valery Tschopp";
     static String rfc2253DN= "CN=Valery Tschopp,O=SWITCH,C=ch";
+    
+    static String slashedOpensslDN= "/DC=ch/DC=cern/OU=computers/CN=cmspilot02/vocms080.cern.ch";
+    static String escapedSlashedOpensslDN= "/DC=ch/DC=cern/OU=computers/CN=cmspilot02\\/vocms080.cern.ch";
+    static String slashedRfc2253DN = "CN=cmspilot02/vocms080.cern.ch,OU=computers,DC=cern,DC=ch";
     
     /** {@inheritDoc} */
     protected void setUp() throws Exception {
@@ -52,18 +61,15 @@ public class OpensslNameUtilsTest extends TestCase {
         System.out.println("output: " + subjectDN);
     }
     
-
-//    
-//    public void testX500Principal() {
-//        X500Principal opensslX500Principal= new X500Principal(opensslDN);
-//        System.out.println(opensslX500Principal.getName());
-//    }
-//    
-//    public void testX509Name() {
-//        X509Name opensslX509Name= new X509Name(opensslDN);
-//        X509Name rfcX509Name= new X509Name(rfc2253DN);
-//        System.out.println(opensslX509Name.toString());
-//        System.out.println(rfcX509Name.toString());
-//    }
+    public void testSlashedOpensslDN() {
+      System.out.println(" input: " + slashedOpensslDN);
+      assertTrue((new X509MatchStrategy()).isMatch(slashedOpensslDN, new X500Principal(slashedRfc2253DN)));
+      System.out.println("output: " + slashedRfc2253DN);
+    }
     
+    public void testEscapedSlashedOpensslDN() {
+      System.out.println(" input: " + escapedSlashedOpensslDN);
+      assertTrue((new X509MatchStrategy()).isMatch(escapedSlashedOpensslDN, new X500Principal(slashedRfc2253DN)));
+      System.out.println("output: " + slashedRfc2253DN);
+    }
 }
