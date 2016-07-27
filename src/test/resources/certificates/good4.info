@@ -1,0 +1,15 @@
+
+#
+# Good CA with many dependencies (some non-existing)
+#   
+alias = Good Test CA 3
+email = root@example.org
+status = accredited:classic
+version = 1.75
+subjectdn = \
+    "/C=NL/O=Example#/OU=PDP/CN=Test CA",\
+    file:good2.info,\
+    file:/etc/grid-security/certificates/NIKHEF.info	,\
+    file:../certificates/good3.info, \
+    file:test.info
+

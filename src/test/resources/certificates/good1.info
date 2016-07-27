@@ -1,0 +1,11 @@
+#
+# Good CA containing urlencoded character
+#   
+alias = Test CA
+email = root@example.org
+status = accredited:classic
+version = 1.75
+subjectdn = \
+    "/C=NL/O=Example/OU=PDP/CN=Test CA 2", \
+    , \
+    "/C=NL/O=Example/OU=PDP%2FCN=Test CA"
