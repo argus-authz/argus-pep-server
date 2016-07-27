@@ -5,7 +5,8 @@
 # IPv4 instead of IPv6
 #PEPD_JOPTS="-Djava.net.preferIPv4Stack=true"
 # Max memory: 256MB
-PEPD_JOPTS="-Xmx256M"
+PEPD_JOPTS="-Xmx256M -Djdk.tls.trustNameService=true"
+#PEPD_START_JOPTS="-Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=4000,suspend=n"
 #PEPD_HOME="/usr/share/argus/pepd"
 #PEPD_CONF="/etc/argus/pepd/pepd.ini"
 #PEPD_CONFDIR="/etc/argus/pepd"
@@ -14,10 +15,4 @@ PEPD_JOPTS="-Xmx256M"
 #PEPD_ENDORSEDDIR="/var/lib/argus/pepd/lib/endorsed"
 #PEPD_PROVIDEDDIR="/var/lib/argus/pepd/lib/provided"
 #PEPD_PID="/var/run/argus-pepd.pid"
-
-# OS provided dependencies (false to use embedded) 
-#PEPD_USE_OS_CANL="false"
-#PEPD_USE_OS_BCPROV="false"
-#PEPD_USE_OS_VOMS="false"
-#PEPD_USE_OS_BCMAIL="false"
 

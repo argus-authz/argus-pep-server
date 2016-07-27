@@ -116,13 +116,12 @@ Installed in a fakeroot directory structure.
             <outputDirectory>/usr/share/doc/argus/pepd</outputDirectory>
             <fileMode>0644</fileMode>
         </fileSet>
-        <!-- Javadoc -->
-        <!--
+        <!-- Systemd -->
         <fileSet>
-            <outputDirectory>/usr/share/doc/argus/pepd/api</outputDirectory>
-            <directory>target/site/apidocs</directory>
+        	<directory>src/main/scripts/systemd/system</directory>
+			<outputDirectory>/lib/systemd/system</outputDirectory>
+			<fileMode>0644</fileMode>
         </fileSet>
-        -->
     </fileSets>
     
 </assembly>

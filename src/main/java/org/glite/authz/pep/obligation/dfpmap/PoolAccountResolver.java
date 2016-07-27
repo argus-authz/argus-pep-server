@@ -15,9 +15,22 @@
  * limitations under the License.
  */
 
-/** 
- * Classes used to create and hold a PEP daemon configuration. 
- * 
- * @see <a href="https://twiki.cern.ch/twiki/bin/view/EGEE/AuthZPEP#Policy_Enforcement_Point_Daemon">PEP configuration and usage documentation</a>
- */
-package org.glite.authz.pep.server.config;
+package org.glite.authz.pep.obligation.dfpmap;
+
+import java.io.File;
+
+public interface PoolAccountResolver {
+
+  /**
+   * Gets a list of account files where the file names begin with the given
+   * prefix.
+   * 
+   * @param prefix
+   *          prefix with which the file names should begin, may be null to
+   *          signify all file names
+   * 
+   * @return the selected account files
+   */
+  public File[] getAccountFiles(final String prefix);
+  
+}

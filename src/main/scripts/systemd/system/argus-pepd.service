@@ -1,0 +1,13 @@
+[Unit]
+Description=Argus Policy Enforcement Point Server
+After=syslog.target network.target
+
+[Service]
+Type=forking
+EnvironmentFile=/etc/sysconfig/argus-pepd
+ExecStart=/usr/sbin/pepdctl start
+ExecStop=/usr/sbin/pepdctl stop
+PIDFile=/var/run/argus-pepd.pid
+
+[Install]
+WantedBy=multi-user.target

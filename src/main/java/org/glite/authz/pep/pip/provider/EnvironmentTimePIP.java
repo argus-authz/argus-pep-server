@@ -73,7 +73,7 @@ public class EnvironmentTimePIP extends AbstractPolicyInformationPoint {
     /**
      * Set to <code>false</code> to use local time zone.
      * 
-     * @param useUTC
+     * @param useUTC if UTC must be used
      */
     public void setUTC(boolean useUTC) {
         this.useUTC= useUTC;

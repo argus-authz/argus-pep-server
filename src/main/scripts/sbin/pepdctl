@@ -29,7 +29,7 @@ while [ -h "$PRG" ]; do
     fi
 done
 PRGDIR=`dirname "$PRG"`
-[ -z "$PEPD_HOME" ] && PEPD_HOME=`cd "$PRGDIR/.." ; pwd`    
+[ -z "$PEPD_HOME" ] && PEPD_HOME=`cd "$PRGDIR/.." ; pwd`
 
 # config, log and lib directories
 PEPD_CONFDIR=${PEPD_CONFDIR:-"$PEPD_HOME/conf"}
@@ -56,48 +56,27 @@ if [ ! -x "$JAVACMD" ] ; then
 fi
 
 # uses pep-common and pdp-pep-common from the installed packages
-# uses canl, voms-api-java and bouncycastle from the install RPM packages or provided
+# uses canl, voms-api-java and bouncycastle from the provided libs.
 LOCALCLASSPATH="/usr/share/java/argus-pdp-pep-common.jar:/usr/share/java/argus-pep-common.jar"
-if [ "$PEPD_USE_OS_CANL" = "false" ] ; then
-    for jar in $PEPD_PROVIDEDDIR/canl-*.jar
-    do
-        if [ -f "$jar" ] ; then
-            LOCALCLASSPATH="$LOCALCLASSPATH:$jar"
-        fi
-    done
-else
-    LOCALCLASSPATH="$LOCALCLASSPATH:/usr/share/java/canl.jar"
-fi
-if [ "$PEPD_USE_OS_BCPROV" = "false" ] ; then
-    for jar in $PEPD_PROVIDEDDIR/bcprov-*.jar
-    do
-        if [ -f "$jar" ] ; then
-            LOCALCLASSPATH="$LOCALCLASSPATH:$jar"
-        fi
-    done
-else
-    LOCALCLASSPATH="$LOCALCLASSPATH:/usr/share/java/bcprov-1.46.jar"
-fi
-if [ "$PEPD_USE_OS_VOMS" = "false" ] ; then
-    for jar in $PEPD_PROVIDEDDIR/voms-api-java-*.jar
-    do
-        if [ -f "$jar" ] ; then
-            LOCALCLASSPATH="$LOCALCLASSPATH:$jar"
-        fi
-    done
-else
-    LOCALCLASSPATH="$LOCALCLASSPATH:/usr/share/java/voms-api-java3.jar"
-fi
-if [ "$PEPD_USE_OS_BCMAIL" = "false" ] ; then
-    for jar in $PEPD_PROVIDEDDIR/bcmail-*.jar
-    do
-        if [ -f "$jar" ] ; then
-            LOCALCLASSPATH="$LOCALCLASSPATH:$jar"
-        fi
-    done
-else
-    LOCALCLASSPATH="$LOCALCLASSPATH:/usr/share/java/bcmail-1.46.jar"
-fi
+
+for jar in $PEPD_PROVIDEDDIR/canl-*.jar; do
+    if [ -f "$jar" ] ; then
+        LOCALCLASSPATH="$LOCALCLASSPATH:$jar"
+    fi
+done
+
+for jar in $PEPD_PROVIDEDDIR/bcprov-*.jar $PEPD_PROVIDEDDIR/bcpkix-*.jar; do
+    if [ -f "$jar" ] ; then
+        LOCALCLASSPATH="$LOCALCLASSPATH:$jar"
+    fi
+done
+
+for jar in $PEPD_PROVIDEDDIR/voms-api-java-*.jar; do
+    if [ -f "$jar" ] ; then
+        LOCALCLASSPATH="$LOCALCLASSPATH:$jar"
+    fi
+done
+
 
 # include all embedded jar
 jarfiles="$PEPD_LIBDIR/*.jar"
@@ -154,15 +133,15 @@ function executeAdminCommand {
     if [ -z "$ADMIN_PORT" ] ; then
        ADMIN_PORT="8155"
     fi
-    
+
     ADMIN_PASS=`sed 's/ //g' $PEPD_CONF | grep "^adminPassword" | awk 'BEGIN {FS="="}{print $2}'`
-    
+
     $JAVACMD $PEPD_JOPTS 'org.glite.authz.common.http.JettyAdminServiceCLI' $ADMIN_HOST $ADMIN_PORT $1 $ADMIN_PASS
 }
 
 function start {
     # Run the PEP Server (background)
-    $JAVACMD $PEPD_JOPTS 'org.glite.authz.pep.server.PEPDaemon' $PEPD_CONF &
+    $JAVACMD $PEPD_JOPTS $PEPD_START_JOPTS 'org.glite.authz.pep.server.PEPDaemon' $PEPD_CONF &
     if [ -n "$PEPD_PID" ]; then
       echo $! > $PEPD_PID
     fi
@@ -172,14 +151,13 @@ function version {
     # Print currently used Version of the PEPd
     $JAVACMD $PEPD_JOPTS 'org.glite.authz.pep.server.Version'
 }
-    
 
 
 function print_help {
    echo "PEP Server control script"
    echo "Usage:"
    echo "  $0 start   - to start the service"
-   echo "  $0 stop    - to stop the service" 
+   echo "  $0 stop    - to stop the service"
    echo "  $0 status  - print PEP daemon status"
    echo "  $0 version - print PEP daemon version"
    echo "  $0 clearResponseCache - clears the PEP Server PDP response cache"
@@ -190,20 +168,20 @@ case "$1" in
         start
         ;;
     stop)
-        executeAdminCommand 'shutdown' 
+        executeAdminCommand 'shutdown'
         ;;
-    status) 
+    status)
         executeAdminCommand 'status'
         ;;
     version)
         version
         ;;
-    clearResponseCache) 
+    clearResponseCache)
         executeAdminCommand 'clearResponseCache'
         ;;
-    *) 
-        print_help 
+    *)
+        print_help
         exit 1
         ;;
 esac
-exit $? 
+exit $?

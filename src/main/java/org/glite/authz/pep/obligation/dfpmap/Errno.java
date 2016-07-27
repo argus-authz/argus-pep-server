@@ -15,9 +15,20 @@
  * limitations under the License.
  */
 
-/** 
- * Classes used to create and hold a PEP daemon configuration. 
- * 
- * @see <a href="https://twiki.cern.ch/twiki/bin/view/EGEE/AuthZPEP#Policy_Enforcement_Point_Daemon">PEP configuration and usage documentation</a>
- */
-package org.glite.authz.pep.server.config;
+package org.glite.authz.pep.obligation.dfpmap;
+
+public enum Errno {
+
+  EEXIST(17);
+
+  private Errno(int v){
+    this.value = v;
+  }
+
+  int value;
+
+  public int getValue() {
+
+    return value;
+  }
+}

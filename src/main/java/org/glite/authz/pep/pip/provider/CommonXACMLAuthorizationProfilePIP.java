@@ -110,13 +110,10 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
      * @param requireProxy
      *            whether a subject's certificate chain must require a proxy in
      *            order to be valid
-     * @param eeTrustMaterial
-     *            trust material used to validate the subject's end entity
-     *            certificate
-     * @param acTrustMaterial
-     *            trust material used to validate the subject's attribute
-     *            certificate certificate, may be <code>null</code> if AC
-     *            support is not desired
+     * @param x509Validator 
+     *            the certificate validator
+     * @param vomsACValidator 
+     *            the voms validator
      * @param performPKIXValidation
      *            perform or not PKIX validation on the certificate
      * @throws ConfigurationException
@@ -148,13 +145,10 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
      * @param requireProxy
      *            whether a subject's certificate chain must require a proxy in
      *            order to be valid
-     * @param eeTrustMaterial
-     *            trust material used to validate the subject's end entity
-     *            certificate
-     * @param acTrustMaterial
-     *            trust material used to validate the subject's attribute
-     *            certificate certificate, may be <code>null</code> if AC
-     *            support is not desired
+     * @param x509Validator 
+     *            the certificate validator
+     * @param vomsACValidator 
+     *            the VOMS validator
      * @param performPKIXValidation
      *            perform or not PKIX validation on the certificate
      * @param acceptedProfileIds

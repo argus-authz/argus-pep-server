@@ -58,13 +58,11 @@ public class WorkerNodeProfileV1 extends GLiteAuthorizationProfilePIP {
      *            whether a subject's certificate chain must require a proxy in
      *            order to be valid
      * @param x509Validator
-     *            trust material used to validate the subject's end entity
-     *            certificate
+     *            the certificate valiator
      * @param vomsACValidator
-     *            trust material used to validate the subject's attribute
-     *            certificate certificate, may be null of AC support is not
-     *            desired
-     * 
+     *            the voms validator
+     * @param performPKIXValidation 
+     *            whether pki validation should be performed
      * @throws ConfigurationException
      *             thrown if the configuration of the PIP fails
      */

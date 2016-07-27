@@ -1,4 +1,6 @@
 /.settings
+/.classpath
+/.project
 /target
 /rpmbuild
 /debbuild
@@ -7,3 +9,4 @@
 /*.tar.gz
 /.pc
 argus-pep-server.spec
+/bin/
