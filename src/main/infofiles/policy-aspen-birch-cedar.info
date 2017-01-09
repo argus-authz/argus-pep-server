@@ -1,0 +1,6 @@
+# Non-IGTF meta-policy file, referencing the 'standard' non-IOTA policies.
+# This policy is acceptable for all current VOs
+subjectdn = \
+    file:policy-igtf-classic.info, \
+    file:policy-igtf-mics.info, \
+    file:policy-igtf-slcs.info
