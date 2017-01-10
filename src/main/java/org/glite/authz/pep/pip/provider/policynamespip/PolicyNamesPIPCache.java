@@ -314,8 +314,12 @@ public class PolicyNamesPIPCache {
 	if (recursion > MAX_RECURSION)
 	    throw new ParseException("Too many levels of recursion (max. "+MAX_RECURSION+") in "+path, recursion);
 
-	// Try to get an old entry
-	Entry entry=(oldList==null ? null : oldList.get(path));
+	// Check existence of file
+	if (Files.notExists(path))  {
+	    log.warn("Skipping non-existing "+path.getFileName().toString());
+	    nentries_failed++;
+	    return;
+	}
 
 	// Get the modification time of the path
 	FileTime modified;
@@ -327,6 +331,9 @@ public class PolicyNamesPIPCache {
 	} else {
 	    modified=Files.getLastModifiedTime(path);
 	}
+
+	// Try to get an old entry
+	Entry entry=(oldList==null ? null : oldList.get(path));
 
 	// If the entry doesn't exist yet or has changed, reparse it.
 	if (entry==null || !entry.modified.equals(modified)) {
