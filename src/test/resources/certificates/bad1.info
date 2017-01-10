@@ -1,7 +1,0 @@
-#
-# Missing subjectDN
-#   
-alias = Bad Test CA
-email = root@example.org
-status = accredited:classic
-version = 1.75

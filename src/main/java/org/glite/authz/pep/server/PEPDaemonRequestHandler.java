@@ -153,7 +153,7 @@ public class PEPDaemonRequestHandler {
           .debug("Checking if a response has already been cached for this request");
         net.sf.ehcache.Element cacheElement = responseCache.get(request);
         if (cacheElement != null) {
-          Response cachedResponse = (Response) cacheElement.getObjectValue();
+          Response cachedResponse = (Response) cacheElement.getValue();
           if (cachedResponse != null) {
             log.debug("Cached response found, using it");
             response = cachedResponse;
