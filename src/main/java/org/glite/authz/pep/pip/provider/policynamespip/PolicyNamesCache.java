@@ -51,9 +51,9 @@ import java.text.ParseException;
  * trust directory.
  * @author Mischa Sall&eacute;
  */
-public class PolicyNamesPIPCache {
+public class PolicyNamesCache {
     /** Class logger instance */
-    private final Logger log = LoggerFactory.getLogger(PolicyNamesPIPCache.class);
+    private final Logger log = LoggerFactory.getLogger(PolicyNamesCache.class);
 
 
     ////////////////////////////////////////////////////////////////////////
@@ -83,17 +83,15 @@ public class PolicyNamesPIPCache {
     /** Previous cached list of {@value #FILE_SFX} file entries in the trust_dir */
     private LinkedHashMap<Path,Entry> oldInfoEntries = null;
     
-    /** Previous cached list of {@value #FILE_SFX} file entries outside of the trust_dir */
+    /** Previous cached list of {@value #FILE_SFX} file entries outside of the
+     * trust_dir */
     private LinkedHashMap<Path,Entry> oldExtInfoEntries = null;
     
-    /**
-     * Directory containing the {@value #FILE_SFX} files
-     * @see #getTrustDir
-     */
+    /** Directory containing the {@value #FILE_SFX} files */
     private String trust_dir = null;
 
     /**
-     * Time when PolicyNamesPIPCache was initialized
+     * Time when PolicyNamesCache was initialized
      * @see #getLifeTime
      */
     private long initTime = 0;
@@ -111,51 +109,38 @@ public class PolicyNamesPIPCache {
     ////////////////////////////////////////////////////////////////////////
 
     /**
-     * constructs new PolicyNamesPIPCache based on given trustDir
+     * constructs new PolicyNamesCache based on given trustDir
      * @param trustDir directory containing info files
      * @throws IOException on read errors for trust_dir or one of the info files
-     * @see #PolicyNamesPIPCache(PolicyNamesPIPCache)
+     * @see #PolicyNamesCache(PolicyNamesCache)
      */
-    public PolicyNamesPIPCache(String trustDir) throws IOException   {
+    public PolicyNamesCache(String trustDir) throws IOException   {
 	this.trust_dir = trustDir;
 	this.update();
     }
 
     /**
-     * constructs new PolicyNamesPIPCache based on old PolicyNamesPIPCache
-     * @param oldCache previous PolicyNamesPIPCache
+     * constructs new PolicyNamesCache based on old PolicyNamesCache
+     * @param oldCache previous PolicyNamesCache
      * @throws IOException on read errors for trust_dir or one of the info files
-     * @see #PolicyNamesPIPCache(String)
+     * @see #PolicyNamesCache(String)
      */
-    public PolicyNamesPIPCache(PolicyNamesPIPCache oldCache) throws IOException    {
+    public PolicyNamesCache(PolicyNamesCache oldCache) throws IOException    {
 	this.update(oldCache);
     }
 
 
     ////////////////////////////////////////////////////////////////////////
-    // getter methods
+    // Public methods
     ////////////////////////////////////////////////////////////////////////
  
     /**
-     * Returns the internal trust_dir
-     * @return {@link #trust_dir} for this PolicyNamesPIPCache
-     */
-    public String getTrustDir()  {
-	return trust_dir;
-    }
-
-    /**
-     * Returns the lifetime of this PolicyNamesPIPCache in milliseconds.
-     * @return msecs since initialization of this PolicyNamesPIPCache
+     * Returns the lifetime of this PolicyNamesCache in milliseconds.
+     * @return msecs since initialization of this PolicyNamesCache
      */
     public long getLifeTime()  {
 	return Calendar.getInstance().getTimeInMillis()-initTime;
     }
-
-
-    ////////////////////////////////////////////////////////////////////////
-    // Main instance method
-    ////////////////////////////////////////////////////////////////////////
 
     /**
      * Tries to find given issuer DN in the cached info files in 
@@ -163,7 +148,7 @@ public class PolicyNamesPIPCache {
      * @param issuerDN String issuer DN to look for
      * @return array of String with all the matching info files
      */
-    public String[] matchIssuerDN(String issuerDN)    {
+    public String[] matchIssuerDN(String issuerDN) {
 	// Protect against empty cache
 	if (infoEntries == null)
 	    return new String[0];
@@ -182,26 +167,26 @@ public class PolicyNamesPIPCache {
 
 
     ////////////////////////////////////////////////////////////////////////
-    // Protected methods
+    // Private methods
     ////////////////////////////////////////////////////////////////////////
 
     /**
      * Updates the current cache not using existing one.
      * @throws IOException upon reading errors
-     * @see #update(PolicyNamesPIPCache)
+     * @see #update(PolicyNamesCache)
      */
-    protected void update() throws IOException    {
+    private void update() throws IOException    {
 	this.update(null);
     }
 
     /**
      * Update internal, cached list of parsed-out info files in the specified
      * trustDir.
-     * @param oldCache previous PolicyNamesPIPCache to be updated
+     * @param oldCache previous PolicyNamesCache to be updated
      * @see #update()
      * @throws IOException upon reading errors
      */
-    protected void update(PolicyNamesPIPCache oldCache) throws IOException    {
+    private void update(PolicyNamesCache oldCache) throws IOException    {
 	long t0=System.nanoTime();
 
 	// Set initialization time
@@ -212,7 +197,7 @@ public class PolicyNamesPIPCache {
 
 	// Force directories to be the same and update the old lists
 	if (oldCache!=null) {
-	    trust_dir=oldCache.getTrustDir();
+	    trust_dir=oldCache.trust_dir;
 	    oldInfoEntries=oldCache.infoEntries;
 	    oldExtInfoEntries=oldCache.extInfoEntries;
 	}
@@ -246,11 +231,6 @@ public class PolicyNamesPIPCache {
 	    extInfoEntries.size()+" external dep(s), "+
 	    nentries_copied+" copied, "+nentries_failed+" failed, "+nentries_new+" new)");
     }
-
-
-    ////////////////////////////////////////////////////////////////////////
-    // Private helper methods
-    ////////////////////////////////////////////////////////////////////////
 
     /**
      * Find all {@value #FILE_SFX} files in given trust dir.

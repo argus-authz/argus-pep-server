@@ -107,18 +107,19 @@ public class PolicyNamesPIPIniConfigurationParser
 	    // Instantiate PIP
 	    PolicyNamesPIP pip;
 	    try {
-		pip = new PolicyNamesPIP(id, trust_dir);
+		if (updateinterval_long>0)  {
+		    // Use update interval
+		    log.debug("Found "+UPDATEINTERVAL_KEY+" = "+updateinterval_long);
+		    pip = new PolicyNamesPIP(id, trust_dir, updateinterval_long);
+		} else	{
+		    // Use default update interval
+		    pip = new PolicyNamesPIP(id, trust_dir);
+		}
 	    } catch (IOException e) {
 		throw new ConfigurationException(
 		    "Could not instantiate PIP: "+e.getMessage());
 	    }
 
-	    // Set update interval
-	    if (updateinterval_long>0) {
-		log.debug("Found "+UPDATEINTERVAL_KEY+" = "+updateinterval_long);
-		pip.setUpdateInterval(updateinterval_long);
-	    }
-	    
 	    // Set attribute name
 	    if (attributeName != null)  {
 		log.debug("Found "+ATTRIBUTENAME_KEY+" = "+attributeName);
