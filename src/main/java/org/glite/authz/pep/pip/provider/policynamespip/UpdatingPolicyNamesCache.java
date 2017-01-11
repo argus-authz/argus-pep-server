@@ -26,6 +26,10 @@ package org.glite.authz.pep.pip.provider.policynamespip;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import java.io.IOException;
 
 
@@ -39,6 +43,14 @@ public class UpdatingPolicyNamesCache {
     /** Class logger instance */
     private final Logger log = LoggerFactory.getLogger(UpdatingPolicyNamesCache.class);
 
+    /** The read/write lock that implements thread safety for this store **/
+    protected final ReadWriteLock rwLock = new ReentrantReadWriteLock();
+
+    /** A reference to the read lock **/
+    protected final Lock read = rwLock.readLock();
+
+    /** A reference to the write lock **/
+    protected final Lock write = rwLock.writeLock();
 
     ////////////////////////////////////////////////////////////////////////
     // constants
@@ -55,10 +67,10 @@ public class UpdatingPolicyNamesCache {
  
     /** time interval (in msec) after which info files cache will be
      * refreshed, default {@link #UPDATEINTERVAL}. */
-    private long update_interval=UPDATEINTERVAL;
+    private long update_interval = UPDATEINTERVAL;
 
-    /** Whether we're updating and replacing the {@link PolicyNamesCache} */
-    private volatile boolean updating=false;
+    /** Whether a thread is updating the {@link PolicyNamesCache} */
+    private volatile boolean updating = false;
 
     /** Cache of info file directory
      * @see PolicyNamesCache */
@@ -125,13 +137,21 @@ public class UpdatingPolicyNamesCache {
 	// Update the cache (when needed)
 	updateCache();
 
-	// Protect against empty cache
-	if (cache == null)  {
-	    log.warn("Encountered empty cache while matching DN "+dn);
-	    return new String[0];
-	}
+	// Obtain read lock
+	read.lock();
+	try {
+	    // Protect against empty cache
+	    if (cache == null)  {
+		log.warn("Encountered empty cache while matching DN "+dn);
+		return new String[0];
+	    }
 
-	return cache.matchIssuerDN(dn);
+	    // Find and return matching info files
+	    return cache.matchIssuerDN(dn);
+	} finally {
+	    // release read lock
+	    read.unlock();
+	}
     }
     
 
@@ -145,24 +165,46 @@ public class UpdatingPolicyNamesCache {
      * {@link PolicyNamesCache}
      */
     private void updateCache() throws IOException    {
-	if (updating)
-	    return;
+	PolicyNamesCache newCache=null;
 
-	// set lock: prevent other threads from updating
-	updating=true;
+	// First check (with appropriate read lock) whether we need to do
+	// anything. If so, create a new cache.
+	read.lock();
+	try {
+	    if (cache.getLifeTime() < update_interval || updating==true) 
+		return;
 
-	// Check whether cached list needs updating
-	if (cache.getLifeTime() > update_interval)	{
+	    // Set updating flag. Note: another thread might have set the
+	    // updating flag after we have just checked, in which case both will
+	    // create a new cache. Even then only one will be used, due to the
+	    // second getLifeTime() check below
+	    updating = true;
+
 	    // Make a new cache, using the old as input. If this throws a
-	    // IOException, we will not reset the updating flag, which means we
-	    // will not re-try to update the cache and the old cache remains
-	    // valid.
-	    PolicyNamesCache newCache = new PolicyNamesCache(cache);
-	    // Replace the old cache
-	    cache=newCache;
+	    // IOException, the old cache remains valid.
+	    newCache = new PolicyNamesCache(cache);
+	} finally {
+	    read.unlock();
 	}
-	
-	// Unset lock
-	updating=false;
+
+	// Now replace: also put a write lock
+	write.lock();
+	try {
+	    // Check we have a valid new cache and the old cache is still
+	    // out-of-date (i.e. hasn't been updated in the mean time by another
+	    // thread
+	    if (newCache==null)
+		// This probably never happens: exception will have been thrown
+		log.warn("New cache is null, continuing to use old one");
+	    else if (cache.getLifeTime() < update_interval)
+		log.info("Other thread appears to have already updated cache");
+	    else
+		cache=newCache;
+
+	    // now reset the updating flag
+	    updating = false;
+	} finally {
+	    write.unlock();
+	}
     }
 }
