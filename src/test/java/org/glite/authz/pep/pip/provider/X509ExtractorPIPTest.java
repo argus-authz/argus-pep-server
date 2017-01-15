@@ -148,7 +148,11 @@ public class X509ExtractorPIPTest {
     @After
     public void finalize() throws Exception {
 	log.debug("Stopping PIP");
-        pip.stop();
+	if (pip!=null)	{
+	    pip.stop();
+	} else	{
+	    log.warn("PIP already stopped it seems...");
+	}
     }
 
     /**

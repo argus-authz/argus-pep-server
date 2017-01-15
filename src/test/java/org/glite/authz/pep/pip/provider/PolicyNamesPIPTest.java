@@ -64,10 +64,11 @@ public class PolicyNamesPIPTest {
     @After
     public void finalize() throws Exception {
 	log.debug("Stopping PIP");
-	if (pip!=null)
+	if (pip!=null)	{
 	    pip.stop();
-	else
+	} else	{
 	    log.warn("PIP already stopped it seems...");
+	}
     }
 
     /**

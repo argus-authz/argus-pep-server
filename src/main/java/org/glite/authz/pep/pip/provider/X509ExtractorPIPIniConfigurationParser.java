@@ -35,6 +35,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 
+import static java.lang.String.format;
+
 /**
  * Configuration parser for a {@link X509ExtractorPIP}.
  * @author Mischa Sall&eacute;, Rens Visser
@@ -72,27 +74,32 @@ public class X509ExtractorPIPIniConfigurationParser
 	String acceptedAttributesValue = iniConfig.get(ACCEPTED_ATTRS_KEY);
 
 	// Mandatory argument is missing
-	if (acceptedAttributesValue == null)
-	    throw new ConfigurationException("No "+ACCEPTED_ATTRS_KEY+" specified, nothing to do");
+	if (acceptedAttributesValue == null)	{
+	    throw new ConfigurationException(
+		format("No %s specified, nothing to do", ACCEPTED_ATTRS_KEY));
+	}
 
 	// Split list on whitespace
 	String[] acceptedAttrName=acceptedAttributesValue.split("\\s+");
 
 	// Value is invalid
-	if (acceptedAttrName.length==0)
-	    throw new ConfigurationException("Empty value for "+ACCEPTED_ATTRS_KEY+" specified");
+	if (acceptedAttrName.length==0)	{
+	    throw new ConfigurationException(
+		format("Empty value for %s specified", ACCEPTED_ATTRS_KEY));
+	}
 
 	// Initialize new acceptedAttribute ArrayList
 	ArrayList<X509ExtractorPIP.AcceptedAttr> acceptedAttrList=new ArrayList<X509ExtractorPIP.AcceptedAttr>();
 	for (int i=0; i<acceptedAttrName.length; i++)	{
-	    if (X509ExtractorPIP.ATTR_X509_ISSUER.equals(acceptedAttrName[i]))
+	    if (X509ExtractorPIP.ATTR_X509_ISSUER.equals(acceptedAttrName[i])) {
 		acceptedAttrList.add(X509ExtractorPIP.AcceptedAttr.ACCEPT_ATTR_X509_ISSUER);
-	    else if (X509ExtractorPIP.ATTR_CA_POLICY_OID.equals(acceptedAttrName[i]))
+	    } else if (X509ExtractorPIP.ATTR_CA_POLICY_OID.equals(acceptedAttrName[i]))	{
 		acceptedAttrList.add(X509ExtractorPIP.AcceptedAttr.ACCEPT_ATTR_CA_POLICY_OID);
-	    else
+	    } else  {
 		throw new ConfigurationException(
-		    "Unknown value for "+ACCEPTED_ATTRS_KEY+" found: "+acceptedAttrName[i]);
-	    log.debug("Will produce attributeID \""+acceptedAttrName[i]+"\"");
+		    format("Unknown value for %s found: %s", ACCEPTED_ATTRS_KEY, acceptedAttrName[i]));
+	    }
+	    log.debug("Will produce attributeID \"{}\"", acceptedAttrName[i]);
 	}
 
 	// Instantiate PIP, convert new ArrayList to right AcceptedAttribute[]

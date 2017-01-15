@@ -26,15 +26,17 @@ package org.glite.authz.pep.pip.provider.policynamespip;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 
 import java.io.IOException;
 
 
 /**
- * Subclass for {@link org.glite.authz.pep.pip.provider.PolicyNamesPIP}
+ * Helper class for {@link org.glite.authz.pep.pip.provider.PolicyNamesPIP}
  * providing a an updating parsed cache of the subjectdn entries in the info
  * files in the trust directory.
  * @author Mischa Sall&eacute;
@@ -58,7 +60,7 @@ public class UpdatingPolicyNamesCache {
 
     /** Default time interval (in msec) after which info files cache will be
      * refreshed ({@value}) */
-    public final static long UPDATEINTERVAL = 6*3600*1000;
+    public final static long UPDATEINTERVAL = TimeUnit.HOURS.toMillis(6);
   
 
     ////////////////////////////////////////////////////////////////////////
@@ -67,10 +69,10 @@ public class UpdatingPolicyNamesCache {
  
     /** time interval (in msec) after which info files cache will be
      * refreshed, default {@link #UPDATEINTERVAL}. */
-    private long update_interval = UPDATEINTERVAL;
+    private long updateInterval = UPDATEINTERVAL;
 
     /** Whether a thread is updating the {@link PolicyNamesCache} */
-    private volatile boolean updating = false;
+    private volatile boolean isUpdating = false;
 
     /** Cache of info file directory
      * @see PolicyNamesCache */
@@ -82,13 +84,13 @@ public class UpdatingPolicyNamesCache {
     ////////////////////////////////////////////////////////////////////////
      
     /**
-     * Sets the {@link #update_interval} (in msec) after which info files cache
+     * Sets the {@link #updateInterval} (in msec) after which info files cache
      * will be reprocessed.
      * @param msecs number of millisecs between updates
      * @see #UPDATEINTERVAL
      */
     public void setUpdateInterval(long msecs)    {
-	update_interval=msecs;
+	updateInterval=msecs;
     }
     
     ////////////////////////////////////////////////////////////////////////
@@ -99,13 +101,14 @@ public class UpdatingPolicyNamesCache {
      * constructs new UpdatingPolicyNamesCache based on given trustDir and
      * updateInterval
      * @param trustDir directory containing info files
+     * @param msecs number of millisecs between updates
      * @throws IOException on read errors for trust_dir or one of the info files
      * @see #UpdatingPolicyNamesCache(String)
      * @throws IOException in case of I/O errors
      */
-    public UpdatingPolicyNamesCache(String trustDir, long updateInterval) throws IOException {
+    public UpdatingPolicyNamesCache(String trustDir, long msecs) throws IOException {
 	this(trustDir);
-	this.update_interval = updateInterval;
+	this.updateInterval = msecs;
     }
 
     /**
@@ -142,7 +145,7 @@ public class UpdatingPolicyNamesCache {
 	try {
 	    // Protect against empty cache
 	    if (cache == null)  {
-		log.warn("Encountered empty cache while matching DN "+dn);
+		log.warn("Encountered empty cache while matching DN {}", dn);
 		return new String[0];
 	    }
 
@@ -171,14 +174,15 @@ public class UpdatingPolicyNamesCache {
 	// anything. If so, create a new cache.
 	read.lock();
 	try {
-	    if (cache.getLifeTime() < update_interval || updating==true) 
+	    if (cache.getLifeTime() < updateInterval || isUpdating==true)   { 
 		return;
+	    }
 
 	    // Set updating flag. Note: another thread might have set the
 	    // updating flag after we have just checked, in which case both will
 	    // create a new cache. Even then only one will be used, due to the
 	    // second getLifeTime() check below
-	    updating = true;
+	    isUpdating = true;
 
 	    // Make a new cache, using the old as input. If this throws a
 	    // IOException, the old cache remains valid.
@@ -193,16 +197,17 @@ public class UpdatingPolicyNamesCache {
 	    // Check we have a valid new cache and the old cache is still
 	    // out-of-date (i.e. hasn't been updated in the mean time by another
 	    // thread
-	    if (newCache==null)
+	    if (newCache==null)	{
 		// This probably never happens: exception will have been thrown
 		log.warn("New cache is null, continuing to use old one");
-	    else if (cache.getLifeTime() < update_interval)
+	    } else if (cache.getLifeTime() < updateInterval)	{
 		log.info("Other thread appears to have already updated cache");
-	    else
+	    } else  {
 		cache=newCache;
+	    }
 
 	    // now reset the updating flag
-	    updating = false;
+	    isUpdating = false;
 	} finally {
 	    write.unlock();
 	}

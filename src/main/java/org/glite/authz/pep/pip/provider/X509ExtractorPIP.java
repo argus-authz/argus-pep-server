@@ -40,7 +40,6 @@ import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.x509.PolicyInformation;
 
-//import org.bouncycastle.asn1.x509.X509Extension;
 import org.bouncycastle.asn1.x509.Extension;
 
 import java.io.InputStream;
@@ -49,6 +48,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.List;
 import java.security.cert.X509Certificate;
+
+import static java.lang.String.format;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,11 +106,11 @@ public class X509ExtractorPIP extends AbstractPolicyInformationPoint {
     /**
      * Constructs a X509ExtractorPIP instance, using both PIP ID and list of
      * accepted attributes
-     * @param pipid ID of this PIP.
+     * @param pipId ID of this PIP.
      * @param acceptedAttrIDs array of accepted attributes
      */
-    public X509ExtractorPIP(String pipid, AcceptedAttr[] acceptedAttrIDs) {
-	super(pipid);
+    public X509ExtractorPIP(String pipId, AcceptedAttr[] acceptedAttrIDs) {
+	super(pipId);
 
 	// Set list of accepted attributes
 	if (acceptedAttrIDs!=null && acceptedAttrIDs.length > 0)
@@ -120,12 +121,12 @@ public class X509ExtractorPIP extends AbstractPolicyInformationPoint {
      * Constructs a X509ExtractorPIP instance, using only PIP ID, list of
      * accepted attributes needs to be set using
      * {@link #setAcceptedAttrIDs(AcceptedAttr[])}
-     * @param pipid ID of this PIP.
+     * @param pipId ID of this PIP.
      * @see #X509ExtractorPIP(String, AcceptedAttr[])
      * @see #setAcceptedAttrIDs(AcceptedAttr[])
      */
-    public X509ExtractorPIP(String pipid) {
-	this(pipid, null);
+    public X509ExtractorPIP(String pipId) {
+	this(pipId, null);
     }
 
     /**
@@ -138,11 +139,12 @@ public class X509ExtractorPIP extends AbstractPolicyInformationPoint {
      */
     public boolean populateRequest(Request request) throws PIPProcessingException {
 	long t0=System.nanoTime();
-	boolean pipprocessed=false;
+	boolean pipProcessed=false;
 
 	// Do we need to do anything?
-	if (acceptedAttrIDs==null || acceptedAttrIDs.length==0)
+	if (acceptedAttrIDs==null || acceptedAttrIDs.length==0)	{
 	    return false;
+	}
 
 	// Get all subjects from the request, should be at least one, warn when
 	// there are more than 1
@@ -151,17 +153,20 @@ public class X509ExtractorPIP extends AbstractPolicyInformationPoint {
 	    log.error("Request has no subjects");
 	    throw new PIPProcessingException("No subject found in request");
 	}
-	if (subjects.size()>1)
-	    log.warn("Request has "+subjects.size()+" subjects, taking first match");
+	if (subjects.size()>1)	{
+	    log.warn("Request has {} subjects, taking first match", subjects.size());
+	}
 	
 	// Loop over all subjects to look for end-entity certificate
 	for (Subject subject : subjects) {
-	    if (subject==null)
+	    if (subject==null)	{
 		continue;
+	    }
 	    Set<Attribute> attributes = subject.getAttributes();
 	    X509Certificate cert = getCertFromSubject(attributes);
-	    if (cert == null)
+	    if (cert == null)	{
 		continue;
+	    }
 
 	    // Now see what we should handle
 	    for (int i=0; i < acceptedAttrIDs.length; i++) {
@@ -174,12 +179,13 @@ public class X509ExtractorPIP extends AbstractPolicyInformationPoint {
 			}
 			Attribute attrCAPolicyOids = new Attribute(ATTR_CA_POLICY_OID);
 			Set<Object> values = attrCAPolicyOids.getValues();
-			for (int j=0; j<oids.length; j++)
+			for (int j=0; j<oids.length; j++)   {
 			    values.add(oids[j]);
+			}
 			attributes.add(attrCAPolicyOids);
-			pipprocessed=true;
+			pipProcessed=true;
 			// Log that we succeeded
-			log.debug("Added attribute \""+ATTR_CA_POLICY_OID+"\" ("+oids.length+" value(s))");
+			log.debug("Added attribute \"{}\" ({} value(s))", ATTR_CA_POLICY_OID, oids.length);
 			break;
 		    case ACCEPT_ATTR_X509_ISSUER:
 			String str = cert.getIssuerX500Principal().getName();
@@ -191,20 +197,22 @@ public class X509ExtractorPIP extends AbstractPolicyInformationPoint {
 			Attribute attrIssuerDN = new Attribute(ATTR_X509_ISSUER);
 			attrIssuerDN.getValues().add(value);
 			attributes.add(attrIssuerDN);
-			pipprocessed=true;
+			pipProcessed=true;
 			// Log that we succeeded
-			log.debug("Added attribute \""+ATTR_X509_ISSUER+"\" ("+value+")");
+			log.debug("Added attribute \"{}\" ({})", ATTR_X509_ISSUER, value);
 			break;
 		    default:
-			throw new PIPProcessingException("Unknown attribute "+acceptedAttrIDs[i]+" specified");
+			final String errorMsg = format("Unknown attribute %s specified", acceptedAttrIDs[i]);
+			log.error(errorMsg);
+			throw new PIPProcessingException(errorMsg);
 		}
 	    }
 	}
 
 	// Log statistics
-	log.debug("PIP parsing took "+(System.nanoTime()-t0)/1000000.0+" msec");
+	log.debug("PIP parsing took {} msec", (System.nanoTime()-t0)/1000000.0);
 
-	return pipprocessed;
+	return pipProcessed;
     }
 
     /**
@@ -219,13 +227,15 @@ public class X509ExtractorPIP extends AbstractPolicyInformationPoint {
      */
     private X509Certificate getCertFromSubject(Set<Attribute> attributes)	{
 	// Protect against empty set
-	if (attributes==null)
+	if (attributes==null)	{
 	    return null;
+	}
 
 	// Loop over all attributes, looking for ATTR_X509_ISSUER
 	for (Attribute attr: attributes) {
-	    if (attr==null)
+	    if (attr==null) {
 		continue;
+	    }
 
 	    if (ATTR_KEY_INFO.equals(attr.getId()))	{
 		Set<Object> attributeValues = attr.getValues();
@@ -239,8 +249,9 @@ public class X509ExtractorPIP extends AbstractPolicyInformationPoint {
 		if (value.startsWith("-----BEGIN "))	{
 		    // assume WN profile: single PEM encoded chain. Should also
 		    // be single-valued according to https://edms.cern.ch/document/1058175/1.0.1
-		    if (attributeValues.size() > 1)
+		    if (attributeValues.size() > 1) {
 			log.warn("key-info attr has >1 values, but is PEM, taking only first value.");
+		    }
 		} else {
 		    // assume CommonXACMLProfile: base64 encoded blobs, might
 		    // not be ordered, according to
@@ -264,7 +275,7 @@ public class X509ExtractorPIP extends AbstractPolicyInformationPoint {
 		} catch (Exception e) {
 		    // This might be a IOException, but also for invalid base64
 		    // a StringIndexOutOfBoundsException or a DecoderException
-		    log.error("Skipping invalid key-info attr: Parsing value as a certificate failed: "+e.getMessage());
+		    log.error("Skipping invalid key-info attr: Parsing value as a certificate failed: {}", e.getMessage());
 		}
 	    }
 	}
@@ -282,13 +293,13 @@ public class X509ExtractorPIP extends AbstractPolicyInformationPoint {
 	List<String> oidList = new LazyList<String>();
 
 	// OID for certificate_policies (=2.5.29.32)
-//	String certPolicies = X509Extension.certificatePolicies.toString();
 	String certPolicies = Extension.certificatePolicies.toString();
 
 	// Grab bare extension value from certificate
 	byte[] extvalue = cert.getExtensionValue(certPolicies);
-	if (extvalue==null)
+	if (extvalue==null) {
 	    return null;
+	}
 
 	// Try to parse the raw bytes as ASN1Sequence
 	ASN1Sequence seq;
@@ -296,7 +307,7 @@ public class X509ExtractorPIP extends AbstractPolicyInformationPoint {
 	    DEROctetString oct=(DEROctetString)(new ASN1InputStream(new ByteArrayInputStream(extvalue)).readObject());
 	    seq = (ASN1Sequence) new ASN1InputStream(new ByteArrayInputStream(oct.getOctets())).readObject();
 	} catch (IOException e)	{
-	    log.error("Trying to obtain policyinfo from certificate failed: "+e.getMessage());
+	    log.error("Trying to obtain policyinfo from certificate failed: {}", e.getMessage());
 	    return null;
 	}
 

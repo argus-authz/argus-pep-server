@@ -39,6 +39,8 @@ import java.util.Set;
 import java.io.IOException;
 import java.text.ParseException;
 
+import static java.lang.String.format;
+
 
 /**
  * This PIP searches for all appearances of the issuer of the end-entity
@@ -71,7 +73,7 @@ public class PolicyNamesPIP extends AbstractPolicyInformationPoint {
      
     /** Name of attribute set by PIP, default {@link #ATTR_CA_POLICY_NAMES}
      * @see #setAttributeName(String) */
-    private String attribute_name = ATTR_CA_POLICY_NAMES;
+    private String attributeName = ATTR_CA_POLICY_NAMES;
 
     /** Contains the cached content of the info files in the trust dir. */
     private UpdatingPolicyNamesCache policyNamesCache = null;
@@ -83,11 +85,11 @@ public class PolicyNamesPIP extends AbstractPolicyInformationPoint {
      
     /**
      * Sets the output attribute name.
-     * @param attributeName name of attribute set by this PIP
+     * @param name name of attribute set by this PIP
      * @see #ATTR_CA_POLICY_NAMES
      */
-    protected void setAttributeName(String attributeName)    {
-	attribute_name=attributeName;
+    protected void setAttributeName(String name)    {
+	attributeName=name;
     }
 
     /**
@@ -107,14 +109,14 @@ public class PolicyNamesPIP extends AbstractPolicyInformationPoint {
     /**
      * constructor for a {@link PolicyNamesPIP} instance, specifying the
      * pipid, the trust dir and the update interval.
-     * @param pipid ID for this PIP
+     * @param pipId ID for this PIP
      * @param trustDir directory containing info files
      * @param updateInterval interval (msec) between info file cache updates
      * @see #PolicyNamesPIP(String)
      * @throws IOException in case of I/O errors
      */
-    public PolicyNamesPIP(String pipid, String trustDir, long updateInterval) throws IOException {
-	super(pipid);
+    public PolicyNamesPIP(String pipId, String trustDir, long updateInterval) throws IOException {
+	super(pipId);
 
 	// Initialize cache
 	policyNamesCache = new UpdatingPolicyNamesCache(trustDir, updateInterval);
@@ -124,12 +126,12 @@ public class PolicyNamesPIP extends AbstractPolicyInformationPoint {
      * constructor for a {@link PolicyNamesPIP} instance, specifying the
      * pipid and the trust dir, using a default {@link
      * UpdatingPolicyNamesCache#UPDATEINTERVAL}.
-     * @param pipid ID for this PIP
+     * @param pipId ID for this PIP
      * @see #PolicyNamesPIP(String,String)
      * @throws IOException in case of I/O errors
      */
-    public PolicyNamesPIP(String pipid, String trustDir) throws IOException {
-	super(pipid);
+    public PolicyNamesPIP(String pipId, String trustDir) throws IOException {
+	super(pipId);
 
 	// Initialize cache
 	policyNamesCache = new UpdatingPolicyNamesCache(trustDir);
@@ -139,12 +141,12 @@ public class PolicyNamesPIP extends AbstractPolicyInformationPoint {
      * constructor for a {@link PolicyNamesPIP} instance, specifying the
      * pipid and using the default {@link #TRUST_DIR} and default {@link
      * UpdatingPolicyNamesCache#UPDATEINTERVAL}.
-     * @param pipid ID for this PIP
+     * @param pipId ID for this PIP
      * @see #PolicyNamesPIP(String,String)
      * @throws IOException in case of I/O errors
      */
-    public PolicyNamesPIP(String pipid)	throws IOException {
-	this(pipid, TRUST_DIR);
+    public PolicyNamesPIP(String pipId)	throws IOException {
+	this(pipId, TRUST_DIR);
     }
 
 
@@ -166,8 +168,8 @@ public class PolicyNamesPIP extends AbstractPolicyInformationPoint {
 	throws PIPProcessingException
     {
 	long t0=System.nanoTime();
-	boolean pipprocessed=false;
-	String issuerdn=null;
+	boolean pipProcessed=false;
+	String issuerDn=null;
 
 	// Get all subjects from the request, should be at least one, warn
 	// when there are more than 1
@@ -177,8 +179,7 @@ public class PolicyNamesPIP extends AbstractPolicyInformationPoint {
 	    throw new PIPProcessingException("No subject found in request");
 	}
 	if (subjects.size()>1)
-	    log.warn("Request has "+subjects.size()+
-		     " subjects, taking first match");
+	    log.warn("Request has {} subjects, taking first match", subjects.size());
 
 	// Loop over all subjects
 	for (Subject subject : subjects) {
@@ -187,56 +188,59 @@ public class PolicyNamesPIP extends AbstractPolicyInformationPoint {
 	    for (Attribute attr: attributes) {
 		if (ATTR_X509_ISSUER.equals(attr.getId())) {
 		    // Take first value (it should be singlevalued)
-		    Object tmp = attr.getValues().iterator().next();
-		    issuerdn = (tmp!=null ? tmp.toString() : null);
+		    Object x509IssuerAttr = attr.getValues().iterator().next();
+		    issuerDn = (x509IssuerAttr!=null ? x509IssuerAttr.toString() : null);
 		    break;
 		}
 	    }
 
 	    // Did we find the issuer attribute?
-	    if (issuerdn==null)	{
-		log.info("Subject has no or invalid "+ATTR_X509_ISSUER+
-			 " attribute set");
+	    if (issuerDn==null)	{
+		log.info("Subject has no or invalid {} attribute set",ATTR_X509_ISSUER);
 		continue;
 	    }
 
-	    // Look for the issuerdn in the .info files
-	    String[] policynames=new String[0];
+	    // Look for the issuerDn in the .info files
+	    String[] policyNames=new String[0];
 	    try {
-		policynames=policyNamesCache.findIssuerDN(issuerdn);
+		policyNames=policyNamesCache.findIssuerDN(issuerDn);
 	    } catch (IOException e)	{
-		log.error("I/O error reading info files: "+e.getMessage());
-		throw new PIPProcessingException(
-		    "I/O error reading info files: "+e.getMessage());
+		final String errorMsg=format("I/O error reading info files: %s", e.getMessage());
+		log.error(errorMsg, e);
+		throw new PIPProcessingException(errorMsg, e);
 	    }
 
 	    // Log total number of matching policies
-	    log.debug("Found "+policynames.length+" matching policies");
+	    if (policyNames.length==1) {
+		log.debug("Found {} matching policy", policyNames.length);
+	    } else {
+		log.debug("Found {} matching policies", policyNames.length);
+	    }
 
 	    // Check that we found any names
-	    if (policynames.length==0)	{
+	    if (policyNames.length==0)	{
 		log.info("No matching info file for this subject");
 		continue;
 	    }
 
 	    // Create new attribute and add the policy names
-	    Attribute attr_policynames =
-		new Attribute(attribute_name,
-			      Attribute.DT_STRING);
-	    Set<Object> values = attr_policynames.getValues();
-	    for (int i=0; i<policynames.length; i++)
-		values.add(policynames[i]);
+	    Attribute policyNamesAttr =
+		new Attribute(attributeName, Attribute.DT_STRING);
+	    Set<Object> values = policyNamesAttr.getValues();
+	    for (int i=0; i<policyNames.length; i++)	{
+		values.add(policyNames[i]);
+	    }
 
 	    // Add to the current subject
-	    attributes.add(attr_policynames);
-	    pipprocessed=true;
-	    log.debug("Added attribute \""+attribute_name+"\"");
+	    attributes.add(policyNamesAttr);
+	    pipProcessed=true;
+	    log.debug("Added attribute \"{}\"", attributeName);
 	}
 
 	// Log statistics
-	log.debug("PIP parsing took "+(System.nanoTime()-t0)/1000000.0+" msec");
+	log.debug("PIP parsing took {} msec", (System.nanoTime()-t0)/1000000.0);
 
 	// Return true when attribute is set
-	return pipprocessed;
+	return pipProcessed;
     }
 }
