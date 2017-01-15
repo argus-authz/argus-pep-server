@@ -269,8 +269,9 @@ public class PolicyNamesCache {
 	// Initialize file array
 	ArrayList<Path> files = new ArrayList<Path>();
 	// Add all entries
-	for (Path entry: stream)
+	for (Path entry: stream)    {
 	    files.add(entry);
+	}
 
 	return files;
     }
