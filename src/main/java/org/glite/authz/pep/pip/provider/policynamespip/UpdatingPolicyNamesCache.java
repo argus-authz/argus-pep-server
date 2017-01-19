@@ -43,7 +43,7 @@ import java.io.IOException;
  */
 public class UpdatingPolicyNamesCache {
     /** Class logger instance */
-    private final Logger log = LoggerFactory.getLogger(UpdatingPolicyNamesCache.class);
+    private static final Logger LOG = LoggerFactory.getLogger(UpdatingPolicyNamesCache.class);
 
     /** The read/write lock that implements thread safety for this store **/
     protected final ReadWriteLock rwLock = new ReentrantReadWriteLock();
@@ -145,7 +145,7 @@ public class UpdatingPolicyNamesCache {
 	try {
 	    // Protect against empty cache
 	    if (cache == null)  {
-		log.warn("Encountered empty cache while matching DN {}", dn);
+		LOG.warn("Encountered empty cache while matching DN {}", dn);
 		return new String[0];
 	    }
 
@@ -199,9 +199,9 @@ public class UpdatingPolicyNamesCache {
 	    // thread
 	    if (newCache==null)	{
 		// This probably never happens: exception will have been thrown
-		log.warn("New cache is null, continuing to use old one");
+		LOG.warn("New cache is null, continuing to use old one");
 	    } else if (cache.getLifeTime() < updateInterval)	{
-		log.info("Other thread appears to have already updated cache");
+		LOG.info("Other thread appears to have already updated cache");
 	    } else  {
 		cache=newCache;
 	    }

@@ -56,7 +56,7 @@ import static java.lang.String.format;
  */
 public class PolicyNamesCache {
     /** Class logger instance */
-    private final Logger log = LoggerFactory.getLogger(PolicyNamesCache.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PolicyNamesCache.class);
 
 
     ////////////////////////////////////////////////////////////////////////
@@ -226,7 +226,7 @@ public class PolicyNamesCache {
 	    try {
 		handleEntry(infoFiles.get(i), oldInfoEntries, infoEntries, 0);
 	    } catch (ParseException e)	{
-		log.warn("Syntax error, skipping {}", infoFiles.get(i), e);
+		LOG.warn("Syntax error, skipping {}", infoFiles.get(i), e);
 	    }
 	}
 
@@ -241,7 +241,7 @@ public class PolicyNamesCache {
 	}
 	
 	// Log statistics
-	log.debug("Updated list ({}): {} msec ({} info files, {} valid, {} external dep(s), {} copied, {} failed, {} new)",
+	LOG.debug("Updated list ({}): {} msec ({} info files, {} valid, {} external dep(s), {} copied, {} failed, {} new)",
 		  trustDir, (System.nanoTime()-t0)/1000000.0,
 		  numInfoFiles, infoEntries.size(), extInfoEntries.size(),
 		  numEntriesCopied, numEntriesFailed, numEntriesNew);
@@ -306,7 +306,7 @@ public class PolicyNamesCache {
 
 	// Check existence of file
 	if (Files.notExists(path))  {
-	    log.warn("Skipping non-existing {}", path.getFileName().toString());
+	    LOG.warn("Skipping non-existing {}", path.getFileName().toString());
 	    numEntriesFailed++;
 	    return;
 	}
@@ -332,7 +332,7 @@ public class PolicyNamesCache {
 		entry=parseInfoFile(path, modified);
 		numEntriesNew++;
 	    } catch (ParseException e)	{
-		log.warn("Syntax error, skipping {}", path.getFileName().toString());
+		LOG.warn("Syntax error, skipping {}", path.getFileName().toString());
 		numEntriesFailed++;
 		return;
 	    }
@@ -402,7 +402,7 @@ public class PolicyNamesCache {
 	    reader=Files.newBufferedReader(path, Charset.defaultCharset());
 	} catch (IOException e)	{
 	    final String errorMsg = format("Cannot open %s: %s", name, e.getMessage());
-	    log.error(errorMsg);
+	    LOG.error(errorMsg);
 	    throw new IOException(errorMsg, e);
 	}
 	
@@ -438,7 +438,7 @@ public class PolicyNamesCache {
 	    // Try to close, this might throw a new IOException. We're throwing
 	    // one in any case.
 	    final String errorMsg = format("Reading from %s failed: %s", name, e.getMessage());
-	    log.error(errorMsg);
+	    LOG.error(errorMsg);
 	    try {
 		reader.close();
 	    } catch (IOException f)	{
@@ -625,7 +625,7 @@ public class PolicyNamesCache {
 		if (entry!=null)    {
 		    subDNsSet.addAll(entry.getSubDNs(recursion+1));
 		} else	{
-		    log.warn("Cannot find dep {} for {}", path, name);
+		    LOG.warn("Cannot find dep {} for {}", path, name);
 		}
 	    }
 		
@@ -635,7 +635,7 @@ public class PolicyNamesCache {
 		if (entry!=null)    {
 		    subDNsSet.addAll(entry.getSubDNs(recursion+1));
 		} else	{
-		    log.warn("Cannot find dep {} for {}", path, name);
+		    LOG.warn("Cannot find dep {} for {}", path, name);
 		}
 	    }
 
@@ -651,7 +651,7 @@ public class PolicyNamesCache {
 	    try {
 		this.subDNs=getSubDNs(0);
 	    } catch (ParseException e)	{
-		log.error("Syntax error in {}: {}", name, e.getMessage());
+		LOG.error("Syntax error in {}: {}", name, e.getMessage());
 		this.subDNs=new HashSet<String>();
 	    }
 	}
