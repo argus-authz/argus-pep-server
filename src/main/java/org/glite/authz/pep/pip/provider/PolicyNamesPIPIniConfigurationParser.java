@@ -44,7 +44,7 @@ public class PolicyNamesPIPIniConfigurationParser
     implements IniSectionConfigurationParser<PolicyInformationPoint>
 {
     /** Class logger. */
-    private Logger log = LoggerFactory.getLogger( PolicyNamesPIPIniConfigurationParser.class);
+    private static final Logger LOG = LoggerFactory.getLogger( PolicyNamesPIPIniConfigurationParser.class);
 
     /**
      * Name of the {@value} property in ini file which defines the directory
@@ -90,7 +90,7 @@ public class PolicyNamesPIPIniConfigurationParser
 
 	    // Log trustDir (if set)
 	    if (trustDir != null)   {
-		log.debug("Found {} = {}", TRUSTDIR_KEY, trustDir);
+		LOG.debug("Found {} = {}", TRUSTDIR_KEY, trustDir);
 	    }
 
 	    // Convert updateInterval to a long (when set)
@@ -112,7 +112,7 @@ public class PolicyNamesPIPIniConfigurationParser
 	    try {
 		if (updateIntervalLong>0)  {
 		    // Use update interval
-		    log.debug("Found {} = {}", UPDATEINTERVAL_KEY, updateIntervalLong);
+		    LOG.debug("Found {} = {}", UPDATEINTERVAL_KEY, updateIntervalLong);
 		    pip = new PolicyNamesPIP(id, trustDir, updateIntervalLong);
 		} else	{
 		    // Use default update interval
@@ -120,13 +120,13 @@ public class PolicyNamesPIPIniConfigurationParser
 		}
 	    } catch (IOException e) {
 		final String errorMsg = format("Could not instantiate PIP: %s", e.getMessage());
-		log.error(errorMsg, e);
+		LOG.error(errorMsg, e);
 		throw new ConfigurationException(errorMsg, e);
 	    }
 
 	    // Set attribute name
 	    if (attributeName != null)  {
-		log.debug("Found {} = {}", ATTRIBUTENAME_KEY, attributeName);
+		LOG.debug("Found {} = {}", ATTRIBUTENAME_KEY, attributeName);
 		pip.setAttributeName(attributeName);
 	    }
 

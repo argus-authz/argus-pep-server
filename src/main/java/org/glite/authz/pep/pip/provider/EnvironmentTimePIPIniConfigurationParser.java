@@ -43,7 +43,7 @@ public class EnvironmentTimePIPIniConfigurationParser implements
     public static final boolean DEFAULT_USE_UTC_TIMEZONE= true;
 
     /** logger */
-    private Logger log= LoggerFactory.getLogger(EnvironmentTimePIP.class);
+    private static final Logger LOG= LoggerFactory.getLogger(EnvironmentTimePIP.class);
 
     /** {@inheritDoc} */
     public PolicyInformationPoint parse(Ini.Section iniConfig,
@@ -52,7 +52,7 @@ public class EnvironmentTimePIPIniConfigurationParser implements
         String pipid= Strings.safeTrimOrNullString(iniConfig.getName());
         EnvironmentTimePIP pip= new EnvironmentTimePIP(pipid);
         boolean useUTC= IniConfigUtil.getBoolean(iniConfig, USE_UTC_TIMEZONE_PROP, DEFAULT_USE_UTC_TIMEZONE);
-        log.info("{}: uses UTC time zone: {}", pipid, useUTC);
+        LOG.info("{}: uses UTC time zone: {}", pipid, useUTC);
         pip.setUTC(useUTC);
         return pip;
     }

@@ -64,7 +64,7 @@ public class CommonXACMLAuthorizationProfilePIPIniConfigurationParser extends
         AbstractX509PIPIniConfigurationParser {
 
     /** Class logger. */
-    private Logger log= LoggerFactory.getLogger(CommonXACMLAuthorizationProfilePIPIniConfigurationParser.class);
+    private static final Logger LOG= LoggerFactory.getLogger(CommonXACMLAuthorizationProfilePIPIniConfigurationParser.class);
 
     /**
      * The name of the {@value} property to define the accepted Grid
@@ -82,12 +82,12 @@ public class CommonXACMLAuthorizationProfilePIPIniConfigurationParser extends
         // read accepted profile IDs from config
         String[] acceptedProfileIds= parseValuesList(iniConfig.get(ACCEPTED_PROFILE_IDS_PROP));
         if (acceptedProfileIds != null && acceptedProfileIds.length > 0) {
-            log.info("{}: accepted profile IDs: {}",
+            LOG.info("{}: accepted profile IDs: {}",
                      pipId,
                      Arrays.toString(acceptedProfileIds));
         }
         else {
-            log.info("{}: accepted profile IDs: all", pipId);
+            LOG.info("{}: accepted profile IDs: all", pipId);
         }
 
         CommonXACMLAuthorizationProfilePIP pip= new CommonXACMLAuthorizationProfilePIP(pipId,

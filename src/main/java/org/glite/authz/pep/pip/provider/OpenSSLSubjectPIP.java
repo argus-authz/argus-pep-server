@@ -45,7 +45,7 @@ import eu.emi.security.authn.x509.impl.OpensslNameUtils;
 public final class OpenSSLSubjectPIP extends AbstractPolicyInformationPoint {
 
     /** Class logger. */
-    private final Logger log= LoggerFactory.getLogger(OpenSSLSubjectPIP.class);
+    private static final Logger LOG= LoggerFactory.getLogger(OpenSSLSubjectPIP.class);
 
     /** Default list of subject attribute IDs what must be converted: {@value} */
     public final static List<String> DEFAULT_OPENSSL_SUBJECT_ATTRIBUTE_IDS= Arrays.asList(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ISSUER,
@@ -91,8 +91,8 @@ public final class OpenSSLSubjectPIP extends AbstractPolicyInformationPoint {
                         String opensslDN= value.toString();
                         @SuppressWarnings("deprecation")
                         String rfcDN= OpensslNameUtils.opensslToRfc2253(opensslDN);
-                        if (log.isDebugEnabled()) {
-                            log.debug("OpenSSL DN {} converted to {}",
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("OpenSSL DN {} converted to {}",
                                       opensslDN,
                                       rfcDN);
                         }

@@ -106,7 +106,7 @@ public class StaticPIPIniConfigurationParser implements IniSectionConfigurationP
     public static final String DEFAULT_ATTRIBUTE_DT = Attribute.DT_STRING;
 
     /** Class logger. */
-    private Logger log = LoggerFactory.getLogger(StaticPIPIniConfigurationParser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StaticPIPIniConfigurationParser.class);
 
     /** {@inheritDoc} */
     public PolicyInformationPoint parse(Ini.Section iniConfig, AbstractConfigurationBuilder<?> configBuilder)
@@ -117,37 +117,36 @@ public class StaticPIPIniConfigurationParser implements IniSectionConfigurationP
 
         String defaultAttributeIssuer = Strings.safeTrimOrNullString(IniConfigUtil.getString(iniConfig,
                 DEFAULT_ATTRIBUTE_ISSUER_PROP, null));
-        log.info("default attribute issuer: {}", (defaultAttributeIssuer == null) ? "none" : defaultAttributeIssuer);
+        LOG.info("default attribute issuer: {}", (defaultAttributeIssuer == null) ? "none" : defaultAttributeIssuer);
 
         List<Attribute> actionAttributes = parseAttributes(iniFile, IniConfigUtil.getString(iniConfig,
                 ACTION_ATTRIBS_PROP, null), defaultAttributeIssuer);
-        log.info("action attributes: {} ", pipId, actionAttributes);
+        LOG.info("action attributes: {} ", pipId, actionAttributes);
 
         List<Attribute> environmentAttributes = parseAttributes(iniFile, IniConfigUtil.getString(iniConfig,
                 ENVIRONMENT_ATTRIBS_PROP, null), defaultAttributeIssuer);
-        log.info("envrionment attributes: {}", pipId, environmentAttributes);
+        LOG.info("envrionment attributes: {}", pipId, environmentAttributes);
 
         List<Attribute> resourceAttributes = parseAttributes(iniFile, IniConfigUtil.getString(iniConfig,
                 RESOURCE_ATTRIBS_PROP, null), defaultAttributeIssuer);
-        log.info("resource attributes: {}", pipId, resourceAttributes);
+        LOG.info("resource attributes: {}", pipId, resourceAttributes);
 
         List<Attribute> subjectAttributes = parseAttributes(iniFile, IniConfigUtil.getString(iniConfig,
                 SUBJECT_ATTRIBS_PROP, null), defaultAttributeIssuer);
-        log.info("subject attributes: {}", pipId, subjectAttributes);
+        LOG.info("subject attributes: {}", pipId, subjectAttributes);
 
         StaticPIP pip = new StaticPIP(pipId, actionAttributes, environmentAttributes, resourceAttributes,
                 subjectAttributes);
 
         boolean resourceAttributesInAllResource = IniConfigUtil.getBoolean(iniConfig, RESOURCE_ATTRIBUTES_IN_ALL_PROP,
                 DEFAULT_RESOURCE_ATTRIBUTES_IN_ALL);
-        log
-                .info("resource attributes will be applied to all resources in request: {}",
+        LOG.info("resource attributes will be applied to all resources in request: {}",
                         resourceAttributesInAllResource);
         pip.setAddAttributesToAllResources(resourceAttributesInAllResource);
 
         boolean subjectAttributesInAllSubject = IniConfigUtil.getBoolean(iniConfig, SUBJECT_ATTRIBUTES_IN_ALL_PROP,
                 DEFAULT_SUBJECT_ATTRIBUTES_IN_ALL);
-        log.info("subject attributes will be applied to all subject in request: {}", subjectAttributesInAllSubject);
+        LOG.info("subject attributes will be applied to all subject in request: {}", subjectAttributesInAllSubject);
         pip.setAddAttributesToAllSubjects(subjectAttributesInAllSubject);
 
         return pip;
@@ -207,7 +206,7 @@ public class StaticPIPIniConfigurationParser implements IniSectionConfigurationP
             if (configSection == null) {
                 String errorMsg = "INI section " + sectionName
                         + " does not exist but was listed as an attribute definition section";
-                log.error(errorMsg);
+                LOG.error(errorMsg);
                 throw new ConfigurationException(errorMsg);
             }
 
@@ -253,7 +252,7 @@ public class StaticPIPIniConfigurationParser implements IniSectionConfigurationP
                 IniConfigUtil.getString(configSection, ATTRIBUTE_VALUE_DELIM_PROP, DEFAULT_VALUE_DELIM));
         attribute.getValues().addAll(values);
 
-        log.debug("Created the following attribute definition from INI section {}: {}", configSection.getName(),
+        LOG.debug("Created the following attribute definition from INI section {}: {}", configSection.getName(),
                 attribute);
         return attribute;
     }

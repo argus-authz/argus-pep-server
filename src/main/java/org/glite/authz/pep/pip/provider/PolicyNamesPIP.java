@@ -50,7 +50,7 @@ import static java.lang.String.format;
  */
 public class PolicyNamesPIP extends AbstractPolicyInformationPoint {
     /** Class logger instance */
-    private final Logger log = LoggerFactory.getLogger(PolicyNamesPIP.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PolicyNamesPIP.class);
 
 
     ////////////////////////////////////////////////////////////////////////
@@ -175,11 +175,11 @@ public class PolicyNamesPIP extends AbstractPolicyInformationPoint {
 	// when there are more than 1
 	Set<Subject> subjects = request.getSubjects();
 	if (subjects.isEmpty())	{
-	    log.error("Request has no subjects");
+	    LOG.error("Request has no subjects");
 	    throw new PIPProcessingException("No subject found in request");
 	}
 	if (subjects.size()>1)
-	    log.warn("Request has {} subjects, taking first match", subjects.size());
+	    LOG.warn("Request has {} subjects, taking first match", subjects.size());
 
 	// Loop over all subjects
 	for (Subject subject : subjects) {
@@ -196,7 +196,7 @@ public class PolicyNamesPIP extends AbstractPolicyInformationPoint {
 
 	    // Did we find the issuer attribute?
 	    if (issuerDn==null)	{
-		log.info("Subject has no or invalid {} attribute set",ATTR_X509_ISSUER);
+		LOG.info("Subject has no or invalid {} attribute set",ATTR_X509_ISSUER);
 		continue;
 	    }
 
@@ -206,20 +206,20 @@ public class PolicyNamesPIP extends AbstractPolicyInformationPoint {
 		policyNames=policyNamesCache.findIssuerDN(issuerDn);
 	    } catch (IOException e)	{
 		final String errorMsg=format("I/O error reading info files: %s", e.getMessage());
-		log.error(errorMsg, e);
+		LOG.error(errorMsg, e);
 		throw new PIPProcessingException(errorMsg, e);
 	    }
 
 	    // Log total number of matching policies
 	    if (policyNames.length==1) {
-		log.debug("Found {} matching policy", policyNames.length);
+		LOG.debug("Found {} matching policy", policyNames.length);
 	    } else {
-		log.debug("Found {} matching policies", policyNames.length);
+		LOG.debug("Found {} matching policies", policyNames.length);
 	    }
 
 	    // Check that we found any names
 	    if (policyNames.length==0)	{
-		log.info("No matching info file for this subject");
+		LOG.info("No matching info file for this subject");
 		continue;
 	    }
 
@@ -234,11 +234,11 @@ public class PolicyNamesPIP extends AbstractPolicyInformationPoint {
 	    // Add to the current subject
 	    attributes.add(policyNamesAttr);
 	    pipProcessed=true;
-	    log.debug("Added attribute \"{}\"", attributeName);
+	    LOG.debug("Added attribute \"{}\"", attributeName);
 	}
 
 	// Log statistics
-	log.debug("PIP parsing took {} msec", (System.nanoTime()-t0)/1000000.0);
+	LOG.debug("PIP parsing took {} msec", (System.nanoTime()-t0)/1000000.0);
 
 	// Return true when attribute is set
 	return pipProcessed;

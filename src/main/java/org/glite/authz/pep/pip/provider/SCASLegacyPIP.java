@@ -136,7 +136,7 @@ public class SCASLegacyPIP extends AbstractX509PIP {
     public static final String VOMS_GA= "http://authz-interop.org/xacml/subject/generic-attribute";
 
     /** Class logger. */
-    private Logger log= LoggerFactory.getLogger(SCASLegacyPIP.class);
+    private static final Logger LOG= LoggerFactory.getLogger(SCASLegacyPIP.class);
 
     /**
      * The constructor for this PIP. This constructor enables support for the
@@ -218,7 +218,7 @@ public class SCASLegacyPIP extends AbstractX509PIP {
             throw new PIPProcessingException("Issuer CA for the end entity certificate was not found in the cert chain");
         }
 
-        log.debug("Extracting end-entity certificate attributes");
+        LOG.debug("Extracting end-entity certificate attributes");
         HashSet<Attribute> subjectAttributes= new HashSet<Attribute>();
 
         // subject X509 ID
@@ -227,7 +227,7 @@ public class SCASLegacyPIP extends AbstractX509PIP {
         attribute.setDataType(Attribute.DT_STRING);
         String opensslSubject= OpensslNameUtils.convertFromRfc2253(endEntityCertificate.getSubjectX500Principal().getName(X500Principal.RFC2253), false);
         attribute.getValues().add(opensslSubject);
-        log.debug("Extracted attribute: {}", attribute);
+        LOG.debug("Extracted attribute: {}", attribute);
         subjectAttributes.add(attribute);
 
         // X509 issuer
@@ -236,7 +236,7 @@ public class SCASLegacyPIP extends AbstractX509PIP {
         attribute.setDataType(Attribute.DT_STRING);
         String opensslIssuer= OpensslNameUtils.convertFromRfc2253(endEntityCertificate.getIssuerX500Principal().getName(X500Principal.RFC2253), false);
         attribute.getValues().add(opensslIssuer);
-        log.debug("Extracted attribute: {}", attribute);
+        LOG.debug("Extracted attribute: {}", attribute);
         subjectAttributes.add(attribute);
 
         // cert serial number
@@ -244,7 +244,7 @@ public class SCASLegacyPIP extends AbstractX509PIP {
         attribute.setId(X509_SN);
         attribute.setDataType(Attribute.DT_INTEGER);
         attribute.getValues().add(endEntityCertificate.getSerialNumber().toString());
-        log.debug("Extracted attribute: {}", attribute);
+        LOG.debug("Extracted attribute: {}", attribute);
         subjectAttributes.add(attribute);
 
         // CA cert serial number
@@ -252,7 +252,7 @@ public class SCASLegacyPIP extends AbstractX509PIP {
         attribute.setId(X509_CA_SN);
         attribute.setDataType(Attribute.DT_INTEGER);
         attribute.getValues().add(caCert.getSerialNumber().toString());
-        log.debug("Extracted attribute: {}", attribute);
+        LOG.debug("Extracted attribute: {}", attribute);
         subjectAttributes.add(attribute);
 
         if (isVOMSSupportEnabled()) {
@@ -285,7 +285,7 @@ public class SCASLegacyPIP extends AbstractX509PIP {
                                               X509Certificate[] certChain)
             throws PIPProcessingException {
 
-        log.debug("Extracting VOMS attribute certificate attributes");
+        LOG.debug("Extracting VOMS attribute certificate attributes");
         VOMSAttribute attributeCertificate= extractVOMSAttributeCertificate(certChain);
         if (attributeCertificate == null) {
             return null;
@@ -298,7 +298,7 @@ public class SCASLegacyPIP extends AbstractX509PIP {
         attribute.setId(VOMS_VO);
         attribute.setDataType(Attribute.DT_STRING);
         attribute.getValues().add(attributeCertificate.getVO());
-        log.debug("Extracted attribute: {}", attribute);
+        LOG.debug("Extracted attribute: {}", attribute);
         vomsAttributes.add(attribute);
 
         // voms signing subject
@@ -321,7 +321,7 @@ public class SCASLegacyPIP extends AbstractX509PIP {
         primaryFqanAttribute.setId(VOMS_PRIMARY_FQAN);
         primaryFqanAttribute.setDataType(Attribute.DT_STRING);
         primaryFqanAttribute.getValues().add(attributeCertificate.getPrimaryFQAN());
-        log.debug("Extracted attribute: {}", primaryFqanAttribute);
+        LOG.debug("Extracted attribute: {}", primaryFqanAttribute);
         vomsAttributes.add(primaryFqanAttribute);
         // Secondary FQANs
         List<String> fqans= attributeCertificate.getFQANs();
@@ -334,7 +334,7 @@ public class SCASLegacyPIP extends AbstractX509PIP {
             for (String fqan : fqans) {
                 fqanAttribute.getValues().add(fqan);
             }
-            log.debug("Extracted attribute: {}", fqanAttribute);
+            LOG.debug("Extracted attribute: {}", fqanAttribute);
             vomsAttributes.add(fqanAttribute);
         }
 

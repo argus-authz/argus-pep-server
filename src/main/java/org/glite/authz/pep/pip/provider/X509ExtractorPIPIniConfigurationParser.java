@@ -45,7 +45,7 @@ public class X509ExtractorPIPIniConfigurationParser
     implements IniSectionConfigurationParser<PolicyInformationPoint>
 {
     /** Class logger. */
-    private Logger log = LoggerFactory.getLogger(PolicyNamesPIPIniConfigurationParser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PolicyNamesPIPIniConfigurationParser.class);
 
     /**
      * Name of the {@value} property in ini file which defines the list of
@@ -99,7 +99,7 @@ public class X509ExtractorPIPIniConfigurationParser
 		throw new ConfigurationException(
 		    format("Unknown value for %s found: %s", ACCEPTED_ATTRS_KEY, acceptedAttrName[i]));
 	    }
-	    log.debug("Will produce attributeID \"{}\"", acceptedAttrName[i]);
+	    LOG.debug("Will produce attributeID \"{}\"", acceptedAttrName[i]);
 	}
 
 	// Instantiate PIP, convert new ArrayList to right AcceptedAttribute[]
