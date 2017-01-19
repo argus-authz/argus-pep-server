@@ -35,6 +35,7 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 import org.junit.Before;
 import org.junit.After;
+import org.hamcrest.CoreMatchers;
 
 /**
  * JUnit framework tests for {@link PolicyNamesPIP}
@@ -86,9 +87,10 @@ public class PolicyNamesPIPTest {
 	    } catch (PIPProcessingException e) {
 		// expected
 		String message= e.getMessage();
+		assertNotNull("Got a null error message", message);
 		log.debug("EXPECTED: " + message);
 		log.debug("GOT ("+message.indexOf(element)+"): " + element);
-		assertTrue("PIPProcessingException message does not contain: " + element, message.indexOf(element) >= 0);
+		assertThat(message, CoreMatchers.containsString(element));
 	    } catch (Exception e) {
 		e.printStackTrace();
 		fail("must throw only PIPProcessingException: " + e.getMessage());
