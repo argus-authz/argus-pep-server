@@ -31,14 +31,14 @@ public class AuthorizationProfilePIPIniConfigurationParser extends
         GLiteAuthorizationProfilePIPIniConfigurationParser {
 
     /** Class logger. */
-    private Logger log= LoggerFactory.getLogger(AuthorizationProfilePIPIniConfigurationParser.class);
+    private static final Logger LOG= LoggerFactory.getLogger(AuthorizationProfilePIPIniConfigurationParser.class);
 
     /**
      * Constructor
      */
     public AuthorizationProfilePIPIniConfigurationParser() {
         super();
-        log.warn(AuthorizationProfilePIPIniConfigurationParser.class.getCanonicalName() + " is DEPRECATED, update your configuration");
+        LOG.warn(AuthorizationProfilePIPIniConfigurationParser.class.getCanonicalName() + " is DEPRECATED, update your configuration");
     }
 
 }

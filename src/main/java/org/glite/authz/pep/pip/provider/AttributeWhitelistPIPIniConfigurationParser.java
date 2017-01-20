@@ -57,7 +57,7 @@ public class AttributeWhitelistPIPIniConfigurationParser implements IniSectionCo
     public static final String SUB_ATTRIBS_PROP = "acceptedSubjectAttributes";
 
     /** Class logger. */
-    private final Logger log = LoggerFactory.getLogger(AttributeWhitelistPIPIniConfigurationParser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AttributeWhitelistPIPIniConfigurationParser.class);
 
     /** {@inheritDoc} */
     public PolicyInformationPoint parse(Ini.Section iniConfig, AbstractConfigurationBuilder<?> configBuilder)
@@ -65,30 +65,30 @@ public class AttributeWhitelistPIPIniConfigurationParser implements IniSectionCo
         String pipId = iniConfig.getName();
         String[] actionAttributeIds = parseAcceptedAttributeIds(iniConfig.get(ACT_ATTRIBS_PROP));
         if (actionAttributeIds != null && actionAttributeIds.length > 0) {
-            log.info("{}: white listed action attributes: {}", pipId, Arrays.toString(actionAttributeIds));
+            LOG.info("{}: white listed action attributes: {}", pipId, Arrays.toString(actionAttributeIds));
         } else {
-            log.info("{}: white listed action attributes: all", pipId);
+            LOG.info("{}: white listed action attributes: all", pipId);
         }
 
         String[] environmentAttributeIds = parseAcceptedAttributeIds(iniConfig.get(ENV_ATTRIBS_PROP));
         if (environmentAttributeIds != null && environmentAttributeIds.length > 0) {
-            log.info("{}: white listed environment attributes: ", pipId, Arrays.toString(environmentAttributeIds));
+            LOG.info("{}: white listed environment attributes: ", pipId, Arrays.toString(environmentAttributeIds));
         } else {
-            log.info("{}: white listed environment attributes: all", pipId);
+            LOG.info("{}: white listed environment attributes: all", pipId);
         }
 
         String[] resourceAttributeIds = parseAcceptedAttributeIds(iniConfig.get(RES_ATTRIBS_PROP));
         if (resourceAttributeIds != null && resourceAttributeIds.length > 0) {
-            log.info("{}: white listed resource attributes: ", pipId, Arrays.toString(resourceAttributeIds));
+            LOG.info("{}: white listed resource attributes: ", pipId, Arrays.toString(resourceAttributeIds));
         } else {
-            log.info("{}: white listed resource attributes: all", pipId);
+            LOG.info("{}: white listed resource attributes: all", pipId);
         }
 
         String[] subjectAttributeIds = parseAcceptedAttributeIds(iniConfig.get(SUB_ATTRIBS_PROP));
         if (subjectAttributeIds != null && subjectAttributeIds.length > 0) {
-            log.info("{}: white listed subject attributes: ", pipId, Arrays.toString(subjectAttributeIds));
+            LOG.info("{}: white listed subject attributes: ", pipId, Arrays.toString(subjectAttributeIds));
         } else {
-            log.info("{}: white listed subject attributes: all", pipId);
+            LOG.info("{}: white listed subject attributes: all", pipId);
         }
         return new AttributeWhitelistPIP(pipId, actionAttributeIds, environmentAttributeIds, resourceAttributeIds,
                 subjectAttributeIds);

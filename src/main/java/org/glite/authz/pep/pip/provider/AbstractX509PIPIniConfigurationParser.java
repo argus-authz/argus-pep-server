@@ -88,7 +88,7 @@ public abstract class AbstractX509PIPIniConfigurationParser implements
     public static final boolean DEFAULT_PERFORM_PKIX_VALIDATION= true;
 
     /** Class logger. */
-    private Logger log= LoggerFactory.getLogger(AbstractX509PIPIniConfigurationParser.class);
+    private static final Logger LOG= LoggerFactory.getLogger(AbstractX509PIPIniConfigurationParser.class);
 
     /** {@inheritDoc} */
     public PolicyInformationPoint parse(Ini.Section iniConfig,
@@ -98,17 +98,17 @@ public abstract class AbstractX509PIPIniConfigurationParser implements
         String pipId= iniConfig.getName();
 
         boolean requireProxy= IniConfigUtil.getBoolean(iniConfig, REQUIRE_PROXY_PROP, DEFAULT_REQUIRE_PROXY);
-        log.info("{}: subject proxy certificate required: {}", pipId, requireProxy);
+        LOG.info("{}: subject proxy certificate required: {}", pipId, requireProxy);
 
         VOMSACValidator vomsValidator= null;
         String vomsInfoDir= IniConfigUtil.getString(iniConfig, VOMS_INFO_DIR_PROP, null);
         if (vomsInfoDir != null) {
-            log.info("{}: VOMS info directory: {}", pipId, vomsInfoDir);
+            LOG.info("{}: VOMS info directory: {}", pipId, vomsInfoDir);
             // get refresh interval: default 1h
             int vomsInfoRefresh= IniConfigUtil.getInt(iniConfig, VOMS_INFO_REFRESH_PROP, DEFAULT_VOMS_INFO_REFRESH, 1, Integer.MAX_VALUE);
             // minute -> millis
             vomsInfoRefresh= vomsInfoRefresh * 60 * 1000;
-            log.info("{}: VOMS info refresh interval: {}ms", pipId, vomsInfoRefresh);
+            LOG.info("{}: VOMS info refresh interval: {}ms", pipId, vomsInfoRefresh);
             try {
                 Files.getFile(vomsInfoDir, false, true, true, false);
                 List<String> vomsInfoDirs= Arrays.asList(vomsInfoDir);
@@ -123,10 +123,10 @@ public abstract class AbstractX509PIPIniConfigurationParser implements
         }
 
         boolean requireCertificate= IniConfigUtil.getBoolean(iniConfig, REQUIRE_CERTIFICATE_PROP, getRequireCertificateDefault());
-        log.info("{}: require a certificate chains: {}", pipId, requireCertificate);
+        LOG.info("{}: require a certificate chains: {}", pipId, requireCertificate);
 
         boolean performPKIXValidation= IniConfigUtil.getBoolean(iniConfig, PERFORM_PKIX_VALIDATION_PROP, DEFAULT_PERFORM_PKIX_VALIDATION);
-        log.info("{}: perform PKIX validation on cert chains: {}", pipId, performPKIXValidation);
+        LOG.info("{}: perform PKIX validation on cert chains: {}", pipId, performPKIXValidation);
 
         PolicyInformationPoint pip= buildInformationPoint(iniConfig, requireProxy, configurationBuilder.getCertChainValidator(), vomsValidator, performPKIXValidation, requireCertificate);
         return pip;

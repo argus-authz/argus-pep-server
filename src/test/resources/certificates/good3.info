@@ -1,0 +1,10 @@
+#
+# Very basic Good CA
+#   
+alias = Good Test CA 3
+email = root@example.org
+status = accredited:classic
+version = 1.75
+subjectdn = \
+    "/C=NL/O=Example#/OU=PDP/CN=Test CA"
+

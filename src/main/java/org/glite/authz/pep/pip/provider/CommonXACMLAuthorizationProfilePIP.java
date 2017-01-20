@@ -96,7 +96,7 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
     private List<String> acceptedProfileIds_= null;
 
     /** Class logger. */
-    private Logger log= LoggerFactory.getLogger(CommonXACMLAuthorizationProfilePIP.class);
+    private static final Logger LOG= LoggerFactory.getLogger(CommonXACMLAuthorizationProfilePIP.class);
 
     /** Certificate factory */
     private CertificateFactory cf_;
@@ -169,16 +169,16 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
              performPKIXValidation);
         if (acceptedProfileIds == null) {
             // accept all
-            log.debug("{}: accept all profile ID values", pipID);
+            LOG.debug("{}: accept all profile ID values", pipID);
             acceptedProfileIds_= null;
         }
         else if (acceptedProfileIds.length == 0) {
             // accept none
-            log.debug("{}: accept NO profile ID value", pipID);
+            LOG.debug("{}: accept NO profile ID value", pipID);
             acceptedProfileIds_= Collections.emptyList();
         }
         else {
-            log.debug("{}: accept profile ID values: ",
+            LOG.debug("{}: accept profile ID values: ",
                       pipID,
                       Arrays.toString(acceptedProfileIds));
             acceptedProfileIds_= new ArrayList<String>(Arrays.asList(acceptedProfileIds));
@@ -201,14 +201,14 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
                 if (CommonXACMLAuthorizationProfileConstants.ID_ATTRIBUTE_PROFILE_ID.equals(attrib.getId())) {
                     if (acceptedProfileIds_ == null) {
                         // accept all profile IDs
-                        log.trace("PIP '{}' accept all {} value",
+                        LOG.trace("PIP '{}' accept all {} value",
                                   getId(),
                                   CommonXACMLAuthorizationProfileConstants.ID_ATTRIBUTE_PROFILE_ID);
                         return true;
                     }
                     else if (acceptedProfileIds_.isEmpty()) {
                         // accept none
-                        log.warn("PIP '{}' don't accept any profile ID, specify 'acceptedProfileIDs = ...' in config.",
+                        LOG.warn("PIP '{}' don't accept any profile ID, specify 'acceptedProfileIDs = ...' in config.",
                                  getId());
                         return false;
                     }
@@ -216,13 +216,13 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
                         // accept only listed one
                         for (String acceptedProfileId : acceptedProfileIds_) {
                             if (attrib.getValues().contains(acceptedProfileId)) {
-                                log.trace("PIP '{}' accept {}",
+                                LOG.trace("PIP '{}' accept {}",
                                           getId(),
                                           acceptedProfileId);
                                 return true;
                             }
                         }
-                        log.debug("PIP '{}' don't accept profile ID: {}",
+                        LOG.debug("PIP '{}' don't accept profile ID: {}",
                                   getId(),
                                   attrib.getValues());
                         return false;
@@ -231,7 +231,7 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
             }
         }
 
-        log.debug("Skipping PIP '{}', request does not contain a profile identifier in environment",
+        LOG.debug("Skipping PIP '{}', request does not contain a profile identifier in environment",
                   getId());
         return false;
     }
@@ -279,7 +279,7 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
             return null;
         }
 
-        log.debug("Extracting EEC attributes...");
+        LOG.debug("Extracting EEC attributes...");
         Set<Attribute> subjectAttributes= new HashSet<Attribute>();
 
         // get and set the subject DN attribute.
@@ -287,7 +287,7 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
         Attribute subjectIdAttribute= new Attribute(CommonXACMLAuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ID,
                                                     CommonXACMLAuthorizationProfileConstants.DATATYPE_X500_NAME);
         subjectIdAttribute.getValues().add(endEntitySubjectDN);
-        log.debug("subject-id attribute: {}", subjectIdAttribute);
+        LOG.debug("subject-id attribute: {}", subjectIdAttribute);
         subjectAttributes.add(subjectIdAttribute);
 
         // set the issuer DN attribute.
@@ -297,7 +297,7 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
             String issuer= cert.getIssuerX500Principal().getName(X500Principal.RFC2253);
             subjectIssuerAttribute.getValues().add(issuer);
         }
-        log.debug("subject-issuer attribute: {}", subjectIssuerAttribute);
+        LOG.debug("subject-issuer attribute: {}", subjectIssuerAttribute);
         subjectAttributes.add(subjectIssuerAttribute);
 
         if (isVOMSSupportEnabled()) {
@@ -323,10 +323,10 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
      */
     protected Collection<Attribute> processVOMS(X509Certificate[] certChain) {
 
-        log.debug("Extracting VOMS ACs");
+        LOG.debug("Extracting VOMS ACs");
         List<VOMSAttribute> vomsAttributes= extractVOMSAttributes(certChain);
         if (vomsAttributes == null) {
-            log.debug("No VOMS AC found in cert chain");
+            LOG.debug("No VOMS AC found in cert chain");
             return null;
         }
 
@@ -355,7 +355,7 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
                 try {
                     fqan= FQAN.parseFQAN(fqanString);
                 } catch (ParseException e) {
-                    log.warn("Failed to parse FQAN: {}. {}",fqanString,e.getMessage());
+                    LOG.warn("Failed to parse FQAN: {}. {}",fqanString,e.getMessage());
                     continue;
                 }
                 // group name
@@ -386,19 +386,19 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
                 }
             }
         }
-        log.debug("VO attribute: {}", voAttribute);
+        LOG.debug("VO attribute: {}", voAttribute);
         vomsSubjectAttributes.add(voAttribute);
-        log.debug("Primary group attribute: {}", primaryGroupAttribute);
+        LOG.debug("Primary group attribute: {}", primaryGroupAttribute);
         vomsSubjectAttributes.add(primaryGroupAttribute);
-        log.debug("Group attribute: {}", groupAttribute);
+        LOG.debug("Group attribute: {}", groupAttribute);
         vomsSubjectAttributes.add(groupAttribute);
         if (primaryRoleAttribute != null) {
-            log.debug("Primary role attribute: {}", primaryRoleAttribute);
+            LOG.debug("Primary role attribute: {}", primaryRoleAttribute);
             vomsSubjectAttributes.add(primaryRoleAttribute);
         }
         if (!issuerRoleAttributeHT.isEmpty()) {
             Collection<Attribute> roleAttributes= issuerRoleAttributeHT.values();
-            log.debug("Role attributes: {}", roleAttributes);
+            LOG.debug("Role attributes: {}", roleAttributes);
             vomsSubjectAttributes.addAll(roleAttributes);
         }
         return vomsSubjectAttributes;
@@ -416,12 +416,12 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
             X509Certificate[] certChain) {
         VOMSACValidator validator= getVOMSACValidator();
         String x509Subject= certChain[0].getSubjectX500Principal().getName(X500Principal.RFC2253);
-        log.debug("Validating VOMS AC for {}",x509Subject);
+        LOG.debug("Validating VOMS AC for {}",x509Subject);
         
         List<VOMSValidationResult> results= validator.validateWithResult(certChain);
 
         if (results.isEmpty()) {
-            log.warn("No VOMS attributes found in cert chain: {}",x509Subject);
+            LOG.warn("No VOMS attributes found in cert chain: {}",x509Subject);
             return null;
         }
 
@@ -433,14 +433,14 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
             else {
                 List<VOMSValidationErrorMessage> errorMessages= result.getValidationErrors();
                 for (VOMSValidationErrorMessage errorMessage : errorMessages) {
-                    log.error("VOMS validation fails: " + errorMessage.getMessage());
+                    LOG.error("VOMS validation fails: " + errorMessage.getMessage());
                     return null;
                 }
 
             }
         }
         if (vomsAttributes.isEmpty()) {
-            log.warn("No valid VOMS attributes found in cert chain: {}",x509Subject);
+            LOG.warn("No valid VOMS attributes found in cert chain: {}",x509Subject);
             return null;
         }
 
@@ -478,24 +478,24 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
                     byte[] derBytes= Base64.decode((String) value);
                     if (derBytes==null) {
                         String error= "Fails to decode base64 encoded DER certificate block";
-                        if (log.isDebugEnabled()) {
-                            log.error(error + ": " + value.toString());
+                        if (LOG.isDebugEnabled()) {
+                            LOG.error(error + ": " + value.toString());
                         }
                         else {
-                            log.error(error);
+                            LOG.error(error);
                         }
                         throw new PIPProcessingException(error);                        
                     }
                     BufferedInputStream bis= new BufferedInputStream(new ByteArrayInputStream(derBytes));
                     try {
                         X509Certificate x509= (X509Certificate) cf_.generateCertificate(bis);
-                        // log.trace("X.509 cert {} decoded ",
+                        // LOG.trace("X.509 cert {} decoded ",
                         // x509.getSubjectX500Principal().getName());
                         certChain.add(x509);
                     } catch (CertificateException e) {
                         String error= "Fails to generate the X.509 certificate: "
                                 + e.getMessage();
-                        log.error(error);
+                        LOG.error(error);
                         throw new PIPProcessingException(error, e);
                     }
                 }
@@ -504,14 +504,14 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
         }
 
         if (certChain.isEmpty()) {
-            log.debug("No attribute: {} datatype: {} found in Subject",getCertificateAttributeId(),getCertificateAttributeDatatype());
+            LOG.debug("No attribute: {} datatype: {} found in Subject",getCertificateAttributeId(),getCertificateAttributeDatatype());
             return null;
         }
         
         boolean proxyPresent= false;
         for (X509Certificate cert : certChain) {
             if (cert.getVersion() < 3) {
-                log.warn("Subject certificate {} is not a version 3, or greater, certificate, certificate chain ignored",
+                LOG.warn("Subject certificate {} is not a version 3, or greater, certificate, certificate chain ignored",
                          cert.getSubjectX500Principal().getName(X500Principal.RFC2253));
                 return null;
             }
@@ -521,7 +521,7 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
         }
 
         if (isProxyCertificateRequired() && !proxyPresent) {
-            log.warn("Proxy is required, but none found");
+            LOG.warn("Proxy is required, but none found");
             return null;
         }
 

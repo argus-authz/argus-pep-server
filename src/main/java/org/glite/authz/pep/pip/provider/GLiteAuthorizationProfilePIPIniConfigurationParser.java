@@ -53,7 +53,7 @@ import eu.emi.security.authn.x509.X509CertChainValidator;
 public class GLiteAuthorizationProfilePIPIniConfigurationParser extends AbstractX509PIPIniConfigurationParser {
 
     /** Class logger. */
-    private Logger log = LoggerFactory.getLogger(GLiteAuthorizationProfilePIPIniConfigurationParser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GLiteAuthorizationProfilePIPIniConfigurationParser.class);
 
     /**
      * The name of the {@value} property to define the accepted Grid Authorization Profile ID to process.
@@ -70,9 +70,9 @@ public class GLiteAuthorizationProfilePIPIniConfigurationParser extends Abstract
         // read accepted profile IDs from config
         String[] acceptedProfileIds = parseValuesList(iniConfig.get(ACCEPTED_PROFILE_IDS_PROP));
         if (acceptedProfileIds != null && acceptedProfileIds.length > 0) {
-            log.info("{}: accepted profile IDs: {}", pipId, Arrays.toString(acceptedProfileIds));
+            LOG.info("{}: accepted profile IDs: {}", pipId, Arrays.toString(acceptedProfileIds));
         } else {
-            log.info("{}: accepted profile IDs: all", pipId);
+            LOG.info("{}: accepted profile IDs: all", pipId);
         }
 
         GLiteAuthorizationProfilePIP pip = new GLiteAuthorizationProfilePIP(pipId, requireProxy, x509Validator, vomsACValidator,

@@ -1,0 +1,14 @@
+#
+# Good CA truncated after first entry
+#   
+alias = Good Test CA 2
+email = root@example.org
+status = accredited:classic
+version = 1.75
+# This will truncate after the first #
+subjectdn = \
+    "/C=NL/O=Example/OU=PDP/CN=Test CA 3", #, \
+    "/C=NL/O=Example/OU=PDP/CN=Test CA", , \
+    "", \
+    "/C=NL/O=Example/OU=PDP/CN=Test CA 2", \
+

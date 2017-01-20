@@ -1,0 +1,9 @@
+#
+# Missing ,
+#   
+alias = Bad Test CA 2
+email = root@example.org
+status = accredited:classic
+version = 1.75
+subjectdn \
+    = "aap" "noot" #
