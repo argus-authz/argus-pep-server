@@ -143,12 +143,6 @@ public class UpdatingPolicyNamesCache {
 	// Obtain read lock
 	read.lock();
 	try {
-	    // Protect against empty cache
-	    if (cache == null)  {
-		LOG.warn("Encountered empty cache while matching DN {}", dn);
-		return new String[0];
-	    }
-
 	    // Find and return matching info files
 	    return cache.matchIssuerDN(dn);
 	} finally {
