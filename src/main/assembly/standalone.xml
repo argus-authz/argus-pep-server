@@ -82,12 +82,6 @@ Installed in a fakeroot directory structure.
             <outputDirectory>/etc/init.d</outputDirectory>
             <fileMode>0755</fileMode>
         </fileSet>
-	<!-- .info files -->
-        <fileSet>
-            <directory>src/main/infofiles</directory>
-            <outputDirectory>/etc/grid-security/certificates</outputDirectory>
-            <fileMode>0750</fileMode>
-        </fileSet>
         <!-- /var/log/argus/pepd logging directory -->
         <fileSet>
             <directory>src/home-tmpl/empty-dir</directory>
