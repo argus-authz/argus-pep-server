@@ -1,0 +1,12 @@
+#
+# Combined with bad4b.external too many recursions
+#   
+alias = Good Test CA 2
+email = root@example.org
+status = accredited:classic
+version = 1.75
+# This will truncate after the first #
+subjectdn = \
+    "/C=NL/O=Example/OU=PDP/CN=Test CA 3", \
+    file:bad4b.external
+

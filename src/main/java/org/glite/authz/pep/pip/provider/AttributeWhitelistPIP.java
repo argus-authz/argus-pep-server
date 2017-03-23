@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 public class AttributeWhitelistPIP extends AbstractPolicyInformationPoint {
     
     /** Class logger. */
-    private Logger log = LoggerFactory.getLogger(AttributeWhitelistPIP.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AttributeWhitelistPIP.class);
 
     /** IDs of action attributes allowed to appear in the request. */
     private Set<String> actionAttributes;
@@ -110,7 +110,7 @@ public class AttributeWhitelistPIP extends AbstractPolicyInformationPoint {
             for (Resource resource : resources) {
                 if (resource != null) {
                     applied= true;
-                    log.debug("Filtering resource attributes");
+                    LOG.debug("Filtering resource attributes");
                     filterAttributes(resource.getAttributes(), resourceAttributes);
                 }
             }
@@ -121,7 +121,7 @@ public class AttributeWhitelistPIP extends AbstractPolicyInformationPoint {
             for (Subject subject : subjects) {
                 if (subject != null) {
                     applied= true;
-                    log.debug("Filtering subject attributes");
+                    LOG.debug("Filtering subject attributes");
                     filterAttributes(subject.getAttributes(), subjectAttributes);
                 }
             }
@@ -129,13 +129,13 @@ public class AttributeWhitelistPIP extends AbstractPolicyInformationPoint {
 
         if (request.getAction() != null) {
             applied= true;
-            log.debug("Filtering action attributes");
+            LOG.debug("Filtering action attributes");
             filterAttributes(request.getAction().getAttributes(), actionAttributes);
         }
 
         if (request.getEnvironment() != null) {
             applied= true;
-            log.debug("Filtering environment attributes");
+            LOG.debug("Filtering environment attributes");
             filterAttributes(request.getEnvironment().getAttributes(), environmentAttributes);
         }
         return applied;
@@ -154,7 +154,7 @@ public class AttributeWhitelistPIP extends AbstractPolicyInformationPoint {
         }
 
         if (acceptedIds.isEmpty()) {
-            log.debug("No attributes allowed, removing all attributes from the request");
+            LOG.debug("No attributes allowed, removing all attributes from the request");
             attributes.clear();
         }
 
@@ -164,7 +164,7 @@ public class AttributeWhitelistPIP extends AbstractPolicyInformationPoint {
         while (attribtueItr.hasNext()) {
             attribute = attribtueItr.next();
             if (!acceptedIds.contains(attribute.getId())) {
-                log.debug("Attribute {} not allowed, removing it from the request.", attribute.getId());
+                LOG.debug("Attribute {} not allowed, removing it from the request.", attribute.getId());
                 removedAttributes.add(attribute);
             }
         }
