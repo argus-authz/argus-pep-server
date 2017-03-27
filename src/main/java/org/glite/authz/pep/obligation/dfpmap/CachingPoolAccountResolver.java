@@ -91,7 +91,7 @@ public class CachingPoolAccountResolver implements PoolAccountResolver {
     } else {
 
       LOG.debug("Cache hit for prefix {}", prefix);
-      accountFiles = (File[])cacheElement.getValue();
+      accountFiles = (File[])cacheElement.getObjectValue();
     }
 
     return accountFiles;

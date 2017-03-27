@@ -35,7 +35,7 @@ public class OpenSSLSubjectPIPIniConfigurationParser implements
         IniSectionConfigurationParser<PolicyInformationPoint> {
 
     /** Class logger. */
-    private Logger log= LoggerFactory.getLogger(OpenSSLSubjectPIPIniConfigurationParser.class);
+    private static final Logger LOG= LoggerFactory.getLogger(OpenSSLSubjectPIPIniConfigurationParser.class);
 
     /**
      * Name of the {@value} property in the INI configuration file to define the
@@ -67,7 +67,7 @@ public class OpenSSLSubjectPIPIniConfigurationParser implements
         } catch (ConfigurationException e) {
             subjectAttributeIDs= OpenSSLSubjectPIP.DEFAULT_OPENSSL_SUBJECT_ATTRIBUTE_IDS;
         }
-        log.info("{}: OpenSSL subject attributes IDs to convert: {}",
+        LOG.info("{}: OpenSSL subject attributes IDs to convert: {}",
                  pipid,
                  subjectAttributeIDs);
         pip.setSubjectAttributeIDs(subjectAttributeIDs);
@@ -80,7 +80,7 @@ public class OpenSSLSubjectPIPIniConfigurationParser implements
         } catch (ConfigurationException e) {
             subjectAttributeDatatypes= OpenSSLSubjectPIP.DEFAULT_OPENSSL_SUBJECT_ATTRIBUTE_DATATYPES;
         }
-        log.info("{}: OpenSSL subject attributes datatypes to convert: {}",
+        LOG.info("{}: OpenSSL subject attributes datatypes to convert: {}",
                  pipid,
                  subjectAttributeDatatypes);
         pip.setSubjectAttributeDataTypes(subjectAttributeDatatypes);

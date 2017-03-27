@@ -33,7 +33,7 @@ public class RequestValidatorPIPIniConfigurationParser implements
         IniSectionConfigurationParser<PolicyInformationPoint> {
 
     /** Class logger. */
-    private Logger log= LoggerFactory.getLogger(RequestValidatorPIPIniConfigurationParser.class);
+    private static final Logger LOG= LoggerFactory.getLogger(RequestValidatorPIPIniConfigurationParser.class);
 
     /**
      * Name of the {@value} property in the INI configuration file to
@@ -93,7 +93,7 @@ public class RequestValidatorPIPIniConfigurationParser implements
         boolean validateRequestSubjects= IniConfigUtil.getBoolean(iniConfig,
                                                                   VALIDATE_REQUEST_SUBJECTS_PROP,
                                                                   DEFAULT_VALIDATE_REQUEST_SUBJECTS);
-        log.info("{}: validate request subjects: {}",
+        LOG.info("{}: validate request subjects: {}",
                  pipid,
                  validateRequestSubjects);
         pip.setValidateRequestSubjects(validateRequestSubjects);
@@ -101,7 +101,7 @@ public class RequestValidatorPIPIniConfigurationParser implements
         boolean validateRequestResources= IniConfigUtil.getBoolean(iniConfig,
                                                                    VALIDATE_REQUEST_RESOURCES_PROP,
                                                                    DEFAULT_VALIDATE_REQUEST_RESOURCES);
-        log.info("{}: validate request resources: {}",
+        LOG.info("{}: validate request resources: {}",
                  pipid,
                  validateRequestResources);
         pip.setValidateRequestResources(validateRequestResources);
@@ -109,7 +109,7 @@ public class RequestValidatorPIPIniConfigurationParser implements
         boolean validateRequestAction= IniConfigUtil.getBoolean(iniConfig,
                                                                 VALIDATE_REQUEST_ACTION_PROP,
                                                                 DEFAULT_VALIDATE_REQUEST_ACTION);
-        log.info("{}: validate request action: {}",
+        LOG.info("{}: validate request action: {}",
                  pipid,
                  validateRequestAction);
         pip.setValidateRequestAction(validateRequestAction);
@@ -117,7 +117,7 @@ public class RequestValidatorPIPIniConfigurationParser implements
         boolean validateRequestEnvironment= IniConfigUtil.getBoolean(iniConfig,
                                                                      VALIDATE_REQUEST_ENVIRONMENT_PROP,
                                                                      DEFAULT_VALIDATE_REQUEST_ENVIRONMENT);
-        log.info("{}: validate request environment: {}",
+        LOG.info("{}: validate request environment: {}",
                  pipid,
                  validateRequestEnvironment);
         pip.setValidateRequestEnvironment(validateRequestEnvironment);
