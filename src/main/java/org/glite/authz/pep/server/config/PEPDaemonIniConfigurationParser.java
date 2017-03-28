@@ -43,7 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Parser for a {@link org.glite.authz.pep.server.PEPDaemon} configuration file.
+ * VoCaApInfoFileParser for a {@link org.glite.authz.pep.server.PEPDaemon} configuration file.
  */
 @ThreadSafe
 public class PEPDaemonIniConfigurationParser extends
