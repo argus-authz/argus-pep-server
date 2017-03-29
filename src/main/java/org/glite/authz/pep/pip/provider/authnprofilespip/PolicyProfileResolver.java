@@ -1,9 +1,11 @@
 package org.glite.authz.pep.pip.provider.authnprofilespip;
 
+import java.util.Optional;
+
 import javax.security.auth.x500.X500Principal;
 
 public interface PolicyProfileResolver {
   
-  PolicyProfileInfo getPolicyProfile(X500Principal certificateSubject);
+  Optional<PolicyProfileInfo> getPolicyProfile(X500Principal certificateSubject);
   
 }

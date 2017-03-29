@@ -1,0 +1,18 @@
+# Realistic example vo-ca-ap file, can be used with lcmaps-plugins-vo-ca-ap
+# CERN VOs are allowed to use any AP, including IOTA
+/atlas   file:policy-igtf-classic.info, file:policy-igtf-mics.info,\
+         file:policy-igtf-slcs.info,    file:policy-igtf-iota.info
+/cms     file:policy-igtf-classic.info, file:policy-igtf-mics.info,\
+         file:policy-igtf-slcs.info,    file:policy-igtf-iota.info
+/lhcb    file:policy-igtf-classic.info, file:policy-igtf-mics.info,\
+         file:policy-igtf-slcs.info,    file:policy-igtf-iota.info
+/alice   file:policy-igtf-classic.info, file:policy-igtf-mics.info,\
+         file:policy-igtf-slcs.info,    file:policy-igtf-iota.info
+
+# Any other VO only for classic, mics and slcs
+/*       file:policy-igtf-classic.info, file:policy-igtf-mics.info,\
+         file:policy-igtf-slcs.info
+
+# Any non-VOMS proxy also only for classic, mics and slcs
+"-"      file:policy-igtf-classic.info, file:policy-igtf-mics.info,\
+         file:policy-igtf-slcs.info
