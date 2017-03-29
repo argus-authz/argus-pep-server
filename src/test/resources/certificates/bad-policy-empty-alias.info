@@ -1,0 +1,10 @@
+#
+# Empty alias
+#
+alias = 
+requires = FOO
+version = 1.81
+subjectdn = "/C=IT/L=Bologna/O=Policy Tester/CN=First CA", \
+    "/C=IT/L=Bologna/O=Policy Tester/CN=Second CA", \
+    "/C=IT/L=Bologna/O=Policy Tester/CN=Second CA"
+obsolete = BAR

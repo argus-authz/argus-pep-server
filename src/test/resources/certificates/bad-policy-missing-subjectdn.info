@@ -1,0 +1,7 @@
+#
+# Missing subjectDN
+#   
+alias = bad-policy-missing-subjectdn
+requires = FOO
+version = 1.81
+obsolete = BAR
