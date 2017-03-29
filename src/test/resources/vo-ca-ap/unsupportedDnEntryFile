@@ -1,0 +1,7 @@
+# NOT-realistic example vo-ca-ap file, this will fail parsing
+# VO A can be used only with IGTF classic
+/vo_a    file:policy-igtf-classic.info
+
+# VO B can be used with IGTF classic, or a CERN CA specified either using DN or with its info file
+/vo_b    file:policy-igtf-classic.info, "/DC=ch/DC=cern/CN=CERN Grid Certification Authority",\
+         file:CERN-Root-2.info

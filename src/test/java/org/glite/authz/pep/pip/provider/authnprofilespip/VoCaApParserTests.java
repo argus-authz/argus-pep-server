@@ -1,25 +1,24 @@
-package org.glite.authz.pep.authnprofile;
+package org.glite.authz.pep.pip.provider.authnprofilespip;
 
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.regex.Matcher;
 
 import org.glite.authz.pep.pip.provider.authnprofilespip.AuthenticationProfilePolicy;
-import org.glite.authz.pep.pip.provider.authnprofilespip.PolicyInfoParser;
-import org.glite.authz.pep.pip.provider.authnprofilespip.PolicyProfileInfo;
-import org.glite.authz.pep.pip.provider.authnprofilespip.VoCaApInfo;
+import org.glite.authz.pep.pip.provider.authnprofilespip.AuthenticationProfileRepository;
+import org.glite.authz.pep.pip.provider.authnprofilespip.TrustAnchorsDirectoryAuthenticationProfileRepository;
+import org.glite.authz.pep.pip.provider.authnprofilespip.AuthenticationProfilePolicySet;
 import org.glite.authz.pep.pip.provider.authnprofilespip.VoCaApInfoFileParser;
+import org.glite.authz.pep.pip.provider.authnprofilespip.error.ParseError;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -27,35 +26,20 @@ import org.junit.Test;
 
 public class VoCaApParserTests extends VoCaApParserTestSupport {
 
-  private PolicyInfoParser policyInfoParser;
 
+  private AuthenticationProfileRepository repo;
 
 
   @Before
   public void setup() {
-    policyInfoParser = mock(PolicyInfoParser.class);
-
-    PolicyProfileInfo classic = igtfClassicProfile();
-    when(policyInfoParser.parse("policy-igtf-classic.info")).thenReturn(classic);
-
-    PolicyProfileInfo slcs = igtfSlcsProfile();
-
-    when(policyInfoParser.parse("policy-igtf-slcs.info")).thenReturn(slcs);
-
-    PolicyProfileInfo mics = igtfMicsProfile();
-
-    when(policyInfoParser.parse("policy-igtf-mics.info")).thenReturn(mics);
-
-    PolicyProfileInfo iota = igtfIotaProfile();
-
-    when(policyInfoParser.parse("policy-igtf-iota.info")).thenReturn(iota);
+    repo = new TrustAnchorsDirectoryAuthenticationProfileRepository(TRUST_ANCHORS_DIR, "policy-igtf-*.info");
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void testParsingNonExistingFileRaisesException() {
     String filename = "/this/should/never/exist";
 
-    VoCaApInfoFileParser parser = new VoCaApInfoFileParser(filename, policyInfoParser);
+    VoCaApInfoFileParser parser = new VoCaApInfoFileParser(filename, repo);
 
     try {
       parser.parse();
@@ -73,7 +57,7 @@ public class VoCaApParserTests extends VoCaApParserTestSupport {
   @Test(expected = IllegalArgumentException.class)
   public void testParsingDirectoryRaisesException() {
     String filename = "/tmp";
-    VoCaApInfoFileParser parser = new VoCaApInfoFileParser(filename, policyInfoParser);
+    VoCaApInfoFileParser parser = new VoCaApInfoFileParser(filename, repo);
     try {
       parser.parse();
     } catch (IOException e) {
@@ -89,9 +73,9 @@ public class VoCaApParserTests extends VoCaApParserTestSupport {
   @Test
   public void testEmptyFileReturnsEmtpyInfo() throws IOException {
 
-    VoCaApInfoFileParser parser = new VoCaApInfoFileParser(EMPTY_FILE, policyInfoParser);
+    VoCaApInfoFileParser parser = new VoCaApInfoFileParser(EMPTY_FILE, repo);
 
-    VoCaApInfo info = parser.parse();
+    AuthenticationProfilePolicySet info = parser.parse();
 
     assertThat(info.getVoProfilePolicies().entrySet(), hasSize(0));
     assertFalse(info.getAnyVoProfilePolicy().isPresent());
@@ -102,9 +86,9 @@ public class VoCaApParserTests extends VoCaApParserTestSupport {
   public void testIgtfWlcgFileParsing() throws IOException {
 
     VoCaApInfoFileParser parser =
-        new VoCaApInfoFileParser(IGTF_WLCG_VO_CA_AP_FILE, policyInfoParser);
+        new VoCaApInfoFileParser(IGTF_WLCG_VO_CA_AP_FILE, repo);
 
-    VoCaApInfo info = parser.parse();
+    AuthenticationProfilePolicySet info = parser.parse();
 
     assertThat(info.getVoProfilePolicies().entrySet(), hasSize(4));
     assertTrue(info.getAnyVoProfilePolicy().isPresent());
@@ -115,10 +99,10 @@ public class VoCaApParserTests extends VoCaApParserTestSupport {
     for (String vo : voNames) {
       AuthenticationProfilePolicy policy = info.getVoProfilePolicies().get(vo);
       assertNotNull("Policy for vo " + vo + " was null!", policy);
-      assertThat(policy.getRules(), hasSize(4));
+      assertThat(policy.getSupportedProfiles(), hasSize(4));
 
-      List<String> profileNames = profilesToAliases(policy.getRules());
-
+      List<String> profileNames = profilesToAliases(policy.getSupportedProfiles());
+      
       assertThat(profileNames, hasItems(IGTF_CLASSIC_PROFILE_NAME, IGTF_IOTA_PROFILE_NAME,
           IGTF_MICS_PROFILE_NAME, IGTF_SLCS_PROFILE_NAME));
     }
@@ -126,44 +110,35 @@ public class VoCaApParserTests extends VoCaApParserTestSupport {
     AuthenticationProfilePolicy anyVo = info.getAnyVoProfilePolicy()
       .orElseThrow(() -> new AssertionError("Any VO policy expected but not found"));
 
-    assertThat(anyVo.getRules(), hasSize(3));
-    List<String> profileNames = profilesToAliases(anyVo.getRules());
+    assertThat(anyVo.getSupportedProfiles(), hasSize(3));
+    List<String> profileNames = profilesToAliases(anyVo.getSupportedProfiles());
     assertThat(profileNames,
         hasItems(IGTF_CLASSIC_PROFILE_NAME, IGTF_MICS_PROFILE_NAME, IGTF_SLCS_PROFILE_NAME));
-    
+
     AuthenticationProfilePolicy anyCert = info.getAnyCertificateProfilePolicy()
-        .orElseThrow(() -> new AssertionError("Any cert policy expected but not found"));
-    
-    assertThat(anyCert.getRules(), hasSize(3));
-    profileNames = profilesToAliases(anyCert.getRules());
+      .orElseThrow(() -> new AssertionError("Any cert policy expected but not found"));
+
+    assertThat(anyCert.getSupportedProfiles(), hasSize(3));
+    profileNames = profilesToAliases(anyCert.getSupportedProfiles());
     assertThat(profileNames,
         hasItems(IGTF_CLASSIC_PROFILE_NAME, IGTF_MICS_PROFILE_NAME, IGTF_SLCS_PROFILE_NAME));
 
   }
 
-  public void testRulePattern() {
+  @Test(expected = ParseError.class)
+  public void testParsingFileWithDnEntryFails() throws IOException {
+    VoCaApInfoFileParser parser =
+        new VoCaApInfoFileParser(UNSUPPORTED_DN_ENTRY_FILE, repo);
 
-    String[] validLines =
-        {"   file:policy-egi-core.info, file:policy-egi-cam.info,file:policy-ciccio.info",
-            "file:ciccio.info", "file:porenghi.info,file:camaghe.info,file:ciccio.info",
-            "file:porenghi.info,\\", "file:porenghi.info,   \\"};
-
-    String[] invalidLines = {"", "file:", "file:, file:caio.info", "file:porenghi.info \\"};
-
-    for (String l : validLines) {
-      Matcher m = VoCaApInfoFileParser.FILE_RULE_PATTERN.matcher(l);
-      assertTrue(String.format("%s was not matched!", l), m.matches());
-
-      for (int i = 0; i < m.groupCount(); i++) {
-        System.out.format("%d: %s\n", i, m.group(i));
-      }
-
+    try {
+      parser.parse();
+    } catch (ParseError e) {
+      assertThat(e.getMessage(), startsWith("Unrecognized VO-CA-AP policy"));
+      throw e;
     }
 
-    for (String l : invalidLines) {
-      Matcher m = VoCaApInfoFileParser.FILE_RULE_PATTERN.matcher(l);
-      assertFalse(String.format("%s was matched!", l), m.matches());
-    }
   }
+
+
 
 }

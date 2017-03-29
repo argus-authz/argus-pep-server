@@ -1,4 +1,4 @@
-package org.glite.authz.pep.authnprofile;
+package org.glite.authz.pep.pip.provider.authnprofilespip;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -10,21 +10,25 @@ import java.util.stream.Collectors;
 
 import javax.security.auth.x500.X500Principal;
 
-import org.glite.authz.pep.pip.provider.authnprofilespip.PolicyProfileInfo;
+import org.glite.authz.pep.pip.provider.authnprofilespip.AuthenticationProfile;
 
 import eu.emi.security.authn.x509.impl.OpensslNameUtils;
 
 public class VoCaApParserTestSupport {
 
   public static final String IGTF_CLASSIC_PROFILE_NAME = "policy-igtf-classic";
-  public static final String IGTF_MICS_PROFILE_NAME = "policy-mics-classic";
-  public static final String IGTF_SLCS_PROFILE_NAME = "policy-slcs-classic";
-  public static final String IGTF_IOTA_PROFILE_NAME = "policy-iota-classic";
+  public static final String IGTF_MICS_PROFILE_NAME = "policy-igtf-mics";
+  public static final String IGTF_SLCS_PROFILE_NAME = "policy-igtf-slcs";
+  public static final String IGTF_IOTA_PROFILE_NAME = "policy-igtf-iota";
 
   public static final String EMPTY_FILE = "src/test/resources/vo-ca-ap/emptyFile";
+  public static final String TRUST_ANCHORS_DIR = "src/test/resources/certificates";
   
   public static final String IGTF_WLCG_VO_CA_AP_FILE =
       "src/test/resources/vo-ca-ap/igtf-wlcg-vo-ca-ap";
+  
+  public static final String UNSUPPORTED_DN_ENTRY_FILE =
+      "src/test/resources/vo-ca-ap/unsupportedDnEntryFile";
 
   public static final String[] SOME_CLASSIC_DNS = {"/C=FR/O=CNRS/CN=GRID2-FR",
       "/DC=ORG/DC=SEE-GRID/CN=SEE-GRID CA 2013", "/C=RU/O=RDIG/CN=Russian Data-Intensive Grid CA",
@@ -65,8 +69,8 @@ public class VoCaApParserTestSupport {
     return principal;
   }
 
-  protected PolicyProfileInfo buildProfile(String alias, String[] dns) {
-    PolicyProfileInfo profile = mock(PolicyProfileInfo.class);
+  protected AuthenticationProfile buildProfile(String alias, String[] dns) {
+    AuthenticationProfile profile = mock(AuthenticationProfile.class);
 
     Set<X500Principal> caDns = new HashSet<>();
 
@@ -81,23 +85,23 @@ public class VoCaApParserTestSupport {
   }
 
 
-  protected PolicyProfileInfo igtfClassicProfile() {
+  protected AuthenticationProfile igtfClassicProfile() {
     return buildProfile(IGTF_CLASSIC_PROFILE_NAME, SOME_CLASSIC_DNS);
   }
 
-  protected PolicyProfileInfo igtfMicsProfile() {
+  protected AuthenticationProfile igtfMicsProfile() {
     return buildProfile(IGTF_MICS_PROFILE_NAME, SOME_MICS_DNS);
   }
 
-  protected PolicyProfileInfo igtfSlcsProfile() {
+  protected AuthenticationProfile igtfSlcsProfile() {
     return buildProfile(IGTF_SLCS_PROFILE_NAME, SOME_SLCS_DNS);
   }
 
-  protected PolicyProfileInfo igtfIotaProfile() {
+  protected AuthenticationProfile igtfIotaProfile() {
     return buildProfile(IGTF_IOTA_PROFILE_NAME, SOME_IOTA_DNS);
   }
 
-  protected List<String> profilesToAliases(List<PolicyProfileInfo> profiles){
+  protected List<String> profilesToAliases(Set<AuthenticationProfile> profiles){
     List<String> profileNames =
         profiles.stream().map(p -> p.getAlias()).collect(Collectors.toList());
     return profileNames;

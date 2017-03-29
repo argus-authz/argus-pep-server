@@ -14,16 +14,22 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.glite.authz.pep.pip.provider.authnprofilespip.error.InvalidConfigurationError;
+import org.glite.authz.pep.pip.provider.authnprofilespip.error.ParseError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
 /**
  * 
+ * An {@link AuthenticationProfilePolicySetParser} that can parse the vo-ca-ap syntax,
+ * as defined in https://wiki.nikhef.nl/grid/Lcmaps-plugins-vo-ca-ap#vo-ca-ap-file.
  * 
- *
+ * This parser only supports "file:filename.info" entries, i.e. the syntax that allows
+ * to specify CA DNs directly in the file is not supported.
+ * 
  */
-public class VoCaApInfoFileParser implements VoCaApInfoParser {
+public class VoCaApInfoFileParser implements AuthenticationProfilePolicySetParser {
 
   private static final Logger LOG = LoggerFactory.getLogger(VoCaApInfoFileParser.class);
 
@@ -37,25 +43,20 @@ public class VoCaApInfoFileParser implements VoCaApInfoParser {
   static final String DN_RULE_PATTERN_STRING = "\"([^\"]+)\"";
 
   public static final Pattern FILE_RULE_PATTERN = Pattern.compile(FILE_RULE_PATTERN_STRING);
-  public static final Pattern DN_RULE_PATTERN = Pattern.compile(DN_RULE_PATTERN_STRING);
 
   final String filename;
-  final PolicyInfoParser policyInfoParser;
+  final AuthenticationProfileRepository repo;
 
-  private VoCaApInfoImpl.Builder builder;
+  private AuthenticationProfilePolicySetImpl.Builder builder;
   private Properties properties;
 
-  public VoCaApInfoFileParser(String filename, PolicyInfoParser policyInfoParser) {
+  public VoCaApInfoFileParser(String filename, AuthenticationProfileRepository repo) {
 
-    requireNonNull(policyInfoParser, "Please set a non-null policyInfoParser");
+    requireNonNull(repo, "Please set a non-null policy repository");
     requireNonNull(filename, "Please set a non-null filename");
-    
+
     this.filename = filename;
-    this.policyInfoParser = policyInfoParser;
-  }
-
-  void parseLine(String line) {
-
+    this.repo = repo;
   }
 
   void fileSanityChecks(String filename) {
@@ -79,14 +80,12 @@ public class VoCaApInfoFileParser implements VoCaApInfoParser {
       FileInputStream fis = new FileInputStream(filename);
       props.load(fis);
       return props;
+
     } catch (FileNotFoundException e) {
       throw new IllegalArgumentException(e);
-
     } catch (IOException e) {
-
       String errorMsg = String.format("Error parsing '%s: %s", filename, e.getCause());
       LOG.error(errorMsg, e);
-
       throw new ParseError(errorMsg, e);
     }
   }
@@ -123,13 +122,9 @@ public class VoCaApInfoFileParser implements VoCaApInfoParser {
     return infoFileNames;
   }
 
-  private PolicyProfileInfo parseInfoFile(String policyProfileInfoFile) {
-    return policyInfoParser.parse(policyProfileInfoFile);
-  }
-
   private void buildAnyCertPolicy() {
 
-    List<PolicyProfileInfo> rules = parsePoliciesFromFiles(parseInfoFileNames(ANY_CERT_STRING));
+    List<AuthenticationProfile> rules = parseRulesFromFiles(parseInfoFileNames(ANY_CERT_STRING));
 
     AuthenticationProfilePolicy policy = new AuthenticationProfilePolicyImpl(rules);
 
@@ -138,7 +133,7 @@ public class VoCaApInfoFileParser implements VoCaApInfoParser {
 
   private void buildAnyVoPolicy() {
 
-    List<PolicyProfileInfo> rules = parsePoliciesFromFiles(parseInfoFileNames(ANY_VO_STRING));
+    List<AuthenticationProfile> rules = parseRulesFromFiles(parseInfoFileNames(ANY_VO_STRING));
 
     AuthenticationProfilePolicy policy = new AuthenticationProfilePolicyImpl(rules);
 
@@ -146,19 +141,21 @@ public class VoCaApInfoFileParser implements VoCaApInfoParser {
   }
 
 
-  private List<PolicyProfileInfo> parsePoliciesFromFiles(List<String> policyFileNames) {
-    List<PolicyProfileInfo> policies = new ArrayList<>();
+  private List<AuthenticationProfile> parseRulesFromFiles(List<String> policyFileNames) {
+    List<AuthenticationProfile> rules = new ArrayList<>();
+    
     for (String f : policyFileNames) {
-      PolicyProfileInfo p = parseInfoFile(f);
-      policies.add(p);
+      AuthenticationProfile p = repo.findProfileByFilename(f).orElseThrow(
+          () -> new InvalidConfigurationError("Policy file not found: " + f));
+      rules.add(p);
     }
-    return policies;
+    return rules;
   }
 
-  
+
   private void buildNamedVoPolicy(String voKey) {
 
-    List<PolicyProfileInfo> rules = parsePoliciesFromFiles(parseInfoFileNames(voKey));
+    List<AuthenticationProfile> rules = parseRulesFromFiles(parseInfoFileNames(voKey));
 
     AuthenticationProfilePolicy policy = new AuthenticationProfilePolicyImpl(rules);
 
@@ -168,11 +165,11 @@ public class VoCaApInfoFileParser implements VoCaApInfoParser {
 
 
   @Override
-  public VoCaApInfo parse() throws IOException {
+  public AuthenticationProfilePolicySet parse() throws IOException {
 
     fileSanityChecks(filename);
     properties = parseAsProperties();
-    builder = new VoCaApInfoImpl.Builder();
+    builder = new AuthenticationProfilePolicySetImpl.Builder();
 
     boolean anyCertPolicySeen = false;
     boolean anyVoPolicySeen = false;
@@ -182,15 +179,15 @@ public class VoCaApInfoFileParser implements VoCaApInfoParser {
 
       if (key.equals(ANY_CERT_STRING)) {
         if (anyCertPolicySeen) {
-          throw new ParseError(String.format(
-              "%s contains more than one rule targeting " + "any trusted certificate", filename));
+          throw new ParseError(String
+            .format("%s contains more than one rule targeting any trusted certificate", filename));
         }
         buildAnyCertPolicy();
         anyCertPolicySeen = true;
       } else if (key.equals(ANY_VO_STRING)) {
         if (anyVoPolicySeen) {
-          throw new ParseError(String
-            .format("%s contains more than one rule targeting " + "any trusted vo", filename));
+          throw new ParseError(
+              String.format("%s contains more than one rule targeting any trusted vo", filename));
         }
         buildAnyVoPolicy();
         anyVoPolicySeen = true;

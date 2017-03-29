@@ -5,16 +5,24 @@ import java.util.Optional;
 
 /**
  * 
- * This interface summarizes the authentication profile information provided by a vo-ca-ap policy
- * file, as described in https://wiki.nikhef.nl/grid/Lcmaps-plugins-vo-ca-ap#vo-ca-ap-file
+ * An {@link AuthenticationProfilePolicySet} holds three types of
+ * {@link AuthenticationProfilePolicy}
+ * 
+ * <ul>
+ * <li>VO policies, that define the {@link AuthenticationProfilePolicy} for given VO
+ * <li>the VO catchall policy, that provides an {@link AuthenticationProfilePolicy} for any VO not
+ * explicitly covered by VO policies
+ * <li>the any trusted certificate catchall policy, that provides an
+ * {@link AuthenticationProfilePolicy} for any certificate no containing VOMS extensions
+ * </ul>
  * 
  * 
  */
-public interface VoCaApInfo {
+public interface AuthenticationProfilePolicySet {
 
   /**
-   * Returns a map, keyed by VO name, of the profile policies defined by this {@link VoCaApInfo}
-   * object
+   * Returns a map, keyed by VO name, of the authentication profile policies defined by this
+   * {@link AuthenticationProfilePolicySet} object
    * 
    * @return a (possibly empty) {@link Map} of VO profile policies
    */
@@ -23,7 +31,7 @@ public interface VoCaApInfo {
   /**
    * Returns the {@link AuthenticationProfilePolicy} for any trusted VO not explicitly listed in the
    * policies returned by the {@link #getVoProfilePolicies()} method, if defined for this
-   * {@link VoCaApInfo} object.
+   * {@link AuthenticationProfilePolicySet} object.
    * 
    * @return an {@link AuthenticationProfilePolicy} defined for any trusted VO
    */

@@ -1,4 +1,4 @@
-package org.glite.authz.pep.pip.provider.authnprofilespip;
+package org.glite.authz.pep.pip.provider.authnprofilespip.error;
 
 /**
  * 

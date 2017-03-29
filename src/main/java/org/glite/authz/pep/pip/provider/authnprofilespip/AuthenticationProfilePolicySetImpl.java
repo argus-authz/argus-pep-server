@@ -4,7 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
-public class VoCaApInfoImpl implements VoCaApInfo {
+public class AuthenticationProfilePolicySetImpl implements AuthenticationProfilePolicySet {
 
   private final Map<String, AuthenticationProfilePolicy> voProfilePolicies;
 
@@ -13,7 +13,7 @@ public class VoCaApInfoImpl implements VoCaApInfo {
   private final AuthenticationProfilePolicy anyCertificateProfilePolicy;
 
 
-  private VoCaApInfoImpl(Builder builder) {
+  private AuthenticationProfilePolicySetImpl(Builder builder) {
     voProfilePolicies = builder.voProfilePolicies;
     anyVoProfilePolicy = builder.anyVoProfilePolicy;
     anyCertificateProfilePolicy = builder.anyCertificateProfilePolicy;
@@ -56,8 +56,8 @@ public class VoCaApInfoImpl implements VoCaApInfo {
       return this;
     }
 
-    public VoCaApInfo build() {
-      return new VoCaApInfoImpl(this);
+    public AuthenticationProfilePolicySet build() {
+      return new AuthenticationProfilePolicySetImpl(this);
     }
   }
 

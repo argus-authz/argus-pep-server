@@ -23,10 +23,7 @@ import java.io.InputStream;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 import javax.security.auth.x500.X500Principal;
 
@@ -47,9 +44,10 @@ import org.slf4j.LoggerFactory;
 import eu.emi.security.authn.x509.ValidationError;
 import eu.emi.security.authn.x509.ValidationResult;
 import eu.emi.security.authn.x509.X509CertChainValidator;
+import eu.emi.security.authn.x509.helpers.CertificateHelpers;
 import eu.emi.security.authn.x509.impl.CertificateUtils;
-import eu.emi.security.authn.x509.impl.X500NameUtils;
 import eu.emi.security.authn.x509.impl.CertificateUtils.Encoding;
+import eu.emi.security.authn.x509.impl.X500NameUtils;
 import eu.emi.security.authn.x509.proxy.ProxyUtils;
 
 /** Base class for PIPs which work with X.509 certificates. */
@@ -499,61 +497,20 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
      */
     protected X509Certificate[] sortCertificateChain(X509Certificate[] certChain)
             throws PIPProcessingException {
-        if (certChain.length == 0)
+        
+      if (certChain.length == 0)
             return new X509Certificate[0];
 
         LOG.trace("sorting certificate chain...");
-
-        List<X509Certificate> certificates= Arrays.asList(certChain);
-
-        Map<X500Principal, X509Certificate> certsMapBySubject= new HashMap<X500Principal, X509Certificate>();
-        // in this map root CA cert is not stored (as it has the same Issuer as
-        // its direct child)
-        Map<X500Principal, X509Certificate> certsMapByIssuer= new HashMap<X500Principal, X509Certificate>();
-        for (X509Certificate c : certificates) {
-            certsMapBySubject.put(c.getSubjectX500Principal(), c);
-            if (!c.getIssuerX500Principal().equals(c.getSubjectX500Principal()))
-                certsMapByIssuer.put(c.getIssuerX500Principal(), c);
+        // Now using CANL code, instead of copying it inside this method
+        try{
+          
+          return CertificateHelpers.sortChain(Arrays.asList(certChain));
+        
+        }catch(IOException e){
+          throw new PIPProcessingException("Error sorting certificate chain: "+e.getMessage(), 
+              e);
         }
-
-        // let's start from the random one (the 1st on the received list)
-        List<X509Certificate> certsList= new LinkedList<X509Certificate>();
-        X509Certificate current= certsMapBySubject.remove(certificates.get(0).getSubjectX500Principal());
-        if (!current.getIssuerX500Principal().equals(current.getSubjectX500Principal())) {
-            certsMapByIssuer.remove(current.getIssuerX500Principal());
-        }
-        certsList.add(current);
-
-        // build path from current to root
-        while (true) {
-            X509Certificate parent= certsMapBySubject.remove(current.getIssuerX500Principal());
-            if (parent != null) {
-                certsMapByIssuer.remove(parent.getIssuerX500Principal());
-                certsList.add(parent);
-                current= parent;
-            }
-            else
-                break;
-        }
-
-        // build path from the first on the list down to the user's certificate
-        current= certsList.get(0);
-        while (true) {
-            X509Certificate child= certsMapByIssuer.remove(current.getSubjectX500Principal());
-            if (child != null) {
-                certsList.add(0, child);
-                current= child;
-            }
-            else
-                break;
-        }
-
-        if (certsMapByIssuer.size() > 0) {
-            throw new PIPProcessingException("The certificate chain can not be sorted, it is inconsistent.");
-        }
-
-        return certsList.toArray(new X509Certificate[certsList.size()]);
-
     }
 
     /**
@@ -573,71 +530,5 @@ public abstract class AbstractX509PIP extends AbstractPolicyInformationPoint {
         LOG.debug("implemented in caNl validator...");
         return certChain;
     }
-    /*
-     * @SuppressWarnings("unchecked") protected X509Certificate[]
-     * completeCertificateChain(X509Certificate[] certChain) throws
-     * PIPProcessingException { if (certChain == null) { return null; } if
-     * (certChain.length <= 1) { return certChain; } // get the trust anchors
-     * store X509Certificate trustedIssers[]=
-     * certChainValidator.getTrustedIssuers();
-     * 
-     * Vector<X509Certificate> certChainVector= new Vector<X509Certificate>();
-     * 
-     * // first cert is proxy or end-entity cert X509Certificate currentCert=
-     * certChain[0]; certChainVector.add(currentCert);
-     * 
-     * // check the original cert chain
-     * LOG.debug("Checking original certChain.length= {}", certChain.length);
-     * for (int i= 1; i < certChain.length; i++) { if
-     * (PKIUtils.checkIssued(certChain[i], certChain[i - 1])) { if
-     * (LOG.isDebugEnabled()) { LOG.debug("checkIssued: YES: {} issued {}",
-     * certChain[i].getSubjectX500Principal().getName(X500Principal.RFC2253),
-     * certChain[i -
-     * 1].getSubjectX500Principal().getName(X500Principal.RFC2253)); }
-     * currentCert= certChain[i]; certChainVector.add(currentCert); } }
-     * 
-     * LOG.debug("is trust anchor? {}",
-     * currentCert.getSubjectX500Principal().getName(X500Principal.RFC2253));
-     * 
-     * // check that currentCert is self signed and in ca store (trusted //
-     * anchor). if (PKIUtils.selfIssued(currentCert)) { String hash=
-     * PKIUtils.getHash(currentCert); Vector<X509Certificate> trustAnchors=
-     * certificates.get(hash); if (trustAnchors == null ||
-     * trustAnchors.indexOf(currentCert) == -1) { String errorMessage=
-     * "Certificate " +
-     * currentCert.getSubjectX500Principal().getName(X500Principal.RFC2253) +
-     * " is self signed, but not a trust anchor"; if (isPKIXValidationEnabled())
-     * { LOG.error("PKIX validation failed: " + errorMessage); throw new
-     * PIPProcessingException(errorMessage); } else { LOG.warn(errorMessage); }
-     * } else { LOG.debug("YES: {} is a valid trust anchor",
-     * currentCert.getSubjectX500Principal().getName(X500Principal.RFC2253)); }
-     * } else { LOG.debug("NO: searching trust anchor for {}",
-     * currentCert.getSubjectX500Principal().getName(X500Principal.RFC2253)); //
-     * and complete the certification path. do { // find trusted issuer String
-     * hash= PKIUtils.getHash(currentCert.getIssuerX500Principal());
-     * Vector<X509Certificate> issuers= certificates.get(hash); if
-     * (LOG.isTraceEnabled()) { LOG.trace("Issuers({}): {}", hash, issuers); }
-     * if (issuers != null) { for (X509Certificate issuer : issuers) { if
-     * (PKIUtils.checkIssued(issuer, currentCert)) { if (LOG.isDebugEnabled()) {
-     * LOG.debug("checkIssued: YES: {} issued {}",
-     * issuer.getSubjectX500Principal().getName(X500Principal.RFC2253),
-     * currentCert.getSubjectX500Principal().getName(X500Principal.RFC2253)); }
-     * currentCert= issuer; certChainVector.add(currentCert); if
-     * (LOG.isDebugEnabled()) { LOG.debug("currentCert: {}",
-     * currentCert.getSubjectX500Principal().getName(X500Principal.RFC2253)); }
-     * break; } } } else { String errorMessage=
-     * "No trust anchor found for certificate " +
-     * currentCert.getSubjectX500Principal().getName(X500Principal.RFC2253); if
-     * (isPKIXValidationEnabled()) { LOG.error("PKIX validation failed: " +
-     * errorMessage); throw new PIPProcessingException(errorMessage); } else {
-     * LOG.warn(errorMessage); // exit while loop break; } } } while
-     * (!PKIUtils.selfIssued(currentCert)); } // else
-     * 
-     * if (LOG.isTraceEnabled()) { int i= 0; for (X509Certificate cert :
-     * certChainVector) { LOG.trace("completed chain[{}]: {}", i++,
-     * cert.getSubjectX500Principal().getName(X500Principal.RFC2253)); } }
-     * 
-     * return certChainVector.toArray(new
-     * X509Certificate[certChainVector.size()]); }
-     */
+   
 }
