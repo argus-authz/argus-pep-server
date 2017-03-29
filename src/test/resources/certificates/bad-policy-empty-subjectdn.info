@@ -1,0 +1,8 @@
+#
+# Empty subjectDN
+#   
+alias = bad-policy-empty-subjectdn
+version = 1.81
+requires = FOO
+subjectdn =
+obsolete = BAR

@@ -1,0 +1,16 @@
+# @(#)policy-igtf-mics.info - IGTF mics authorities
+# Generated Friday, 17 Feb, 2017
+alias = test-policy-double-ca
+version = 1.81
+requires = AAACertificateServices = 1.81, \
+    cilogon-silver = 1.81, \
+    TERENAeSciencePersonalCA = 1.81, \
+    TERENAeSciencePersonalCA2 = 1.81, \
+    UTNAAAClient = 1.81, \
+    TERENAeSciencePersonalCA3 = 1.81, \
+    HPCI = 1.81
+subjectdn = "/C=IT/L=Bologna/O=Policy Tester/CN=First CA", \
+    "/C=IT/L=Bologna/O=Policy Tester/CN=Second CA", \
+    "/C=IT/L=Bologna/O=Policy Tester/CN=Second CA"
+obsoletes = TACC-MICS, \
+    NCSA-mics
