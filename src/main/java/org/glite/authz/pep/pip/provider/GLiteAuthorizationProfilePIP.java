@@ -250,6 +250,18 @@ public class GLiteAuthorizationProfilePIP extends AbstractX509PIP {
         LOG.debug("Extracted subject-issuer attribute: {}", attribute);
         subjectAttributes.add(attribute);
 
+        String endEntityIssuerDN = endEntityCertificate.getIssuerX500Principal()
+            .getName(X500Principal.RFC2253);
+        
+        Attribute subjectX509IssuerAttribute = new Attribute(
+            GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_X509_SUBJECT_ISSUER,
+            GLiteAuthorizationProfileConstants.DATATYPE_X500_NAME);
+        
+        subjectX509IssuerAttribute.getValues().add(endEntityIssuerDN);
+        LOG.debug("x509-subject-issuer: {}", subjectX509IssuerAttribute);
+        
+        subjectAttributes.add(subjectX509IssuerAttribute);
+        
         if (isVOMSSupportEnabled()) {
             Collection<Attribute> vomsAttributes= processVOMS(endEntityCertificate, certChain);
             if (vomsAttributes != null) {

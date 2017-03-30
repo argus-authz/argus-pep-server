@@ -43,7 +43,6 @@ import org.glite.authz.common.model.Environment;
 import org.glite.authz.common.model.Request;
 import org.glite.authz.common.model.Subject;
 import org.glite.authz.common.profile.CommonXACMLAuthorizationProfileConstants;
-import org.glite.authz.common.profile.GLiteAuthorizationProfileConstants;
 import org.glite.authz.common.util.Base64;
 import org.glite.authz.common.util.LazyList;
 import org.glite.authz.common.util.Strings;
@@ -289,6 +288,18 @@ public class CommonXACMLAuthorizationProfilePIP extends AbstractX509PIP {
         subjectIdAttribute.getValues().add(endEntitySubjectDN);
         LOG.debug("subject-id attribute: {}", subjectIdAttribute);
         subjectAttributes.add(subjectIdAttribute);
+        
+        // get and set the issuer DN attribute
+        String endEntityIssuerDN = endEntityCertificate.getIssuerX500Principal()
+            .getName(X500Principal.RFC2253);
+        
+        Attribute subjectX509IssuerAttribute = new Attribute(
+            CommonXACMLAuthorizationProfileConstants.ID_ATTRIBUTE_X509_SUBJECT_ISSUER,
+            CommonXACMLAuthorizationProfileConstants.DATATYPE_X500_NAME);
+        subjectX509IssuerAttribute.getValues().add(endEntityIssuerDN);
+        subjectAttributes.add(subjectX509IssuerAttribute);
+        
+        LOG.debug("x509-subject-issuer attribute: {}", subjectX509IssuerAttribute);
 
         // set the issuer DN attribute.
         Attribute subjectIssuerAttribute= new Attribute(CommonXACMLAuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ISSUER,
