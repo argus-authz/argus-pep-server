@@ -1,11 +1,8 @@
 package org.glite.authz.pep.pip.provider.authnprofilespip;
 
-import static org.glite.authz.common.profile.CommonXACMLAuthorizationProfileConstants.DATATYPE_STRING;
-import static org.glite.authz.common.profile.CommonXACMLAuthorizationProfileConstants.DATATYPE_X500_NAME;
-import static org.glite.authz.common.profile.CommonXACMLAuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ID;
-import static org.glite.authz.common.profile.CommonXACMLAuthorizationProfileConstants.ID_ATTRIBUTE_VIRTUAL_ORGANIZATION;
-import static org.glite.authz.common.profile.CommonXACMLAuthorizationProfileConstants.ID_ATTRIBUTE_X509_SUBJECT_ISSUER;
+import static java.util.stream.Collectors.toList;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -20,15 +17,8 @@ import org.glite.authz.pep.pip.provider.AbstractPolicyInformationPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint {
-
-  static final Attribute X509_SUBJECT = new Attribute(ID_ATTRIBUTE_SUBJECT_ID, DATATYPE_X500_NAME);
-
-  static final Attribute X509_ISSUER =
-      new Attribute(ID_ATTRIBUTE_X509_SUBJECT_ISSUER, DATATYPE_X500_NAME);
-
-  static final Attribute VIRTUAL_ORGANIZATION =
-      new Attribute(ID_ATTRIBUTE_VIRTUAL_ORGANIZATION, DATATYPE_STRING);
+public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
+    implements AuthenticationProfilePIPConstants {
 
   Attribute x509SubjectAttr = X509_SUBJECT;
   Attribute x509IssuerAttr = X509_ISSUER;
@@ -40,6 +30,31 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint {
 
   public AuthenticationProfilePIP(AuthenticationProfilePDP pdp) {
     this.pdp = pdp;
+  }
+
+  private boolean removeVoAttributesFromRequestSubject(Request r) {
+    return removeAttributesFromRequestSubject(r, VO_ATTRS_IDS);
+  }
+
+  private boolean removeSubjectAttributesFromRequestSubject(Request r) {
+    return removeAttributesFromRequestSubject(r, X509_SUBJECT_ATTRS_IDS);
+  }
+
+  private boolean removeAttributesFromRequestSubject(Request r, Set<String> toBeRemovedIds) {
+
+    boolean requestModified = false;
+
+    for (Subject s : r.getSubjects()) {
+      List<Attribute> toBeRemoved = s.getAttributes()
+          .stream().filter(a -> toBeRemovedIds.contains(a.getId())).collect(toList());
+      
+      if (!toBeRemoved.isEmpty()){ 
+        LOG.debug("Removing attributes from request subject: {}", toBeRemoved);
+        requestModified = s.getAttributes().removeAll(toBeRemoved); 
+      }
+    }
+    
+    return requestModified;
   }
 
   private Optional<Attribute> lookupAttribute(Set<Attribute> attr, Attribute template) {
@@ -88,11 +103,29 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint {
   }
 
 
-  private boolean enforceCertificateAuthenticationProfile(X500Principal principal) {
+  private boolean enforceCertificateAuthenticationProfile(Request request, X500Principal principal) {
+    if (!pdp.isCaAllowed(principal)){
+      LOG.warn("CA {} is not allowed by authentication profile policy for X.509 certificates",
+          principal);
+      return removeSubjectAttributesFromRequestSubject(request);
+    }
+    
+    LOG.debug("CA {} allowed by authentication profile policy for X.509 certificates", principal);
     return false;
   }
 
-  private boolean enforceVoAuthenticationProfile(X500Principal principal, String voName) {
+  private boolean enforceVoAuthenticationProfile(Request request, X500Principal principal,
+      String voName) {
+
+    if (!pdp.isCaAllowedForVO(principal, voName)) {
+      LOG.warn(
+          "CA {} is not allowed by authentication profile policy for vo {}. VO attributes will be "
+              + "removed from request",
+          principal, voName);
+      return removeVoAttributesFromRequestSubject(request);
+    }
+
+    LOG.debug("CA {} allowed by authentication profile policy for vo {}", principal, voName);
     return false;
   }
 
@@ -105,7 +138,8 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint {
 
     if (!issuerPrincipal.isPresent()) {
       LOG.debug(
-          "X509 issuer principal attribute {} not found in request. This PIP will leave the request unmodified",
+          "X509 issuer principal attribute {} not found in request. This PIP will leave the request "
+              + "unmodified",
           x509IssuerAttr);
       return false;
     }
@@ -115,14 +149,23 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint {
     boolean pipModifiedRequest = false;
 
     if (voName.isPresent()) {
-      pipModifiedRequest = enforceVoAuthenticationProfile(issuerPrincipal.get(), voName.get());
+      pipModifiedRequest =
+          enforceVoAuthenticationProfile(request, issuerPrincipal.get(), voName.get());
+    } else {
+      LOG.debug("No VOMS virtual organization name found in request");
     }
 
     if (pipModifiedRequest) {
-      enforceCertificateAuthenticationProfile(issuerPrincipal.get());
+      enforceCertificateAuthenticationProfile(request, issuerPrincipal.get());
     }
 
+    if (pipModifiedRequest) {
+      LOG.debug("The request was modified by {}", getId());
+    }
+    
     return pipModifiedRequest;
   }
 
+  
+  
 }

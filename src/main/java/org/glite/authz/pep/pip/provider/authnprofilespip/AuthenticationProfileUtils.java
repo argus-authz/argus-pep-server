@@ -2,6 +2,7 @@ package org.glite.authz.pep.pip.provider.authnprofilespip;
 
 import static eu.emi.security.authn.x509.impl.OpensslNameUtils.opensslToRfc2253;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -11,6 +12,10 @@ import javax.security.auth.x500.X500Principal;
  * Utility methods for authentication profiles
  */
 public class AuthenticationProfileUtils {
+  
+  public static <T> Set<T> newHashSet(T... elements){
+    return new HashSet<>(Arrays.asList(elements));
+  }
 
 
   public static X500Principal opensslDnToX500Principal(String dn) {
