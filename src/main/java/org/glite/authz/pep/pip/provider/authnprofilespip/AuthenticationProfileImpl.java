@@ -53,4 +53,10 @@ public class AuthenticationProfileImpl implements AuthenticationProfile {
       return false;
     return true;
   }
+
+  @Override
+  public String toString() {
+    return "AuthenticationProfileImpl [alias=" + alias + "]";
+  }
+  
 }

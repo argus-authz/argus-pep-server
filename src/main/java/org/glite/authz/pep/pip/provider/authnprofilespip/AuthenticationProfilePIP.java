@@ -104,20 +104,25 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
 
 
   private boolean enforceCertificateAuthenticationProfile(Request request, X500Principal principal) {
-    if (!pdp.isCaAllowed(principal)){
-      LOG.warn("CA {} is not allowed by authentication profile policy for X.509 certificates",
+    
+    Decision decision = pdp.isCaAllowed(principal); 
+    if (!decision.isAllowed()){
+      LOG.warn("CA {} was not allowed by any authentication profile policy",
           principal);
       return removeSubjectAttributesFromRequestSubject(request);
     }
     
-    LOG.debug("CA {} allowed by authentication profile policy for X.509 certificates", principal);
+    LOG.debug("CA {} allowed by authentication profile {} in policy for X.509 certificates", 
+        principal, decision.getProfile().getAlias());
     return false;
   }
 
   private boolean enforceVoAuthenticationProfile(Request request, X500Principal principal,
       String voName) {
 
-    if (!pdp.isCaAllowedForVO(principal, voName)) {
+    Decision decision = pdp.isCaAllowedForVO(principal, voName);
+    
+    if (!decision.isAllowed()) {
       LOG.warn(
           "CA {} is not allowed by authentication profile policy for vo {}. VO attributes will be "
               + "removed from request",
@@ -125,7 +130,9 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
       return removeVoAttributesFromRequestSubject(request);
     }
 
-    LOG.debug("CA {} allowed by authentication profile policy for vo {}", principal, voName);
+    LOG.debug("CA {} allowed by authentication profile {} in policy for vo {}", principal, 
+        decision.getProfile().getAlias(), voName);
+    
     return false;
   }
 

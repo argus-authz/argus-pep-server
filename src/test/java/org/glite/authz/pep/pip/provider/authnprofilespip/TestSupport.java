@@ -17,6 +17,11 @@ public abstract class TestSupport {
   public static final String IGTF_PROFILES_FILTER = "policy-igtf-*.info";
   public static final String ALL_POLICIES_FILTER = "policy-*.info";
   
+  public static final String IGTF_CLASSIC = "policy-igtf-classic";
+  public static final String IGTF_MICS = "policy-igtf-mics";
+  public static final String IGTF_SLCS = "policy-igtf-slcs";
+  public static final String IGTF_IOTA = "policy-igtf-iota";
+  
   public static final String CLASSIC_CA = "/C=IT/O=INFN/CN=INFN Certification Authority";
   public static final String IOTA_CA = "/DC=ch/DC=cern/CN=CERN LCG IOTA Certification Authority";
   public static final String SLCS_CA = "/C=DE/O=DFN-Verein/OU=DFN-PKI/CN=DFN SLCS-CA";

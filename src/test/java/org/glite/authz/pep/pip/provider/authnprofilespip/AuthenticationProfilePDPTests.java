@@ -1,6 +1,7 @@
 package org.glite.authz.pep.pip.provider.authnprofilespip;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
@@ -17,14 +18,14 @@ public class AuthenticationProfilePDPTests extends TestSupport {
   private AuthenticationProfileRepository repo;
 
   private AuthenticationProfilePDP pdp;
-  private AuthenticationProfilePolicySet policies;
 
   @Before
   public void setup() throws IOException {
-    repo = new TrustAnchorsDirectoryAuthenticationProfileRepository(TRUST_ANCHORS_DIR, ALL_POLICIES_FILTER);
+    repo = new TrustAnchorsDirectoryAuthenticationProfileRepository(TRUST_ANCHORS_DIR,
+        ALL_POLICIES_FILTER);
+    
     VoCaApInfoFileParser parser = new VoCaApInfoFileParser(IGTF_WLCG_VO_CA_AP_FILE, repo);
-    policies = parser.parse();
-
+    
     pdp = new DefaultAuthenticationProfilePDP(repo, parser);
   }
 
@@ -46,57 +47,58 @@ public class AuthenticationProfilePDPTests extends TestSupport {
     try {
       pdp.isCaAllowedForVO(principal, null);
     } catch (NullPointerException e) {
-      Assert.assertThat(e.getMessage(), Matchers.equalTo("Please provide a non-null vo name"));
+      assertThat(e.getMessage(), equalTo("Please provide a non-null vo name"));
       throw e;
     }
   }
 
-  private void assertCaAcceptableForLhcVos(String caSubject){
+  private void assertCaAcceptableForLhcVos(String caSubject, String profile) {
     X500Principal principal = opensslDnToX500Principal(caSubject);
     for (String lhcVo : LHC_VOS) {
-      Assert.assertThat(pdp.isCaAllowedForVO(principal, lhcVo), is(true));
+      assertEquals(pdp.isCaAllowedForVO(principal, lhcVo).isAllowed(), true);
+      assertEquals(pdp.isCaAllowedForVO(principal, lhcVo).getProfile().getAlias(), profile);
     }
   }
 
   @Test
   public void testIOTACaAcceptableForLHC() {
-    assertCaAcceptableForLhcVos(IOTA_CA);
+    assertCaAcceptableForLhcVos(IOTA_CA, IGTF_IOTA);
   }
-  
+
   @Test
   public void testClassicCaAcceptableForLHC() {
-    assertCaAcceptableForLhcVos(CLASSIC_CA);
+    assertCaAcceptableForLhcVos(CLASSIC_CA, IGTF_CLASSIC);
   }
-  
+
   @Test
   public void testMicsCaAcceptableForLHC() {
-    assertCaAcceptableForLhcVos(MICS_CA);
+    assertCaAcceptableForLhcVos(MICS_CA, IGTF_MICS);
   }
-  
+
   @Test
   public void testSlcsCaAcceptableForLHC() {
-    assertCaAcceptableForLhcVos(SLCS_CA);
+    assertCaAcceptableForLhcVos(SLCS_CA, IGTF_SLCS);
   }
 
   @Test
   public void testIOTACaNotAcceptableNonLHC() {
     X500Principal iotaCaPrincipal = opensslDnToX500Principal(IOTA_CA);
 
-    assertThat(pdp.isCaAllowedForVO(iotaCaPrincipal, TEST_VO), is(false));
+    assertEquals(pdp.isCaAllowedForVO(iotaCaPrincipal, TEST_VO).isAllowed(), false);
 
   }
-  
+
   @Test
   public void testIOTACaNotAcceptableForPlainCertificateAccess() {
     X500Principal iotaCaPrincipal = opensslDnToX500Principal(IOTA_CA);
 
-    assertThat(pdp.isCaAllowed(iotaCaPrincipal), is(false));
+    assertEquals(pdp.isCaAllowed(iotaCaPrincipal).isAllowed(), false);
 
   }
-  
-  @Test(expected=AuthenticationProfileError.class)
+
+  @Test(expected = AuthenticationProfileError.class)
   public void testUnaccreditedCa() {
-    X500Principal unaccreditedCA  = opensslDnToX500Principal(UNACCREDITED_CA);
+    X500Principal unaccreditedCA = opensslDnToX500Principal(UNACCREDITED_CA);
     pdp.isCaAllowedForVO(unaccreditedCA, "atlas");
   }
 }

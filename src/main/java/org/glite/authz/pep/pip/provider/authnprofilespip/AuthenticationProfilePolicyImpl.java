@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -40,14 +41,10 @@ public class AuthenticationProfilePolicyImpl implements AuthenticationProfilePol
   }
 
   @Override
-  public boolean supportsAtLeastOneProfile(Set<AuthenticationProfile> profiles) {
+  public Optional<AuthenticationProfile> supportsAtLeastOneProfile(
+      Set<AuthenticationProfile> profiles) {
+
+    return profiles.stream().filter(p -> supportsProfile(p)).findFirst();
     
-    for (AuthenticationProfile p: profiles){
-      if (supportsProfile(p)){
-        return true;
-      }
-    }
-    
-    return false;
   }
 }

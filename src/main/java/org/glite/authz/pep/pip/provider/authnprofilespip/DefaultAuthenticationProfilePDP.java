@@ -1,8 +1,11 @@
 package org.glite.authz.pep.pip.provider.authnprofilespip;
 
 import static java.util.Objects.requireNonNull;
+import static org.glite.authz.pep.pip.provider.authnprofilespip.Decision.allow;
+import static org.glite.authz.pep.pip.provider.authnprofilespip.Decision.deny;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.security.auth.x500.X500Principal;
@@ -42,38 +45,66 @@ public class DefaultAuthenticationProfilePDP implements AuthenticationProfilePDP
     return profiles;
   }
 
+  private Decision policyDecision(AuthenticationProfilePolicy policy, X500Principal principal,
+      Set<AuthenticationProfile> profiles) {
+
+    requireNonNull(policy);
+    requireNonNull(principal);
+    requireNonNull(profiles);
+
+    Optional<AuthenticationProfile> allowedProfile = policy.supportsAtLeastOneProfile(profiles);
+    
+    if (allowedProfile.isPresent()) {
+      return allow(principal, allowedProfile.get());
+    }
+
+    return deny(principal);
+  }
+
   @Override
-  public boolean isCaAllowedForVO(X500Principal principal, String voName) {
+  public Decision isCaAllowedForVO(X500Principal principal, String voName) {
 
     requireNonNull(voName, "Please provide a non-null vo name");
     Set<AuthenticationProfile> principalProfiles = lookupProfiles(principal);
 
     AuthenticationProfilePolicy voPolicy = policies.getVoProfilePolicies().get(voName);
 
+    Decision decision = Decision.deny(principal);
+    
     if (voPolicy != null) {
-      return voPolicy.supportsAtLeastOneProfile(principalProfiles);
+      
+      decision = policyDecision(voPolicy, principal, principalProfiles);
+      
+      if (decision.isAllowed()){
+        return decision;
+      }
     }
 
     if (policies.getAnyVoProfilePolicy().isPresent()) {
       AuthenticationProfilePolicy anyVoPolicy = policies.getAnyVoProfilePolicy().get();
-
-      return anyVoPolicy.supportsAtLeastOneProfile(principalProfiles);
+      decision = policyDecision(anyVoPolicy, principal, principalProfiles);
     }
 
-    return false;
+    return decision;
   }
 
   @Override
-  public boolean isCaAllowed(X500Principal principal) {
+  public Decision isCaAllowed(X500Principal principal) {
 
     Set<AuthenticationProfile> principalProfiles = lookupProfiles(principal);
 
     if (policies.getAnyCertificateProfilePolicy().isPresent()) {
       AuthenticationProfilePolicy anyCertPolicy = policies.getAnyCertificateProfilePolicy().get();
-      return anyCertPolicy.supportsAtLeastOneProfile(principalProfiles);
+
+      Optional<AuthenticationProfile> allowedProfile =
+          anyCertPolicy.supportsAtLeastOneProfile(principalProfiles);
+
+      if (allowedProfile.isPresent()) {
+        return allow(principal, allowedProfile.get());
+      }
     }
 
-    return false;
+    return deny(principal);
   }
 
 

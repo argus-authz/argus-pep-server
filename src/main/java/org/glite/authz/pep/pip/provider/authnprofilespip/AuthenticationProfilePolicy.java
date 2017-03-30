@@ -1,5 +1,6 @@
 package org.glite.authz.pep.pip.provider.authnprofilespip;
 
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -38,10 +39,11 @@ public interface AuthenticationProfilePolicy {
    * Tells whether this policy supports at least one of the profiles passed as argument
    * 
    * @param profiles the {@link Set} of profiles to be checked
-   * @return <code>true</code> if at least one profile in the set passed as argument is supported,
-   *         <code>false</code> otherwise
+   * @return a possibly empty {@link Optional} that contains the first supported
+   *         {@link AuthenticationProfile} among those passed as arguments
    */
-  public boolean supportsAtLeastOneProfile(Set<AuthenticationProfile> profiles);
+  public Optional<AuthenticationProfile> supportsAtLeastOneProfile(
+      Set<AuthenticationProfile> profiles);
 
 
 }
