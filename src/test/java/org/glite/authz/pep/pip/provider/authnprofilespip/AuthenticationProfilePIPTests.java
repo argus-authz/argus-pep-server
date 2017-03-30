@@ -1,21 +1,13 @@
 package org.glite.authz.pep.pip.provider.authnprofilespip;
 
-import static eu.emi.security.authn.x509.impl.OpensslNameUtils.opensslToRfc2253;
-import static org.glite.authz.common.profile.CommonXACMLAuthorizationProfileConstants.DATATYPE_STRING;
-import static org.glite.authz.common.profile.CommonXACMLAuthorizationProfileConstants.DATATYPE_X500_NAME;
-import static org.glite.authz.common.profile.CommonXACMLAuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ID;
-import static org.glite.authz.common.profile.CommonXACMLAuthorizationProfileConstants.ID_ATTRIBUTE_VIRTUAL_ORGANIZATION;
-import static org.glite.authz.common.profile.CommonXACMLAuthorizationProfileConstants.ID_ATTRIBUTE_X509_SUBJECT_ISSUER;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import java.util.Set;
 
 import org.glite.authz.common.model.Attribute;
 import org.glite.authz.common.model.Request;
-import org.glite.authz.common.model.Subject;
 import org.glite.authz.pep.pip.PIPProcessingException;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
 import org.junit.After;
@@ -23,7 +15,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class AuthenticationProfilePIPTests extends TestSupport
-  implements AuthenticationProfilePIPConstants {
+    implements AuthenticationProfilePIPConstants {
 
   private PolicyInformationPoint pip;
 
@@ -52,102 +44,36 @@ public class AuthenticationProfilePIPTests extends TestSupport
   public void testVOWithSupportedProfile() throws PIPProcessingException {
 
     Request request = createRequest(CLASSIC_DN, CLASSIC_CA, "atlas");
+    assertEquals(pip.populateRequest(request), true);
+    assertThat(requestSubjectAttributes(request), containsAuthnProfileAttr(IGTF_CLASSIC));
 
-    boolean result = pip.populateRequest(request);
-    assertThat(result, is(false));
   }
+ 
 
   @Test
   public void testVOWithNotSupportedProfile() throws PIPProcessingException {
 
-    Request request = createRequest(CLASSIC_DN, IOTA_CA, TEST_VO);
+    Request request = createRequest(IOTA_DN, IOTA_CA, TEST_VO);
+    assertEquals(pip.populateRequest(request), true);
 
-    boolean result = pip.populateRequest(request);
-    assertThat(result, is(true));
+    Set<Attribute> subjectAttributes = requestSubjectAttributes(request);
 
-    Set<Attribute> attributes = request.getSubjects()
-      .iterator()
-      .next()
-      .getAttributes();
-
-    assertThat(attributes, not(hasItem(createVoAttribute(TEST_VO))));
-    assertThat(attributes, hasItem(createIssuerAttribute(IOTA_CA)));
+    assertThat(subjectAttributes, not(containsVoAttrs()));
+    assertThat(subjectAttributes, not(containsSubjectAttrs()));
   }
-
-  //
-  // @Test
-  // public void testPlainCertWithSupportedProfile() {
-  //
-  // }
-  //
-  // @Test
-  // public void testPlainCertWithNotSupportedProfile() {
-  //
-  // }
-  //
-  // @Test
-  // public void testRequestWithoutSubject() {
-  //
-  // }
-  //
-  // @Test
-  // public void testRequestWithoutIssuer() {
-  //
-  // }
-
-  private Request createRequest(String subjectDn, String issuerDn,
-    String voName) {
-
+  
+  @Test
+   public void testPlainCertWithSupportedProfile() throws PIPProcessingException, IllegalStateException {
+     Request request = createRequest(CLASSIC_DN, CLASSIC_CA);
+     assertEquals(pip.populateRequest(request), true);
+     assertThat(requestSubjectAttributes(request), containsAuthnProfileAttr(IGTF_CLASSIC));
+   }
+  
+  
+  @Test
+  public void testRequestWithoutXACMLSubject() throws PIPProcessingException, IllegalStateException {
     Request request = new Request();
-
-    Subject subject = new Subject();
-    Attribute subjectAttr = createSubjectAttribute(subjectDn);
-    subject.getAttributes()
-      .add(subjectAttr);
-
-    Attribute issuerAttr = createIssuerAttribute(issuerDn);
-    subject.getAttributes()
-      .add(issuerAttr);
-
-    Attribute voAttr = createVoAttribute(voName);
-    subject.getAttributes()
-      .add(voAttr);
-
-    request.getSubjects()
-      .add(subject);
-
-    return request;
-  }
-
-  private Attribute createVoAttribute(String voName) {
-
-    Attribute attr = new Attribute(ID_ATTRIBUTE_VIRTUAL_ORGANIZATION,
-      DATATYPE_STRING);
-    attr.getValues()
-      .add(voName);
-
-    return attr;
-  }
-
-  @SuppressWarnings("deprecation")
-  private Attribute createIssuerAttribute(String issuer) {
-
-    Attribute attr = new Attribute(ID_ATTRIBUTE_X509_SUBJECT_ISSUER,
-      DATATYPE_X500_NAME);
-    attr.getValues()
-      .add(opensslToRfc2253(issuer));
-
-    return attr;
-  }
-
-  @SuppressWarnings("deprecation")
-  private Attribute createSubjectAttribute(String subject) {
-
-    Attribute attr = new Attribute(ID_ATTRIBUTE_SUBJECT_ID, DATATYPE_X500_NAME);
-    attr.getValues()
-      .add(opensslToRfc2253(subject));
-
-    return attr;
+    assertEquals(pip.populateRequest(request), false);
   }
 
 }

@@ -23,6 +23,7 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
   Attribute x509SubjectAttr = X509_SUBJECT;
   Attribute x509IssuerAttr = X509_ISSUER;
   Attribute voAttr = VIRTUAL_ORGANIZATION;
+  Attribute x509AuthProfileAttr = X509_AUTHN_PROFILE;
 
   public static final Logger LOG = LoggerFactory.getLogger(AuthenticationProfilePIP.class);
 
@@ -40,20 +41,43 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
     return removeAttributesFromRequestSubject(r, X509_SUBJECT_ATTRS_IDS);
   }
 
+
+  private Attribute buildFromTemplate(Attribute attr, String value) {
+    Attribute a = new Attribute();
+    a.setId(attr.getId());
+    a.setDataType(attr.getDataType());
+    a.getValues().add(value);
+    return a;
+  }
+
+
+  private void setAuthenticationProfileAttribute(Request request, Decision decision) {
+    Attribute x509AuthnProfileAttr =
+        buildFromTemplate(x509AuthProfileAttr, decision.getProfile().getAlias());
+
+    LOG.debug("Setting authn profile attribute: {}", x509AuthnProfileAttr);
+    
+    request.getSubjects().iterator().next().getAttributes().add(x509AuthnProfileAttr);
+  }
+
+
+
   private boolean removeAttributesFromRequestSubject(Request r, Set<String> toBeRemovedIds) {
 
     boolean requestModified = false;
 
     for (Subject s : r.getSubjects()) {
       List<Attribute> toBeRemoved = s.getAttributes()
-          .stream().filter(a -> toBeRemovedIds.contains(a.getId())).collect(toList());
-      
-      if (!toBeRemoved.isEmpty()){ 
+        .stream()
+        .filter(a -> toBeRemovedIds.contains(a.getId()))
+        .collect(toList());
+
+      if (!toBeRemoved.isEmpty()) {
         LOG.debug("Removing attributes from request subject: {}", toBeRemoved);
-        requestModified = s.getAttributes().removeAll(toBeRemoved); 
+        requestModified = s.getAttributes().removeAll(toBeRemoved);
       }
     }
-    
+
     return requestModified;
   }
 
@@ -66,17 +90,17 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
 
   private Optional<Attribute> findFirstSubjectAttribute(Request request, Attribute template) {
 
-    Optional<Attribute> result;
+    Optional<Attribute> result = Optional.empty();
 
     for (Subject s : request.getSubjects()) {
       result = lookupAttribute(s.getAttributes(), template);
 
       if (result.isPresent()) {
-        return result;
+        break;
       }
     }
 
-    return Optional.empty();
+    return result;
   }
 
   private Optional<X500Principal> resolveSubjectIssuer(Request request) {
@@ -103,37 +127,44 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
   }
 
 
-  private boolean enforceCertificateAuthenticationProfile(Request request, X500Principal principal) {
+  private Decision enforceCertificateAuthenticationProfile(Request request,
+      X500Principal principal) {
+
+    Decision decision = pdp.isCaAllowed(principal);
     
-    Decision decision = pdp.isCaAllowed(principal); 
-    if (!decision.isAllowed()){
-      LOG.warn("CA {} was not allowed by any authentication profile policy",
-          principal);
-      return removeSubjectAttributesFromRequestSubject(request);
+    if (!decision.isAllowed()) {
+      LOG.warn("CA '{}' does not belong to any allowed authentication profile", principal);
+      removeSubjectAttributesFromRequestSubject(request);
+    } else {
+      LOG.debug("CA '{}' belongs to an allowed authentication profile: {}",
+          principal, decision.getProfile().getAlias());
+      setAuthenticationProfileAttribute(request, decision);
     }
     
-    LOG.debug("CA {} allowed by authentication profile {} in policy for X.509 certificates", 
-        principal, decision.getProfile().getAlias());
-    return false;
+    return decision;
   }
 
-  private boolean enforceVoAuthenticationProfile(Request request, X500Principal principal,
+  private Decision enforceVoAuthenticationProfile(Request request, X500Principal principal,
       String voName) {
 
     Decision decision = pdp.isCaAllowedForVO(principal, voName);
-    
+
     if (!decision.isAllowed()) {
       LOG.warn(
-          "CA {} is not allowed by authentication profile policy for vo {}. VO attributes will be "
+          "CA '{}' does not belong to any allowed authentication profiles for VO '{}'. VO attributes will be "
               + "removed from request",
           principal, voName);
-      return removeVoAttributesFromRequestSubject(request);
-    }
+      removeVoAttributesFromRequestSubject(request);
 
-    LOG.debug("CA {} allowed by authentication profile {} in policy for vo {}", principal, 
-        decision.getProfile().getAlias(), voName);
+    } else {
+
+      LOG.debug("CA '{}' belongs to a supported authentication profile for VO '{}': {}", principal,
+          voName, decision.getProfile().getAlias());
+
+      setAuthenticationProfileAttribute(request, decision);
+    }
     
-    return false;
+    return decision;
   }
 
 
@@ -145,34 +176,30 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
 
     if (!issuerPrincipal.isPresent()) {
       LOG.debug(
-          "X509 issuer principal attribute {} not found in request. This PIP will leave the request "
+          "X509 issuer principal attribute '{}' NOT found in request. This PIP will leave the request "
               + "unmodified",
-          x509IssuerAttr);
+          x509IssuerAttr.getId());
       return false;
     }
 
     Optional<String> voName = resolveVoName(request);
 
-    boolean pipModifiedRequest = false;
+    Decision decision = Decision.deny(issuerPrincipal.get());
 
     if (voName.isPresent()) {
-      pipModifiedRequest =
-          enforceVoAuthenticationProfile(request, issuerPrincipal.get(), voName.get());
+      decision = enforceVoAuthenticationProfile(request, issuerPrincipal.get(), voName.get());
     } else {
-      LOG.debug("No VOMS virtual organization name found in request");
+      LOG.debug("Virtual organization name attribute '{}' NOT found in request",
+          voAttr.getId());
     }
 
-    if (pipModifiedRequest) {
-      enforceCertificateAuthenticationProfile(request, issuerPrincipal.get());
+    // Do not fallback to plain certificate checks if we already have a permit
+    if (decision.isAllowed()) {
+      return true;
     }
 
-    if (pipModifiedRequest) {
-      LOG.debug("The request was modified by {}", getId());
-    }
-    
-    return pipModifiedRequest;
+    enforceCertificateAuthenticationProfile(request, issuerPrincipal.get());
+    return true;
   }
 
-  
-  
 }
