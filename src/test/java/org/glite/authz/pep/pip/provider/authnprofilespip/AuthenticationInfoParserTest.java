@@ -16,7 +16,7 @@ import org.junit.Test;
 public class AuthenticationInfoParserTest {
 
   private static final String trustInfoDir = "src/test/resources/certificates";
-  private AuthenticationProfileParser parser = new DefaultAuthenticationProfileParser();
+  private AuthenticationProfileFileParser parser = new DefaultAuthenticationProfileFileParser();
 
   @Test
   public void parseRegularPolicyFile() {

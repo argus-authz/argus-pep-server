@@ -15,11 +15,6 @@ import javax.security.auth.x500.X500Principal;
 public interface AuthenticationProfileRepository {
 
   /**
-   * Initializes the {@link AuthenticationProfileRepository}
-   */
-  void init();
-
-  /**
    * Returns the list of {@link AuthenticationProfile} active for this repository
    * 
    * @return a (possibly empty) list of {@link AuthenticationProfile}

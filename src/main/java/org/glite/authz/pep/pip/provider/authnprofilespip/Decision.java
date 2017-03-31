@@ -1,13 +1,20 @@
 package org.glite.authz.pep.pip.provider.authnprofilespip;
 
 import javax.security.auth.x500.X500Principal;
-
+/**
+ * A {@link Decision} is rendered by the {@link AuthenticationProfilePDP} after having 
+ * evaluated if a principal is allowed according to the set of current 
+ * {@link AuthenticationProfilePolicy}.
+ */
 public class Decision {
 
+  /** The principal for which the decision is rendered **/
   final X500Principal principal;
 
+  /** Whether the principal was was allowed or denied **/
   final boolean allowed;
 
+  /** The authentication profile, in case access was allowed **/
   final AuthenticationProfile profile;
 
   private Decision(X500Principal principal, boolean allowed, AuthenticationProfile profile) {

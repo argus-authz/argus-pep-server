@@ -22,14 +22,14 @@ import org.slf4j.LoggerFactory;
 
 /**
  * 
- * An {@link AuthenticationProfilePolicySetParser} that can parse the vo-ca-ap syntax,
+ * An {@link AuthenticationProfilePolicySetBuilder} that can parse the vo-ca-ap syntax,
  * as defined in https://wiki.nikhef.nl/grid/Lcmaps-plugins-vo-ca-ap#vo-ca-ap-file.
  * 
  * This parser only supports "file:filename.info" entries, i.e. the syntax that allows
  * to specify CA DNs directly in the file is not supported.
  * 
  */
-public class VoCaApInfoFileParser implements AuthenticationProfilePolicySetParser {
+public class VoCaApInfoFileParser implements AuthenticationProfilePolicySetBuilder {
 
   private static final Logger LOG = LoggerFactory.getLogger(VoCaApInfoFileParser.class);
 
@@ -165,7 +165,7 @@ public class VoCaApInfoFileParser implements AuthenticationProfilePolicySetParse
 
 
   @Override
-  public AuthenticationProfilePolicySet parse() throws IOException {
+  public AuthenticationProfilePolicySet build() {
 
     fileSanityChecks(filename);
     properties = parseAsProperties();

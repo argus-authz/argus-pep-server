@@ -11,7 +11,7 @@ import java.util.Set;
 import javax.security.auth.x500.X500Principal;
 
 /**
- * A basic implementation for {@link AuthenticationProfilePDP}. Decisions are rendered taking into
+ * An implementation for {@link AuthenticationProfilePDP}. Decisions are rendered taking into
  * account the authentication profiles obtained by the {@link AuthenticationProfileRepository} and
  * the {@link AuthenticationProfilePolicySet} used to build a
  * {@link DefaultAuthenticationProfilePDP}.
@@ -20,22 +20,19 @@ import javax.security.auth.x500.X500Principal;
  */
 public class DefaultAuthenticationProfilePDP implements AuthenticationProfilePDP {
 
-  final AuthenticationProfileRepository repo;
-  final AuthenticationProfilePolicySetParser parser;
-  AuthenticationProfilePolicySet policies;
+  final AuthenticationProfileRepository profileRepository;
+  final AuthenticationProfilePolicySetRepository policyRepository;
 
-
-  public DefaultAuthenticationProfilePDP(AuthenticationProfileRepository repo,
-      AuthenticationProfilePolicySetParser parser) throws IOException {
-    this.repo = repo;
-    this.parser = parser;
-    policies = parser.parse();
+  public DefaultAuthenticationProfilePDP(AuthenticationProfileRepository profileRepo,
+      AuthenticationProfilePolicySetRepository policyRepo) throws IOException {
+    this.profileRepository = profileRepo;
+    this.policyRepository = policyRepo;
   }
 
   private Set<AuthenticationProfile> lookupProfiles(X500Principal principal) {
     requireNonNull(principal, "Please provide a non-null principal argument");
 
-    Set<AuthenticationProfile> profiles = repo.findProfilesForSubject(principal);
+    Set<AuthenticationProfile> profiles = profileRepository.findProfilesForSubject(principal);
 
     if (profiles.isEmpty()) {
       throw new AuthenticationProfileError(
@@ -53,7 +50,7 @@ public class DefaultAuthenticationProfilePDP implements AuthenticationProfilePDP
     requireNonNull(profiles);
 
     Optional<AuthenticationProfile> allowedProfile = policy.supportsAtLeastOneProfile(profiles);
-    
+
     if (allowedProfile.isPresent()) {
       return allow(principal, allowedProfile.get());
     }
@@ -67,21 +64,23 @@ public class DefaultAuthenticationProfilePDP implements AuthenticationProfilePDP
     requireNonNull(voName, "Please provide a non-null vo name");
     Set<AuthenticationProfile> principalProfiles = lookupProfiles(principal);
 
-    AuthenticationProfilePolicy voPolicy = policies.getVoProfilePolicies().get(voName);
+    AuthenticationProfilePolicy voPolicy =
+        policyRepository.getAuthenticationProfilePolicySet().getVoProfilePolicies().get(voName);
 
     Decision decision = Decision.deny(principal);
-    
+
     if (voPolicy != null) {
-      
+
       decision = policyDecision(voPolicy, principal, principalProfiles);
-      
-      if (decision.isAllowed()){
+
+      if (decision.isAllowed()) {
         return decision;
       }
     }
 
-    if (policies.getAnyVoProfilePolicy().isPresent()) {
-      AuthenticationProfilePolicy anyVoPolicy = policies.getAnyVoProfilePolicy().get();
+    if (policyRepository.getAuthenticationProfilePolicySet().getAnyVoProfilePolicy().isPresent()) {
+      AuthenticationProfilePolicy anyVoPolicy =
+          policyRepository.getAuthenticationProfilePolicySet().getAnyVoProfilePolicy().get();
       decision = policyDecision(anyVoPolicy, principal, principalProfiles);
     }
 
@@ -93,8 +92,9 @@ public class DefaultAuthenticationProfilePDP implements AuthenticationProfilePDP
 
     Set<AuthenticationProfile> principalProfiles = lookupProfiles(principal);
 
-    if (policies.getAnyCertificateProfilePolicy().isPresent()) {
-      AuthenticationProfilePolicy anyCertPolicy = policies.getAnyCertificateProfilePolicy().get();
+    if (policyRepository.getAuthenticationProfilePolicySet().getAnyCertificateProfilePolicy().isPresent()) {
+      AuthenticationProfilePolicy anyCertPolicy =
+          policyRepository.getAuthenticationProfilePolicySet().getAnyCertificateProfilePolicy().get();
 
       Optional<AuthenticationProfile> allowedProfile =
           anyCertPolicy.supportsAtLeastOneProfile(principalProfiles);
@@ -135,13 +135,18 @@ public class DefaultAuthenticationProfilePDP implements AuthenticationProfilePDP
     }
 
     public DefaultAuthenticationProfilePDP build() throws IOException {
-      AuthenticationProfileRepository repo =
+      
+      AuthenticationProfileRepository profileRepo =
           new TrustAnchorsDirectoryAuthenticationProfileRepository(trustAnchorsDir,
               policyFilePattern);
-      AuthenticationProfilePolicySetParser parser =
-          new VoCaApInfoFileParser(authenticationPolicyFile, repo);
+      
+      AuthenticationProfilePolicySetBuilder parser =
+          new VoCaApInfoFileParser(authenticationPolicyFile, profileRepo);
+      
+      AuthenticationProfilePolicySetRepository policySetRepo =
+          new DefaultAuthenticationProfilePolicySetRepository(parser);
 
-      return new DefaultAuthenticationProfilePDP(repo, parser);
+      return new DefaultAuthenticationProfilePDP(profileRepo, policySetRepo);
     }
   }
 }

@@ -17,46 +17,57 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.security.auth.x500.X500Principal;
 
+import net.jcip.annotations.ThreadSafe;
+
 /**
  * 
- * Default implementation for a {@link AuthenticationProfileRepository}.
+ * Default implementation for a {@link AuthenticationProfileRepository}, which
+ * can refresh its contents in a thread-safe manner.
  *
  */
+@ThreadSafe
 public class TrustAnchorsDirectoryAuthenticationProfileRepository
-    implements AuthenticationProfileRepository {
+    implements AuthenticationProfileRepository, ReloadingRepository {
 
   private static final String DEFAULT_AUTHN_PROFILE_FILE_PATTERN_STRING = "policy-*.info";
-
   private static final Pattern AUTHN_PROFILE_FILE_PATTERN = Pattern.compile("(.*).info");
 
   private final String trustAnchorsDir;
   private final String authnProfileFilePattern;
-  private final AuthenticationProfileParser authnProfileParser;
+  private final AuthenticationProfileFileParser authnProfileParser;
 
   private Map<String, AuthenticationProfile> profiles = new HashMap<>();
   private Map<X500Principal, Set<AuthenticationProfile>> dnLookupTable = new HashMap<>();
 
+  protected final ReadWriteLock rwLock = new ReentrantReadWriteLock();
+
+  protected final Lock readLock = rwLock.readLock();
+  protected final Lock writeLock = rwLock.writeLock();
+
   public TrustAnchorsDirectoryAuthenticationProfileRepository(String trustAnchorsDir,
-      String policyFilePattern, AuthenticationProfileParser policyFileParser) {
+      String policyFilePattern, AuthenticationProfileFileParser policyFileParser) {
     this.trustAnchorsDir = trustAnchorsDir;
     this.authnProfileFilePattern = policyFilePattern;
     this.authnProfileParser = policyFileParser;
-    init();
+    loadProfiles();
   }
 
   public TrustAnchorsDirectoryAuthenticationProfileRepository(String trustAnchorsDir) {
     this(trustAnchorsDir, DEFAULT_AUTHN_PROFILE_FILE_PATTERN_STRING,
-        new DefaultAuthenticationProfileParser());
+        new DefaultAuthenticationProfileFileParser());
   }
 
   public TrustAnchorsDirectoryAuthenticationProfileRepository(String trustAnchorsDir,
       String policyFilePattern) {
-    this(trustAnchorsDir, policyFilePattern, new DefaultAuthenticationProfileParser());
+    this(trustAnchorsDir, policyFilePattern, new DefaultAuthenticationProfileFileParser());
   }
 
   @Override
@@ -110,9 +121,7 @@ public class TrustAnchorsDirectoryAuthenticationProfileRepository
   }
 
 
-
-  @Override
-  public void init() {
+  protected void loadProfiles() {
     trustInfoDirSanityChecks();
     authenticationProfileFilePatternSanityChecks();
     authnInfoParserSanityChecks();
@@ -149,35 +158,68 @@ public class TrustAnchorsDirectoryAuthenticationProfileRepository
               authnProfileFilePattern, trustAnchorsDir));
     }
 
-    profiles = loadedProfiles;
-    dnLookupTable = lookupTable;
+    writeLock.lock();
+
+    try {
+      profiles = loadedProfiles;
+      dnLookupTable = lookupTable;
+    } finally {
+      writeLock.unlock();
+    }
+
   }
 
   @Override
   public Optional<AuthenticationProfile> findProfileByAlias(String profile) {
-    return Optional.ofNullable(profiles.get(profile));
+    readLock.lock();
+    try {
+      return Optional.ofNullable(profiles.get(profile));
+    } finally {
+      readLock.unlock();
+    }
   }
 
   @Override
   public Optional<AuthenticationProfile> findProfileByFilename(String filename) {
 
-    Matcher m = AUTHN_PROFILE_FILE_PATTERN.matcher(filename);
+    readLock.lock();
 
-    if (!m.matches()) {
-      throw new IllegalArgumentException("Invalid authentication profile file name: " + filename);
+    try {
+
+      Matcher m = AUTHN_PROFILE_FILE_PATTERN.matcher(filename);
+
+      if (!m.matches()) {
+        throw new IllegalArgumentException("Invalid authentication profile file name: " + filename);
+      }
+
+      String profileAlias = m.group(1);
+
+      return findProfileByAlias(profileAlias);
+
+    } finally {
+      readLock.unlock();
     }
-
-    String profileAlias = m.group(1);
-
-    return findProfileByAlias(profileAlias);
   }
 
   @Override
   public Set<AuthenticationProfile> findProfilesForSubject(X500Principal principal) {
-    Set<AuthenticationProfile> result = dnLookupTable.get(principal);
-    if (result == null) {
-      return Collections.emptySet();
+
+    readLock.lock();
+
+    try {
+      Set<AuthenticationProfile> result = dnLookupTable.get(principal);
+      if (result == null) {
+        return Collections.emptySet();
+      }
+      return result;
+    } finally {
+      readLock.unlock();
     }
-    return result;
+  }
+
+
+  @Override
+  public void reloadRepositoryContents() {
+    loadProfiles();
   }
 }

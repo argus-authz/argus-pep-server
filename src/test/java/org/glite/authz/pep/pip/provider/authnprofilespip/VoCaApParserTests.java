@@ -13,11 +13,6 @@ import static org.junit.Assert.fail;
 import java.io.IOException;
 import java.util.List;
 
-import org.glite.authz.pep.pip.provider.authnprofilespip.AuthenticationProfilePolicy;
-import org.glite.authz.pep.pip.provider.authnprofilespip.AuthenticationProfileRepository;
-import org.glite.authz.pep.pip.provider.authnprofilespip.TrustAnchorsDirectoryAuthenticationProfileRepository;
-import org.glite.authz.pep.pip.provider.authnprofilespip.AuthenticationProfilePolicySet;
-import org.glite.authz.pep.pip.provider.authnprofilespip.VoCaApInfoFileParser;
 import org.glite.authz.pep.pip.provider.authnprofilespip.error.ParseError;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,10 +37,7 @@ public class VoCaApParserTests extends VoCaApParserTestSupport {
     VoCaApInfoFileParser parser = new VoCaApInfoFileParser(filename, repo);
 
     try {
-      parser.parse();
-    } catch (IOException e) {
-      fail("Unexpected IOException raised: " + e.getMessage());
-
+      parser.build();
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage(), endsWith("does not exist"));
       throw e;
@@ -59,10 +51,7 @@ public class VoCaApParserTests extends VoCaApParserTestSupport {
     String filename = "/tmp";
     VoCaApInfoFileParser parser = new VoCaApInfoFileParser(filename, repo);
     try {
-      parser.parse();
-    } catch (IOException e) {
-      fail("Unexpected IOException raised: " + e.getMessage());
-
+      parser.build();
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage(), endsWith("is not a regular file"));
       throw e;
@@ -75,7 +64,7 @@ public class VoCaApParserTests extends VoCaApParserTestSupport {
 
     VoCaApInfoFileParser parser = new VoCaApInfoFileParser(EMPTY_FILE, repo);
 
-    AuthenticationProfilePolicySet info = parser.parse();
+    AuthenticationProfilePolicySet info = parser.build();
 
     assertThat(info.getVoProfilePolicies().entrySet(), hasSize(0));
     assertFalse(info.getAnyVoProfilePolicy().isPresent());
@@ -88,7 +77,7 @@ public class VoCaApParserTests extends VoCaApParserTestSupport {
     VoCaApInfoFileParser parser =
         new VoCaApInfoFileParser(IGTF_WLCG_VO_CA_AP_FILE, repo);
 
-    AuthenticationProfilePolicySet info = parser.parse();
+    AuthenticationProfilePolicySet info = parser.build();
 
     assertThat(info.getVoProfilePolicies().entrySet(), hasSize(4));
     assertTrue(info.getAnyVoProfilePolicy().isPresent());
@@ -131,7 +120,7 @@ public class VoCaApParserTests extends VoCaApParserTestSupport {
         new VoCaApInfoFileParser(UNSUPPORTED_DN_ENTRY_FILE, repo);
 
     try {
-      parser.parse();
+      parser.build();
     } catch (ParseError e) {
       assertThat(e.getMessage(), startsWith("Unrecognized VO-CA-AP policy"));
       throw e;

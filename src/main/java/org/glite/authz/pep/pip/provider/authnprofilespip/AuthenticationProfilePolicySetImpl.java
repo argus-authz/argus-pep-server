@@ -4,7 +4,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
-public class AuthenticationProfilePolicySetImpl implements AuthenticationProfilePolicySet {
+public class AuthenticationProfilePolicySetImpl
+    implements AuthenticationProfilePolicySet {
 
   private final Map<String, AuthenticationProfilePolicy> voProfilePolicies;
 
@@ -12,25 +13,29 @@ public class AuthenticationProfilePolicySetImpl implements AuthenticationProfile
 
   private final AuthenticationProfilePolicy anyCertificateProfilePolicy;
 
-
   private AuthenticationProfilePolicySetImpl(Builder builder) {
     voProfilePolicies = builder.voProfilePolicies;
     anyVoProfilePolicy = builder.anyVoProfilePolicy;
     anyCertificateProfilePolicy = builder.anyCertificateProfilePolicy;
   }
 
+
+  @Override
+  public Map<String, AuthenticationProfilePolicy> getVoProfilePolicies() {
+    return voProfilePolicies;
+  }
+
   @Override
   public Optional<AuthenticationProfilePolicy> getAnyVoProfilePolicy() {
 
     return Optional.ofNullable(anyVoProfilePolicy);
+
   }
 
   @Override
   public Optional<AuthenticationProfilePolicy> getAnyCertificateProfilePolicy() {
-
     return Optional.ofNullable(anyCertificateProfilePolicy);
   }
-
 
   public static class Builder {
     private Map<String, AuthenticationProfilePolicy> voProfilePolicies;
@@ -60,12 +65,4 @@ public class AuthenticationProfilePolicySetImpl implements AuthenticationProfile
       return new AuthenticationProfilePolicySetImpl(this);
     }
   }
-
-
-  @Override
-  public Map<String, AuthenticationProfilePolicy> getVoProfilePolicies() {
-
-    return voProfilePolicies;
-  }
-
 }

@@ -13,7 +13,7 @@ import javax.security.auth.x500.X500Principal;
 
 import org.glite.authz.pep.pip.provider.authnprofilespip.error.ParseError;
 
-public class DefaultAuthenticationProfileParser implements AuthenticationProfileParser {
+public class DefaultAuthenticationProfileFileParser implements AuthenticationProfileFileParser {
 
   public AuthenticationProfile parse(String policyFileName) {
 

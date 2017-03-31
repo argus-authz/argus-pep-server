@@ -23,10 +23,12 @@ public class AuthenticationProfilePDPTests extends TestSupport {
   public void setup() throws IOException {
     repo = new TrustAnchorsDirectoryAuthenticationProfileRepository(TRUST_ANCHORS_DIR,
         ALL_POLICIES_FILTER);
-    
+
     VoCaApInfoFileParser parser = new VoCaApInfoFileParser(IGTF_WLCG_VO_CA_AP_FILE, repo);
+    AuthenticationProfilePolicySetRepository policySetRepo =
+        new DefaultAuthenticationProfilePolicySetRepository(parser);
     
-    pdp = new DefaultAuthenticationProfilePDP(repo, parser);
+    pdp = new DefaultAuthenticationProfilePDP(repo, policySetRepo);
   }
 
   @Test(expected = NullPointerException.class)

@@ -17,6 +17,29 @@ import org.glite.authz.pep.pip.provider.AbstractPolicyInformationPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This PIP must be configured to run after
+ * {@link org.glite.authz.pep.pip.provider.CommonXACMLAuthorizationProfilePIP} or
+ * {@link org.glite.authz.pep.pip.provider.GLiteAuthorizationProfilePIP}, as it expects certificate
+ * and VOMS related attributes to be present in the request.
+ * 
+ * This PIP looks in the request subject attributes for the
+ * {@link org.glite.authz.common.profile.CommonXACMLAuthorizationProfileConstants#ID_ATTRIBUTE_X509_SUBJECT_ISSUER}
+ * attribute, which holds the subject of the CA that issued the EEC contained in the request, and
+ * the
+ * {@link org.glite.authz.common.profile.CommonXACMLAuthorizationProfileConstants#ID_ATTRIBUTE_VIRTUAL_ORGANIZATION}
+ * , which holds the VOMS VO name linked to the request.
+ * 
+ * This PIP then checks whether the included certificate subject and VOMS attributes are compliant
+ * with local authentication profile policies via calls to an {@link AuthenticationProfilePDP}.
+ * 
+ * If the policies are not met, subject and VOMS attributes are removed from the request.
+ *
+ * If the policies are met, the
+ * {@link org.glite.authz.common.profile.CommonXACMLAuthorizationProfileConstants#ID_ATTRIBUTE_X509_AUTHN_PROFILE}
+ * is set containing the authentication profile resolved for the request.
+ * 
+ */
 public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
     implements AuthenticationProfilePIPConstants {
 
@@ -41,8 +64,7 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
     return removeAttributesFromRequestSubject(r, X509_SUBJECT_ATTRS_IDS);
   }
 
-
-  private Attribute buildFromTemplate(Attribute attr, String value) {
+  private Attribute buildAttributeFromTemplate(Attribute attr, String value) {
     Attribute a = new Attribute();
     a.setId(attr.getId());
     a.setDataType(attr.getDataType());
@@ -50,13 +72,13 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
     return a;
   }
 
-
   private void setAuthenticationProfileAttribute(Request request, Decision decision) {
     Attribute x509AuthnProfileAttr =
-        buildFromTemplate(x509AuthProfileAttr, decision.getProfile().getAlias());
+        buildAttributeFromTemplate(x509AuthProfileAttr, decision.getProfile().getAlias());
 
-    LOG.debug("Setting authn profile attribute: {}", x509AuthnProfileAttr);
-    
+    LOG.debug("Adding authentication profile attribute to request subject attributes: {}",
+        x509AuthnProfileAttr);
+
     request.getSubjects().iterator().next().getAttributes().add(x509AuthnProfileAttr);
   }
 
@@ -103,7 +125,7 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
     return result;
   }
 
-  private Optional<X500Principal> resolveSubjectIssuer(Request request) {
+  private Optional<X500Principal> findSubjectCertificateIssuer(Request request) {
     return findFirstSubjectAttribute(request, x509IssuerAttr).map(this::extractFirstValueAsString)
       .map(X500Principal::new);
   }
@@ -121,7 +143,7 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
     return (String) a.getValues().iterator().next();
   }
 
-  private Optional<String> resolveVoName(Request request) {
+  private Optional<String> findSubjectVoName(Request request) {
 
     return findFirstSubjectAttribute(request, voAttr).map(this::extractFirstValueAsString);
   }
@@ -131,16 +153,16 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
       X500Principal principal) {
 
     Decision decision = pdp.isCaAllowed(principal);
-    
+
     if (!decision.isAllowed()) {
       LOG.warn("CA '{}' does not belong to any allowed authentication profile", principal);
       removeSubjectAttributesFromRequestSubject(request);
     } else {
-      LOG.debug("CA '{}' belongs to an allowed authentication profile: {}",
-          principal, decision.getProfile().getAlias());
+      LOG.debug("CA '{}' belongs to an allowed authentication profile: {}", principal,
+          decision.getProfile().getAlias());
       setAuthenticationProfileAttribute(request, decision);
     }
-    
+
     return decision;
   }
 
@@ -163,7 +185,7 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
 
       setAuthenticationProfileAttribute(request, decision);
     }
-    
+
     return decision;
   }
 
@@ -172,32 +194,30 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
   public boolean populateRequest(Request request)
       throws PIPProcessingException, IllegalStateException {
 
-    Optional<X500Principal> issuerPrincipal = resolveSubjectIssuer(request);
+    Optional<X500Principal> issuerPrincipal = findSubjectCertificateIssuer(request);
 
     if (!issuerPrincipal.isPresent()) {
-      LOG.debug(
-          "X509 issuer principal attribute '{}' NOT found in request. This PIP will leave the request "
-              + "unmodified",
-          x509IssuerAttr.getId());
+      LOG.debug("X509 issuer principal attribute '{}' NOT found in request. This PIP will leave "
+          + "the request unmodified", x509IssuerAttr.getId());
       return false;
     }
 
-    Optional<String> voName = resolveVoName(request);
+    Optional<String> voName = findSubjectVoName(request);
 
     Decision decision = Decision.deny(issuerPrincipal.get());
 
     if (voName.isPresent()) {
       decision = enforceVoAuthenticationProfile(request, issuerPrincipal.get(), voName.get());
+
+      if (decision.isAllowed()) {
+        return true;
+      }
     } else {
-      LOG.debug("Virtual organization name attribute '{}' NOT found in request",
-          voAttr.getId());
+      LOG.debug("Virtual organization name attribute '{}' NOT found in request", voAttr.getId());
     }
 
-    // Do not fallback to plain certificate checks if we already have a permit
-    if (decision.isAllowed()) {
-      return true;
-    }
-
+    // If we reach this point, no VOMS-related attribute has been found in the request,
+    // or the attributes have been removed due to a deny decision against VO policies
     enforceCertificateAuthenticationProfile(request, issuerPrincipal.get());
     return true;
   }

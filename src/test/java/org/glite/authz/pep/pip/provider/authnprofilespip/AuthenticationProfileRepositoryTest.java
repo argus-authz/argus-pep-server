@@ -20,7 +20,7 @@ public class AuthenticationProfileRepositoryTest {
 
   private static final String trustInfoDir = "src/test/resources/certificates";
 
-  private AuthenticationProfileParser policyFileParser = new DefaultAuthenticationProfileParser();
+  private AuthenticationProfileFileParser policyFileParser = new DefaultAuthenticationProfileFileParser();
 
   @Test
   public void readFromTrustInfoDirTest() throws IOException {
