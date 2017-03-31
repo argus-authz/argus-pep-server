@@ -17,7 +17,7 @@
 
 name=argus-pep-server
 
-version=1.7.2
+version=1.7.3-SNAPSHOT
 
 prefix=/
 
