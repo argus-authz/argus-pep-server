@@ -14,7 +14,7 @@ import net.jcip.annotations.ThreadSafe;
  */
 @ThreadSafe
 public class DefaultAuthenticationProfilePolicySetRepository
-    implements AuthenticationProfilePolicySetRepository, ReloadingRepository {
+    implements AuthenticationProfilePolicySetRepository {
   
   protected final ReadWriteLock rwLock = new ReentrantReadWriteLock();
   

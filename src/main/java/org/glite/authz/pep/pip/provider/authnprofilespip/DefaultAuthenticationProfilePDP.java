@@ -7,8 +7,15 @@ import static org.glite.authz.pep.pip.provider.authnprofilespip.Decision.deny;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import javax.security.auth.x500.X500Principal;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An implementation for {@link AuthenticationProfilePDP}. Decisions are rendered taking into
@@ -16,17 +23,47 @@ import javax.security.auth.x500.X500Principal;
  * the {@link AuthenticationProfilePolicySet} used to build a
  * {@link DefaultAuthenticationProfilePDP}.
  * 
- * A {@link Builder} class is provided to simplify boostrapping the PDP.
+ * A {@link Builder} class is provided to simplify creating this PDP.
+ * 
  */
 public class DefaultAuthenticationProfilePDP implements AuthenticationProfilePDP {
+  
+  public static final Logger LOG = LoggerFactory.getLogger(DefaultAuthenticationProfilePDP.class);
 
-  final AuthenticationProfileRepository profileRepository;
-  final AuthenticationProfilePolicySetRepository policyRepository;
+  protected final AuthenticationProfileRepository profileRepository;
+  protected final AuthenticationProfilePolicySetRepository policyRepository;
+
+  protected final long refreshIntervalInSecs;
+  
+  ScheduledExecutorService repositoryRefreshExecutorService;
 
   public DefaultAuthenticationProfilePDP(AuthenticationProfileRepository profileRepo,
-      AuthenticationProfilePolicySetRepository policyRepo) throws IOException {
+      AuthenticationProfilePolicySetRepository policyRepo, long refreshIntervalInSecs) throws IOException {
     this.profileRepository = profileRepo;
     this.policyRepository = policyRepo;
+    this.refreshIntervalInSecs = refreshIntervalInSecs;
+  }
+  
+  public DefaultAuthenticationProfilePDP(AuthenticationProfileRepository profileRepo,
+      AuthenticationProfilePolicySetRepository policyRepo) throws IOException {
+    this(profileRepo, policyRepo, -1);
+  }
+
+  protected void boostrapRepositoryRefresh() {
+    
+    if (refreshIntervalInSecs <= 0) {
+      LOG.info("Repositories will not be refreshed: refreshInterval <= 0");
+      return;
+    }
+
+    repositoryRefreshExecutorService = Executors
+      .newSingleThreadScheduledExecutor(new AuthenticationProfileRefresherThreadFactory());
+
+    repositoryRefreshExecutorService.scheduleAtFixedRate(
+        new RefreshRepositoryTask(profileRepository), 0, refreshIntervalInSecs, TimeUnit.SECONDS);
+    
+    repositoryRefreshExecutorService.scheduleAtFixedRate(
+        new RefreshRepositoryTask(policyRepository), 0, refreshIntervalInSecs, TimeUnit.SECONDS);
   }
 
   private Set<AuthenticationProfile> lookupProfiles(X500Principal principal) {
@@ -92,9 +129,11 @@ public class DefaultAuthenticationProfilePDP implements AuthenticationProfilePDP
 
     Set<AuthenticationProfile> principalProfiles = lookupProfiles(principal);
 
-    if (policyRepository.getAuthenticationProfilePolicySet().getAnyCertificateProfilePolicy().isPresent()) {
-      AuthenticationProfilePolicy anyCertPolicy =
-          policyRepository.getAuthenticationProfilePolicySet().getAnyCertificateProfilePolicy().get();
+    if (policyRepository.getAuthenticationProfilePolicySet()
+      .getAnyCertificateProfilePolicy()
+      .isPresent()) {
+      AuthenticationProfilePolicy anyCertPolicy = policyRepository
+        .getAuthenticationProfilePolicySet().getAnyCertificateProfilePolicy().get();
 
       Optional<AuthenticationProfile> allowedProfile =
           anyCertPolicy.supportsAtLeastOneProfile(principalProfiles);
@@ -118,6 +157,7 @@ public class DefaultAuthenticationProfilePDP implements AuthenticationProfilePDP
     private String authenticationPolicyFile = "/etc/grid-security/vo-ca-ap-file";
     private String trustAnchorsDir = "/etc/grid-security/certificates";
     private String policyFilePattern = "policy-*.info";
+    private int refreshIntervalInSecs = -1;
 
     public Builder authenticationPolicyFile(String f) {
       this.authenticationPolicyFile = f;
@@ -134,19 +174,66 @@ public class DefaultAuthenticationProfilePDP implements AuthenticationProfilePDP
       return this;
     }
 
+    public Builder refreshIntervalInSecs(int refreshInterval) {
+      this.refreshIntervalInSecs = refreshInterval;
+      return this;
+    }
+
     public DefaultAuthenticationProfilePDP build() throws IOException {
-      
+
       AuthenticationProfileRepository profileRepo =
           new TrustAnchorsDirectoryAuthenticationProfileRepository(trustAnchorsDir,
               policyFilePattern);
-      
+
       AuthenticationProfilePolicySetBuilder parser =
           new VoCaApInfoFileParser(authenticationPolicyFile, profileRepo);
-      
+
       AuthenticationProfilePolicySetRepository policySetRepo =
           new DefaultAuthenticationProfilePolicySetRepository(parser);
 
-      return new DefaultAuthenticationProfilePDP(profileRepo, policySetRepo);
+      return new DefaultAuthenticationProfilePDP(profileRepo, 
+          policySetRepo, refreshIntervalInSecs); 
     }
+  }
+
+  static class RefreshRepositoryTask implements Runnable {
+    private static final Logger LOG = LoggerFactory.getLogger(RefreshRepositoryTask.class);
+
+    final ReloadingRepository repository;
+
+    public RefreshRepositoryTask(ReloadingRepository repo) {
+      this.repository = repo;
+    }
+
+    @Override
+    public void run() {
+      try {
+        repository.reloadRepositoryContents();
+      } catch (Throwable e) {
+        LOG.error("Error reloading repository {} contents: {}",
+            repository.getClass().getSimpleName(), e.getMessage(), e);
+      }
+    }
+
+  }
+  static class AuthenticationProfileRefresherThreadFactory implements ThreadFactory {
+
+    public static final String THREAD_NAME = "authn-profile-refresher";
+
+    @Override
+    public Thread newThread(Runnable r) {
+      return new Thread(r, THREAD_NAME);
+    }
+  }
+  @Override
+  public void start() {
+    boostrapRepositoryRefresh();
+  }
+
+  @Override
+  public void stop() {
+   if (repositoryRefreshExecutorService != null){
+     repositoryRefreshExecutorService.shutdown();
+   }
   }
 }

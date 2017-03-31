@@ -6,7 +6,7 @@ package org.glite.authz.pep.pip.provider.authnprofilespip;
  * to an {@link AuthenticationProfilePolicySet}
  *
  */
-public interface AuthenticationProfilePolicySetRepository {
+public interface AuthenticationProfilePolicySetRepository extends ReloadingRepository {
   
   /**
    * Returns the {@link AuthenticationProfilePolicySet} stored in this

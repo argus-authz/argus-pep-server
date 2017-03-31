@@ -1,6 +1,8 @@
 package org.glite.authz.pep.pip.provider.authnprofilespip;
 
 
+import java.util.concurrent.TimeUnit;
+
 import org.glite.authz.common.config.AbstractConfigurationBuilder;
 import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.common.config.IniConfigUtil;
@@ -22,11 +24,17 @@ public class AuthenticationProfilePIPConfigurationParser
 
   static final String DEFAULT_TRUST_ANCHORS_DIRECTORY = "/etc/grid-security/certificates";
 
+  static final int DEFAULT_TRUST_ANCHORS_REFRESH_INTERVAL_IN_SECS =
+      (int) TimeUnit.HOURS.toSeconds(4);
+
   static final String TRUST_ANCHORS_DIRECTORY_PROP = "trustAnchors.directory";
 
   static final String DEFAULT_TRUST_ANCHORS_POLICY_FILE_PATTERN = "policy-*.info";
 
   static final String TRUST_ANCHORS_POLICY_FILE_PATTERN_PROP = "trustAnchors.policyFilePattern";
+
+  static final String TRUST_ANCHORS_REFRESH_INTERVAL_IN_SECS_PROP =
+      "trustAnchors.refreshIntervalInSecs";
 
 
   @Override
@@ -51,17 +59,24 @@ public class AuthenticationProfilePIPConfigurationParser
 
     LOG.info("{}: {} = {}", new Object[] {pipId, TRUST_ANCHORS_DIRECTORY_PROP, policyFilePattern});
 
-
+    final int refreshIntervalInSecs =
+        IniConfigUtil.getInt(iniConfig, TRUST_ANCHORS_REFRESH_INTERVAL_IN_SECS_PROP,
+            DEFAULT_TRUST_ANCHORS_REFRESH_INTERVAL_IN_SECS, Integer.MIN_VALUE, 604_800);
+    
+    LOG.info("{}: {} = {}", new Object[] {pipId, TRUST_ANCHORS_REFRESH_INTERVAL_IN_SECS_PROP, 
+        refreshIntervalInSecs});
+    
     try {
 
       AuthenticationProfilePDP pdp = new DefaultAuthenticationProfilePDP.Builder()
         .authenticationPolicyFile(authenticationProfilePolicyFile)
         .trustAnchorsDir(trustAnchorsDir)
         .policyFilePattern(policyFilePattern)
+        .refreshIntervalInSecs(refreshIntervalInSecs)
         .build();
 
       AuthenticationProfilePIP pip = new AuthenticationProfilePIP(pdp);
-      
+
       return pip;
 
     } catch (Exception e) {

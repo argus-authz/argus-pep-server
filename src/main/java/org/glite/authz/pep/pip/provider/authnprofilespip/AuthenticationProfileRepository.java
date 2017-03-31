@@ -12,7 +12,7 @@ import javax.security.auth.x500.X500Principal;
  * authentication profiles
  *
  */
-public interface AuthenticationProfileRepository {
+public interface AuthenticationProfileRepository extends ReloadingRepository{
 
   /**
    * Returns the list of {@link AuthenticationProfile} active for this repository

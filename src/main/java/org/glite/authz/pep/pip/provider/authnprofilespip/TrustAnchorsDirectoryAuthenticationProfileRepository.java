@@ -25,17 +25,23 @@ import java.util.regex.Pattern;
 
 import javax.security.auth.x500.X500Principal;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.jcip.annotations.ThreadSafe;
 
 /**
  * 
- * Default implementation for a {@link AuthenticationProfileRepository}, which
- * can refresh its contents in a thread-safe manner.
+ * Default implementation for a {@link AuthenticationProfileRepository}, which can refresh its
+ * contents in a thread-safe manner.
  *
  */
 @ThreadSafe
 public class TrustAnchorsDirectoryAuthenticationProfileRepository
-    implements AuthenticationProfileRepository, ReloadingRepository {
+    implements AuthenticationProfileRepository {
+
+  public static final Logger LOG =
+      LoggerFactory.getLogger(TrustAnchorsDirectoryAuthenticationProfileRepository.class);
 
   private static final String DEFAULT_AUTHN_PROFILE_FILE_PATTERN_STRING = "policy-*.info";
   private static final Pattern AUTHN_PROFILE_FILE_PATTERN = Pattern.compile("(.*).info");
@@ -122,6 +128,7 @@ public class TrustAnchorsDirectoryAuthenticationProfileRepository
 
 
   protected void loadProfiles() {
+
     trustInfoDirSanityChecks();
     authenticationProfileFilePatternSanityChecks();
     authnInfoParserSanityChecks();
@@ -134,6 +141,7 @@ public class TrustAnchorsDirectoryAuthenticationProfileRepository
           newDirectoryStream(Paths.get(trustAnchorsDir), buildAuthenticationProfileFileFilter());
 
       for (Path filepath : stream) {
+        LOG.debug("Loading authentication profiles from file: {}", filepath);
         AuthenticationProfile profile = authnProfileParser.parse(filepath.toString());
         loadedProfiles.put(profile.getAlias(), profile);
 
@@ -149,13 +157,17 @@ public class TrustAnchorsDirectoryAuthenticationProfileRepository
 
       }
     } catch (IOException e) {
-      throw new IllegalArgumentException("Error reading policy files: " + e.getMessage(), e);
+      LOG.error("Error loading authentication profile: {}", e.getMessage(), e);
+      throw new IllegalArgumentException("Error loading authentication profile: " + e.getMessage(),
+          e);
     }
 
     if (loadedProfiles.isEmpty()) {
-      throw new IllegalArgumentException(
-          format("The pattern [%s] doesn't match any file into directory [%s]",
-              authnProfileFilePattern, trustAnchorsDir));
+      String errorMsg = format("The pattern [%s] doesn't match any file into directory [%s]",
+          authnProfileFilePattern, trustAnchorsDir);
+
+      LOG.error(errorMsg);
+      throw new IllegalArgumentException(errorMsg);
     }
 
     writeLock.lock();
@@ -182,23 +194,15 @@ public class TrustAnchorsDirectoryAuthenticationProfileRepository
   @Override
   public Optional<AuthenticationProfile> findProfileByFilename(String filename) {
 
-    readLock.lock();
+    Matcher m = AUTHN_PROFILE_FILE_PATTERN.matcher(filename);
 
-    try {
-
-      Matcher m = AUTHN_PROFILE_FILE_PATTERN.matcher(filename);
-
-      if (!m.matches()) {
-        throw new IllegalArgumentException("Invalid authentication profile file name: " + filename);
-      }
-
-      String profileAlias = m.group(1);
-
-      return findProfileByAlias(profileAlias);
-
-    } finally {
-      readLock.unlock();
+    if (!m.matches()) {
+      throw new IllegalArgumentException("Invalid authentication profile file name: " + filename);
     }
+
+    String profileAlias = m.group(1);
+    return findProfileByAlias(profileAlias);
+
   }
 
   @Override

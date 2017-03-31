@@ -11,19 +11,19 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 
+import org.glite.authz.pep.pip.provider.authnprofilespip.error.InvalidConfigurationError;
 import org.glite.authz.pep.pip.provider.authnprofilespip.error.ParseError;
 import org.junit.Before;
 import org.junit.Test;
 
 
 
-public class VoCaApParserTests extends VoCaApParserTestSupport {
-
+public class VoCaApParserTests extends TestSupport {
 
   private AuthenticationProfileRepository repo;
-
 
   @Before
   public void setup() {
@@ -56,9 +56,51 @@ public class VoCaApParserTests extends VoCaApParserTestSupport {
       assertThat(e.getMessage(), endsWith("is not a regular file"));
       throw e;
     }
-    fail("Expected illegal argument exception not raised");
+  }
+  
+  @Test(expected=InvalidConfigurationError.class)
+  public void testInvalidFileEntryThrowsError(){
+    VoCaApInfoFileParser parser = new VoCaApInfoFileParser(INVALID_FILE_ENTRY_FILE, 
+        repo);
+    try{
+      parser.build();
+    }catch(InvalidConfigurationError e){
+      assertThat(e.getMessage(), startsWith("Authentication profile file not found"));
+      throw e;
+    }
+    
   }
 
+  @Test(expected=ParseError.class)
+  public void testInvalidVoEntryFileThrowsError() {
+    
+    VoCaApInfoFileParser parser = new VoCaApInfoFileParser(INVALID_VO_KEY_FILE, 
+        repo);
+    try{
+      parser.build();
+    }catch(ParseError e){
+      assertThat(e.getMessage(), startsWith("Unsupported key"));
+      throw e;
+    }
+  }
+  
+  @Test(expected=IllegalArgumentException.class)
+  public void testReadingUnreadableFileThrowsError() throws IOException {
+    
+    Path unreadablePath = createUnreadableTempFile();
+    
+    String unreadableFileName = unreadablePath.toString();
+    
+    VoCaApInfoFileParser parser = new VoCaApInfoFileParser(unreadableFileName, repo);
+    try{
+      parser.build();
+    }catch(IllegalArgumentException e){
+      assertThat(e.getMessage(), endsWith("not readable"));
+      throw e;
+    }
+  }
+  
+  
   @Test
   public void testEmptyFileReturnsEmtpyInfo() throws IOException {
 
@@ -92,8 +134,8 @@ public class VoCaApParserTests extends VoCaApParserTestSupport {
 
       List<String> profileNames = profilesToAliases(policy.getSupportedProfiles());
       
-      assertThat(profileNames, hasItems(IGTF_CLASSIC_PROFILE_NAME, IGTF_IOTA_PROFILE_NAME,
-          IGTF_MICS_PROFILE_NAME, IGTF_SLCS_PROFILE_NAME));
+      assertThat(profileNames, hasItems(IGTF_CLASSIC, IGTF_IOTA,
+          IGTF_MICS, IGTF_SLCS));
     }
 
     AuthenticationProfilePolicy anyVo = info.getAnyVoProfilePolicy()
@@ -102,7 +144,7 @@ public class VoCaApParserTests extends VoCaApParserTestSupport {
     assertThat(anyVo.getSupportedProfiles(), hasSize(3));
     List<String> profileNames = profilesToAliases(anyVo.getSupportedProfiles());
     assertThat(profileNames,
-        hasItems(IGTF_CLASSIC_PROFILE_NAME, IGTF_MICS_PROFILE_NAME, IGTF_SLCS_PROFILE_NAME));
+        hasItems(IGTF_CLASSIC, IGTF_MICS, IGTF_SLCS));
 
     AuthenticationProfilePolicy anyCert = info.getAnyCertificateProfilePolicy()
       .orElseThrow(() -> new AssertionError("Any cert policy expected but not found"));
@@ -110,7 +152,7 @@ public class VoCaApParserTests extends VoCaApParserTestSupport {
     assertThat(anyCert.getSupportedProfiles(), hasSize(3));
     profileNames = profilesToAliases(anyCert.getSupportedProfiles());
     assertThat(profileNames,
-        hasItems(IGTF_CLASSIC_PROFILE_NAME, IGTF_MICS_PROFILE_NAME, IGTF_SLCS_PROFILE_NAME));
+        hasItems(IGTF_CLASSIC, IGTF_MICS, IGTF_SLCS));
 
   }
 
@@ -125,9 +167,7 @@ public class VoCaApParserTests extends VoCaApParserTestSupport {
       assertThat(e.getMessage(), startsWith("Unrecognized VO-CA-AP policy"));
       throw e;
     }
-
   }
-
-
-
+  
+  
 }

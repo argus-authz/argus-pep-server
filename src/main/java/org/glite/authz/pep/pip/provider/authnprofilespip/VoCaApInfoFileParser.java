@@ -146,7 +146,7 @@ public class VoCaApInfoFileParser implements AuthenticationProfilePolicySetBuild
     
     for (String f : policyFileNames) {
       AuthenticationProfile p = repo.findProfileByFilename(f).orElseThrow(
-          () -> new InvalidConfigurationError("Policy file not found: " + f));
+          () -> new InvalidConfigurationError("Authentication profile file not found: " + f));
       rules.add(p);
     }
     return rules;
@@ -171,26 +171,13 @@ public class VoCaApInfoFileParser implements AuthenticationProfilePolicySetBuild
     properties = parseAsProperties();
     builder = new AuthenticationProfilePolicySetImpl.Builder();
 
-    boolean anyCertPolicySeen = false;
-    boolean anyVoPolicySeen = false;
-
     for (String key : properties.stringPropertyNames()) {
       keySanityCheck(key);
 
-      if (key.equals(ANY_CERT_STRING)) {
-        if (anyCertPolicySeen) {
-          throw new ParseError(String
-            .format("%s contains more than one rule targeting any trusted certificate", filename));
-        }
+      if (key.equals(ANY_CERT_STRING)) {    
         buildAnyCertPolicy();
-        anyCertPolicySeen = true;
       } else if (key.equals(ANY_VO_STRING)) {
-        if (anyVoPolicySeen) {
-          throw new ParseError(
-              String.format("%s contains more than one rule targeting any trusted vo", filename));
-        }
         buildAnyVoPolicy();
-        anyVoPolicySeen = true;
       } else {
         buildNamedVoPolicy(key);
       }

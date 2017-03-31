@@ -12,6 +12,7 @@ import org.glite.authz.common.model.Attribute;
 import org.glite.authz.common.model.Request;
 import org.glite.authz.common.model.Subject;
 import org.glite.authz.common.util.Strings;
+import org.glite.authz.pep.pip.PIPException;
 import org.glite.authz.pep.pip.PIPProcessingException;
 import org.glite.authz.pep.pip.provider.AbstractPolicyInformationPoint;
 import org.slf4j.Logger;
@@ -34,7 +35,7 @@ import org.slf4j.LoggerFactory;
  * with local authentication profile policies via calls to an {@link AuthenticationProfilePDP}.
  * 
  * If the policies are not met, subject and VOMS attributes are removed from the request.
- *
+ * 
  * If the policies are met, the
  * {@link org.glite.authz.common.profile.CommonXACMLAuthorizationProfileConstants#ID_ATTRIBUTE_X509_AUTHN_PROFILE}
  * is set containing the authentication profile resolved for the request.
@@ -220,6 +221,17 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
     // or the attributes have been removed due to a deny decision against VO policies
     enforceCertificateAuthenticationProfile(request, issuerPrincipal.get());
     return true;
+  }
+  
+  
+  @Override
+  public void start() throws PIPException {
+    pdp.start();
+  }
+  
+  @Override
+  public void stop() throws PIPException {
+    pdp.stop();
   }
 
 }

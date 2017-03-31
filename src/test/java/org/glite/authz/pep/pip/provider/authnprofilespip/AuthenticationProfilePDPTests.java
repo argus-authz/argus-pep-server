@@ -57,8 +57,10 @@ public class AuthenticationProfilePDPTests extends TestSupport {
   private void assertCaAcceptableForLhcVos(String caSubject, String profile) {
     X500Principal principal = opensslDnToX500Principal(caSubject);
     for (String lhcVo : LHC_VOS) {
-      assertEquals(pdp.isCaAllowedForVO(principal, lhcVo).isAllowed(), true);
-      assertEquals(pdp.isCaAllowedForVO(principal, lhcVo).getProfile().getAlias(), profile);
+      Decision d = pdp.isCaAllowedForVO(principal, lhcVo);
+      assertThat(d.isAllowed(), equalTo(true));
+      assertThat(d.getPrincipal(), equalTo(principal));
+      assertThat(d.getProfile().getAlias(), equalTo(profile));
     }
   }
 
@@ -95,7 +97,7 @@ public class AuthenticationProfilePDPTests extends TestSupport {
     X500Principal iotaCaPrincipal = opensslDnToX500Principal(IOTA_CA);
 
     assertEquals(pdp.isCaAllowed(iotaCaPrincipal).isAllowed(), false);
-
+    
   }
 
   @Test(expected = AuthenticationProfileError.class)

@@ -11,7 +11,14 @@ import static org.glite.authz.common.profile.GLiteAuthorizationProfileConstants.
 import static org.glite.authz.common.profile.GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_FQAN;
 import static org.glite.authz.common.profile.GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_PRIMARY_FQAN;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.security.auth.x500.X500Principal;
 
@@ -27,6 +34,7 @@ import eu.emi.security.authn.x509.impl.OpensslNameUtils;
 public abstract class TestSupport {
 
   public static final String TRUST_ANCHORS_DIR = "src/test/resources/certificates";
+  
   public static final String IGTF_WLCG_VO_CA_AP_FILE =
       "src/test/resources/vo-ca-ap/igtf-wlcg-vo-ca-ap";
 
@@ -56,6 +64,29 @@ public abstract class TestSupport {
 
   public static final String UNACCREDITED_CA = "/C=IT/O=Whatever/CN=Lonesome CA";
   public static final String UNACCREDITED_DN = "/C=IT/O=Whatever/CN=Test user";
+  
+  public static final String EMPTY_FILE = "src/test/resources/vo-ca-ap/emptyFile";
+  
+  public static final String INVALID_FILE_ENTRY_FILE = 
+      "src/test/resources/vo-ca-ap/invalidFileEntryFile";
+  
+  public static final String INVALID_VO_KEY_FILE = 
+      "src/test/resources/vo-ca-ap/invalidVoKeyFile";
+  
+  public static final String UNSUPPORTED_DN_ENTRY_FILE =
+      "src/test/resources/vo-ca-ap/unsupportedDnEntryFile";
+  
+  public static final String DUPLICATE_ANY_VO_RULE_FILE =
+      "src/test/resources/vo-ca-ap/multipleAnyVoRuleFile";
+  
+  public static final String DUPLICATE_ANY_CERT_RULE_FILE =
+      "src/test/resources/vo-ca-ap/multipleAnyCertRuleFile";
+  
+  protected List<String> profilesToAliases(Set<AuthenticationProfile> profiles){
+    List<String> profileNames =
+        profiles.stream().map(p -> p.getAlias()).collect(Collectors.toList());
+    return profileNames;
+  }
 
   public X500Principal opensslDnToX500Principal(String dn) {
 
@@ -156,4 +187,14 @@ public abstract class TestSupport {
     return new ContainsAuthnProfileAttr(value);
   }
 
+   Path createUnreadableTempFile() throws IOException{
+    Set<PosixFilePermission> perms = new HashSet<>();
+    
+    Path tempFilePath = Files.createTempFile("unreadable", null);
+    
+    Files.setPosixFilePermissions(tempFilePath, 
+        perms);
+    
+    return tempFilePath;
+  }
 }

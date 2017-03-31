@@ -7,7 +7,7 @@ import javax.security.auth.x500.X500Principal;
  * An {@link AuthenticationProfilePDP} can return decisions on whether a CA certificate subject
  * should be allowed for a VO or as a plain certificate without VOMS extensions.
  */
-public interface AuthenticationProfilePDP {
+public interface AuthenticationProfilePDP extends Lifecycle{
 
   /**
    * Returns a {@link Decision} on whether a CA is supported by a given VO.
