@@ -1,18 +1,16 @@
 /*
- * Copyright (c) Members of the EGEE Collaboration. 2006-2010.
- * See http://www.eu-egee.org/partners/ for details on the copyright holders.
+ * Copyright (c) Members of the EGEE Collaboration. 2006-2010. See http://www.eu-egee.org/partners/
+ * for details on the copyright holders.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 
 package org.glite.authz.pep.pip.provider.authnprofilespip;
@@ -25,6 +23,8 @@ import static org.glite.authz.common.profile.CommonXACMLAuthorizationProfileCons
 import static org.glite.authz.common.profile.CommonXACMLAuthorizationProfileConstants.ID_ATTRIBUTE_VIRTUAL_ORGANIZATION;
 import static org.glite.authz.common.profile.CommonXACMLAuthorizationProfileConstants.ID_ATTRIBUTE_X509_SUBJECT_ISSUER;
 import static org.glite.authz.common.profile.GLiteAuthorizationProfileConstants.DATATYPE_FQAN;
+import static org.glite.authz.common.profile.GLiteAuthorizationProfileConstants.GRID_CE_AUTHZ_V1_PROFILE_ID;
+import static org.glite.authz.common.profile.GLiteAuthorizationProfileConstants.GRID_WN_AUTHZ_V1_PROFILE_ID;
 import static org.glite.authz.common.profile.GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_FQAN;
 import static org.glite.authz.common.profile.GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_PRIMARY_FQAN;
 
@@ -40,8 +40,11 @@ import java.util.stream.Collectors;
 import javax.security.auth.x500.X500Principal;
 
 import org.glite.authz.common.model.Attribute;
+import org.glite.authz.common.model.Environment;
 import org.glite.authz.common.model.Request;
 import org.glite.authz.common.model.Subject;
+import org.glite.authz.common.profile.CommonXACMLAuthorizationProfileConstants;
+import org.glite.authz.common.profile.GLiteAuthorizationProfileConstants;
 import org.glite.authz.pep.pip.provider.authnprofilespip.utils.ContainsAuthnProfileAttr;
 import org.glite.authz.pep.pip.provider.authnprofilespip.utils.ContainsSubjectAttrs;
 import org.glite.authz.pep.pip.provider.authnprofilespip.utils.ContainsVoAttrs;
@@ -51,7 +54,7 @@ import eu.emi.security.authn.x509.impl.OpensslNameUtils;
 public abstract class TestSupport {
 
   public static final String TRUST_ANCHORS_DIR = "src/test/resources/certificates";
-  
+
   public static final String IGTF_WLCG_VO_CA_AP_FILE =
       "src/test/resources/vo-ca-ap/igtf-wlcg-vo-ca-ap";
 
@@ -81,25 +84,24 @@ public abstract class TestSupport {
 
   public static final String UNACCREDITED_CA = "/C=IT/O=Whatever/CN=Lonesome CA";
   public static final String UNACCREDITED_DN = "/C=IT/O=Whatever/CN=Test user";
-  
+
   public static final String EMPTY_FILE = "src/test/resources/vo-ca-ap/emptyFile";
-  
-  public static final String INVALID_FILE_ENTRY_FILE = 
+
+  public static final String INVALID_FILE_ENTRY_FILE =
       "src/test/resources/vo-ca-ap/invalidFileEntryFile";
-  
-  public static final String INVALID_VO_KEY_FILE = 
-      "src/test/resources/vo-ca-ap/invalidVoKeyFile";
-  
+
+  public static final String INVALID_VO_KEY_FILE = "src/test/resources/vo-ca-ap/invalidVoKeyFile";
+
   public static final String UNSUPPORTED_DN_ENTRY_FILE =
       "src/test/resources/vo-ca-ap/unsupportedDnEntryFile";
-  
+
   public static final String DUPLICATE_ANY_VO_RULE_FILE =
       "src/test/resources/vo-ca-ap/multipleAnyVoRuleFile";
-  
+
   public static final String DUPLICATE_ANY_CERT_RULE_FILE =
       "src/test/resources/vo-ca-ap/multipleAnyCertRuleFile";
-  
-  protected List<String> profilesToAliases(Set<AuthenticationProfile> profiles){
+
+  protected List<String> profilesToAliases(Set<AuthenticationProfile> profiles) {
     List<String> profileNames =
         profiles.stream().map(p -> p.getAlias()).collect(Collectors.toList());
     return profileNames;
@@ -117,10 +119,38 @@ public abstract class TestSupport {
   }
 
 
+  public void addGliteCEProfileIdToRequest(Request request) {
+
+    Attribute profileIdAttr =
+        createSingleStringValueAttribute(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_PROFILE_ID,
+            DATATYPE_STRING, GRID_CE_AUTHZ_V1_PROFILE_ID);
+
+    request.getEnvironment().getAttributes().add(profileIdAttr);
+  }
+
+  public void addGliteWNProfileIdToRequest(Request request) {
+
+    Attribute profileIdAttr =
+        createSingleStringValueAttribute(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_PROFILE_ID,
+            DATATYPE_STRING, GRID_WN_AUTHZ_V1_PROFILE_ID);
+
+    request.getEnvironment().getAttributes().add(profileIdAttr);
+  }
+
+  public void addDciSecProfileIdToRequest(Request request) {
+    Attribute profileIdAttr = createSingleStringValueAttribute(
+        CommonXACMLAuthorizationProfileConstants.ID_ATTRIBUTE_PROFILE_ID, DATATYPE_STRING,
+        CommonXACMLAuthorizationProfileConstants.COMMON_XACML_AUTHZ_V1_1_PROFILE_ID);
+
+    request.getEnvironment().getAttributes().add(profileIdAttr);
+  }
 
   public Request createRequest(String subjectDn, String issuerDn, String voName) {
 
     Request request = new Request();
+
+    Environment env = new Environment();
+    request.setEnvironment(env);
 
     Subject subject = new Subject();
     Attribute subjectAttr = createSubjectAttribute(subjectDn);
@@ -204,14 +234,13 @@ public abstract class TestSupport {
     return new ContainsAuthnProfileAttr(value);
   }
 
-   Path createUnreadableTempFile() throws IOException{
+  Path createUnreadableTempFile() throws IOException {
     Set<PosixFilePermission> perms = new HashSet<>();
-    
+
     Path tempFilePath = Files.createTempFile("unreadable", null);
-    
-    Files.setPosixFilePermissions(tempFilePath, 
-        perms);
-    
+
+    Files.setPosixFilePermissions(tempFilePath, perms);
+
     return tempFilePath;
   }
 }

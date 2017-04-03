@@ -38,7 +38,8 @@ public class ContainsAuthnProfileAttr extends TypeSafeMatcher<Set<Attribute>>
   }
 
   private boolean attributeMatches(Attribute a) {
-    if (a.getId().equals(X509_AUTHN_PROFILE.getId())) {
+   
+    if (X509_AUTHN_PROFILE_ATTRS_IDS.contains(a.getId())) {
       if (profileValue != null) {
         String value = (String) a.getValues().iterator().next();
         return profileValue.equals(value);

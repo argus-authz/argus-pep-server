@@ -1,24 +1,23 @@
 /*
- * Copyright (c) Members of the EGEE Collaboration. 2006-2010.
- * See http://www.eu-egee.org/partners/ for details on the copyright holders.
+ * Copyright (c) Members of the EGEE Collaboration. 2006-2010. See http://www.eu-egee.org/partners/
+ * for details on the copyright holders.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 
 package org.glite.authz.pep.pip.provider.authnprofilespip;
 
 import static java.util.stream.Collectors.toList;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -26,8 +25,11 @@ import java.util.Set;
 import javax.security.auth.x500.X500Principal;
 
 import org.glite.authz.common.model.Attribute;
+import org.glite.authz.common.model.Environment;
 import org.glite.authz.common.model.Request;
 import org.glite.authz.common.model.Subject;
+import org.glite.authz.common.profile.CommonXACMLAuthorizationProfileConstants;
+import org.glite.authz.common.profile.GLiteAuthorizationProfileConstants;
 import org.glite.authz.common.util.Strings;
 import org.glite.authz.pep.pip.PIPException;
 import org.glite.authz.pep.pip.PIPProcessingException;
@@ -55,20 +57,24 @@ import org.slf4j.LoggerFactory;
  * 
  * If the policies are met, the
  * {@link org.glite.authz.common.profile.CommonXACMLAuthorizationProfileConstants#ID_ATTRIBUTE_X509_AUTHN_PROFILE}
- * is set containing the authentication profile resolved for the request.
+ * or
+ * {@link org.glite.authz.common.profile.GLiteAuthorizationProfileConstants#ID_ATTRIBUTE_X509_AUTHN_PROFILE}
+ * attribute is set, depending on the XACML profile is set containing the authentication profile
+ * resolved for the request.
  * 
  */
 public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
     implements AuthenticationProfilePIPConstants {
 
-  Attribute x509SubjectAttr = X509_SUBJECT;
-  Attribute x509IssuerAttr = X509_ISSUER;
-  Attribute voAttr = VIRTUAL_ORGANIZATION;
-  Attribute x509AuthProfileAttr = X509_AUTHN_PROFILE;
-
   public static final Logger LOG = LoggerFactory.getLogger(AuthenticationProfilePIP.class);
 
   private final AuthenticationProfilePDP pdp;
+
+  enum XacmlProfile {
+    UNKNOWN,
+    GLITE_PROFILE,
+    DCI_SEC_PROFILE
+  }
 
   public AuthenticationProfilePIP(AuthenticationProfilePDP pdp) {
     this.pdp = pdp;
@@ -90,14 +96,50 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
     return a;
   }
 
+  protected XacmlProfile resolveXacmlProfile(Request request) {
+
+    Environment env = request.getEnvironment();
+    
+    if (env == null){
+      return XacmlProfile.UNKNOWN;
+    }
+
+    if (env.getAttributes().stream().anyMatch(
+        a -> a.getId().equals(CommonXACMLAuthorizationProfileConstants.ID_ATTRIBUTE_PROFILE_ID))) {
+      return XacmlProfile.DCI_SEC_PROFILE;
+    }
+
+    if (env.getAttributes().stream().anyMatch(
+        a -> a.getId().equals(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_PROFILE_ID))) {
+      return XacmlProfile.GLITE_PROFILE;
+    }
+
+    return XacmlProfile.UNKNOWN;
+
+  }
+
   private void setAuthenticationProfileAttribute(Request request, Decision decision) {
-    Attribute x509AuthnProfileAttr =
-        buildAttributeFromTemplate(x509AuthProfileAttr, decision.getProfile().getAlias());
-
+    XacmlProfile profile = resolveXacmlProfile(request);
+    
+    Set<Attribute> toBeAdded = new HashSet<>();
+    
+    if (profile.equals(XacmlProfile.DCI_SEC_PROFILE)){
+      toBeAdded.add(buildAttributeFromTemplate(DCI_SEC_X509_AUTHN_PROFILE, 
+          decision.getProfile().getAlias()));
+    }else if (profile.equals(XacmlProfile.GLITE_PROFILE)){
+      toBeAdded.add(buildAttributeFromTemplate(GLITE_X509_AUTHN_PROFILE, 
+          decision.getProfile().getAlias()));
+    }else if (profile.equals(XacmlProfile.UNKNOWN)){
+      toBeAdded.add(buildAttributeFromTemplate(DCI_SEC_X509_AUTHN_PROFILE, 
+          decision.getProfile().getAlias()));
+      toBeAdded.add(buildAttributeFromTemplate(GLITE_X509_AUTHN_PROFILE, 
+          decision.getProfile().getAlias()));
+    }
+    
     LOG.debug("Adding authentication profile attribute to request subject attributes: {}",
-        x509AuthnProfileAttr);
-
-    request.getSubjects().iterator().next().getAttributes().add(x509AuthnProfileAttr);
+        toBeAdded);
+    
+    request.getSubjects().iterator().next().getAttributes().addAll(toBeAdded);
   }
 
 
@@ -143,9 +185,33 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
     return result;
   }
 
+  private Optional<String> findSubjectVoName(Request request) {
+
+    Optional<String> result = Optional.empty();
+    for (Attribute attr : VO_NAME_ATTRS) {
+      result = findFirstSubjectAttribute(request, attr).map(this::extractFirstValueAsString);
+      if (result.isPresent()) {
+        break;
+      }
+    }
+
+    return result;
+  }
+
   private Optional<X500Principal> findSubjectCertificateIssuer(Request request) {
-    return findFirstSubjectAttribute(request, x509IssuerAttr).map(this::extractFirstValueAsString)
-      .map(X500Principal::new);
+
+    Optional<X500Principal> result = Optional.empty();
+
+    for (Attribute attr : X509_ISSUER_ATTRS) {
+      result = findFirstSubjectAttribute(request, attr).map(this::extractFirstValueAsString)
+        .map(X500Principal::new);
+
+      if (result.isPresent()) {
+        break;
+      }
+    }
+
+    return result;
   }
 
 
@@ -161,10 +227,6 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
     return (String) a.getValues().iterator().next();
   }
 
-  private Optional<String> findSubjectVoName(Request request) {
-
-    return findFirstSubjectAttribute(request, voAttr).map(this::extractFirstValueAsString);
-  }
 
 
   private Decision enforceCertificateAuthenticationProfile(Request request,
@@ -215,8 +277,8 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
     Optional<X500Principal> issuerPrincipal = findSubjectCertificateIssuer(request);
 
     if (!issuerPrincipal.isPresent()) {
-      LOG.debug("X509 issuer principal attribute '{}' NOT found in request. This PIP will leave "
-          + "the request unmodified", x509IssuerAttr.getId());
+      LOG.debug("X509 issuer principal attribute in '{}' NOT found in request. This PIP will leave "
+          + "the request unmodified", X509_ISSUER_ATTRS_IDS);
       return false;
     }
 
@@ -231,7 +293,8 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
         return true;
       }
     } else {
-      LOG.debug("Virtual organization name attribute '{}' NOT found in request", voAttr.getId());
+      LOG.debug("Virtual organization name attribute in '{}' NOT found in request",
+          VO_NAME_ATTRS_ID);
     }
 
     // If we reach this point, no VOMS-related attribute has been found in the request,
@@ -239,13 +302,13 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
     enforceCertificateAuthenticationProfile(request, issuerPrincipal.get());
     return true;
   }
-  
-  
+
+
   @Override
   public void start() throws PIPException {
     pdp.start();
   }
-  
+
   @Override
   public void stop() throws PIPException {
     pdp.stop();
