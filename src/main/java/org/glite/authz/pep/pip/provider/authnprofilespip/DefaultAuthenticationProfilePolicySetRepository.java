@@ -1,18 +1,16 @@
 /*
- * Copyright (c) Members of the EGEE Collaboration. 2006-2010.
- * See http://www.eu-egee.org/partners/ for details on the copyright holders.
+ * Copyright (c) Members of the EGEE Collaboration. 2006-2010. See http://www.eu-egee.org/partners/
+ * for details on the copyright holders.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 
 package org.glite.authz.pep.pip.provider.authnprofilespip;
@@ -25,42 +23,43 @@ import net.jcip.annotations.ThreadSafe;
 
 /**
  * 
- * A basic, realoding implementation for {@link AuthenticationProfilePolicySetRepository}, which can 
+ * A basic, realoding implementation for {@link AuthenticationProfilePolicySetRepository}, which can
  * refresh its contents in a thread-safe manner.
  *
  */
 @ThreadSafe
 public class DefaultAuthenticationProfilePolicySetRepository
     implements AuthenticationProfilePolicySetRepository {
-  
+
   protected final ReadWriteLock rwLock = new ReentrantReadWriteLock();
-  
+
   protected final Lock readLock = rwLock.readLock();
   protected final Lock writeLock = rwLock.writeLock();
-  
+
   private AuthenticationProfilePolicySet policySet;
   private final AuthenticationProfilePolicySetBuilder builder;
-  
-  public DefaultAuthenticationProfilePolicySetRepository(AuthenticationProfilePolicySetBuilder builder) {
-   this.builder = builder;
-   buildPolicySet();
+
+  public DefaultAuthenticationProfilePolicySetRepository(
+      AuthenticationProfilePolicySetBuilder builder) {
+    this.builder = builder;
+    buildPolicySet();
   }
-  
-  protected void buildPolicySet(){
+
+  protected void buildPolicySet() {
     writeLock.lock();
-    try{
+    try {
       policySet = builder.build();
-    }finally {
+    } finally {
       writeLock.unlock();
     }
   }
-  
+
   @Override
   public AuthenticationProfilePolicySet getAuthenticationProfilePolicySet() {
     readLock.lock();
-    try{
+    try {
       return policySet;
-    }finally {
+    } finally {
       readLock.unlock();
     }
   }

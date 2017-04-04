@@ -41,24 +41,25 @@ import org.slf4j.LoggerFactory;
  * {@link org.glite.authz.pep.pip.provider.GLiteAuthorizationProfilePIP}, as it expects certificate
  * and VOMS related attributes to be present in the request.
  * 
- * This PIP looks in the request subject attributes for the
- * {@link org.glite.authz.common.profile.CommonXACMLAuthorizationProfileConstants#ID_ATTRIBUTE_X509_SUBJECT_ISSUER}
- * attribute, which holds the subject of the CA that issued the EEC contained in the request, and
- * the
- * {@link org.glite.authz.common.profile.CommonXACMLAuthorizationProfileConstants#ID_ATTRIBUTE_VIRTUAL_ORGANIZATION}
- * , which holds the VOMS VO name linked to the request.
+ * This PIP looks in the request subject attributes for the attribute containing subject of the CA
+ * that issued the EEC contained in the request, and the attribute containing the VO name linked to
+ * the request. This PIP supports the gLite and Common XACML authentication profiles, and their way
+ * to encode the VO name and the subject issuer in the request.
  * 
- * This PIP then checks whether the included certificate subject and VOMS attributes are compliant
- * with local authentication profile policies via calls to an {@link AuthenticationProfilePDP}.
+ * If no attribute is found holding the CA subject, the PIP returns without modifying the request.
  * 
- * If the policies are not met, subject and VOMS attributes are removed from the request.
+ * Otherwise, this PIP checks whether the included certificate subject and VOMS attributes are
+ * allowed by local authentication profile policies via calls to an
+ * {@link AuthenticationProfilePDP}.
+ * 
+ * If the policies are NOT met, subject and VOMS attributes are removed from the request.
  * 
  * If the policies are met, the
  * {@link org.glite.authz.common.profile.CommonXACMLAuthorizationProfileConstants#ID_ATTRIBUTE_X509_AUTHN_PROFILE}
  * or
  * {@link org.glite.authz.common.profile.GLiteAuthorizationProfileConstants#ID_ATTRIBUTE_X509_AUTHN_PROFILE}
- * attribute is set, depending on the XACML profile is set containing the authentication profile
- * resolved for the request.
+ * attribute is set, depending on the XACML profile of the request, is set containing the
+ * authentication profile resolved for the request.
  * 
  */
 public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
@@ -98,8 +99,8 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
   protected XacmlProfile resolveXacmlProfile(Request request) {
 
     Environment env = request.getEnvironment();
-    
-    if (env == null){
+
+    if (env == null) {
       return XacmlProfile.UNKNOWN;
     }
 
@@ -119,25 +120,25 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
 
   private void setAuthenticationProfileAttribute(Request request, Decision decision) {
     XacmlProfile profile = resolveXacmlProfile(request);
-    
+
     Set<Attribute> toBeAdded = new HashSet<>();
-    
-    if (profile.equals(XacmlProfile.DCI_SEC_PROFILE)){
-      toBeAdded.add(buildAttributeFromTemplate(DCI_SEC_X509_AUTHN_PROFILE, 
-          decision.getProfile().getAlias()));
-    }else if (profile.equals(XacmlProfile.GLITE_PROFILE)){
-      toBeAdded.add(buildAttributeFromTemplate(GLITE_X509_AUTHN_PROFILE, 
-          decision.getProfile().getAlias()));
-    }else if (profile.equals(XacmlProfile.UNKNOWN)){
-      toBeAdded.add(buildAttributeFromTemplate(DCI_SEC_X509_AUTHN_PROFILE, 
-          decision.getProfile().getAlias()));
-      toBeAdded.add(buildAttributeFromTemplate(GLITE_X509_AUTHN_PROFILE, 
-          decision.getProfile().getAlias()));
+
+    if (profile.equals(XacmlProfile.DCI_SEC_PROFILE)) {
+      toBeAdded.add(
+          buildAttributeFromTemplate(DCI_SEC_X509_AUTHN_PROFILE, decision.getProfile().getAlias()));
+    } else if (profile.equals(XacmlProfile.GLITE_PROFILE)) {
+      toBeAdded.add(
+          buildAttributeFromTemplate(GLITE_X509_AUTHN_PROFILE, decision.getProfile().getAlias()));
+    } else if (profile.equals(XacmlProfile.UNKNOWN)) {
+      toBeAdded.add(
+          buildAttributeFromTemplate(DCI_SEC_X509_AUTHN_PROFILE, decision.getProfile().getAlias()));
+      toBeAdded.add(
+          buildAttributeFromTemplate(GLITE_X509_AUTHN_PROFILE, decision.getProfile().getAlias()));
     }
-    
+
     LOG.debug("Adding authentication profile attribute to request subject attributes: {}",
         toBeAdded);
-    
+
     request.getSubjects().iterator().next().getAttributes().addAll(toBeAdded);
   }
 
@@ -227,13 +228,14 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
 
 
 
-  private Decision enforceCertificateAuthenticationProfile(Request request,
-      String caSubject) {
+  private Decision enforceCertificateAuthenticationProfile(Request request, String caSubject) {
 
     Decision decision = pdp.isCaAllowed(caSubject);
 
     if (!decision.isAllowed()) {
-      LOG.warn("CA '{}' does not belong to any allowed authentication profile. X.509 subject attributes will be removed from request", caSubject);
+      LOG.warn(
+          "CA '{}' does not belong to any allowed authentication profile. X.509 subject attributes will be removed from request",
+          caSubject);
       removeSubjectAttributesFromRequestSubject(request);
     } else {
       LOG.debug("CA '{}' belongs to an allowed authentication profile: {}", caSubject,

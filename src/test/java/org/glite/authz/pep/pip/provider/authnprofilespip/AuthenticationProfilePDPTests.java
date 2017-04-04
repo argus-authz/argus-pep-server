@@ -69,7 +69,7 @@ public class AuthenticationProfilePDPTests extends TestSupport {
     }
   }
 
-  private void assertCaAcceptableForLhcVos(String caSubject, String profile) {
+  public void assertCaAcceptableForLhcVos(String caSubject, String profile) {
     String principal = opensslDnToRFC2253(caSubject);
     for (String lhcVo : LHC_VOS) {
       Decision d = pdp.isCaAllowedForVO(principal, lhcVo);

@@ -18,9 +18,14 @@
 package org.glite.authz.pep.pip.provider.authnprofilespip;
 
 /**
- * An {@link AuthenticationProfilePolicySet} parser
+ * An {@link AuthenticationProfilePolicySet} builder.
  *
  */
 public interface AuthenticationProfilePolicySetBuilder {
+  /**
+   * Builds an {@link AuthenticationProfilePolicySet}
+   * 
+   * @return a non-null {@link AuthenticationProfilePolicySet}
+   */
   AuthenticationProfilePolicySet build();
 }

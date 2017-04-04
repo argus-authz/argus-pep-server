@@ -64,4 +64,10 @@ public class AuthenticationProfilePolicyImpl implements AuthenticationProfilePol
     return profiles.stream().filter(p -> supportsProfile(p)).findFirst();
     
   }
+
+  @Override
+  public String toString() {
+    return profileMap.keySet().toString();
+  }
+  
 }

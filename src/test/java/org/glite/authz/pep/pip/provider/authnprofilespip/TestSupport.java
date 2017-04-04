@@ -56,12 +56,25 @@ public abstract class TestSupport {
   public static final String IGTF_WLCG_VO_CA_AP_FILE =
       "src/test/resources/vo-ca-ap/igtf-wlcg-vo-ca-ap";
 
+  public static final String IGTF_WLCG_VO_CA_AP_NO_IOTA_FILE =
+      "src/test/resources/vo-ca-ap/igtf-wlcg-vo-ca-ap-no-iota";
+
   public static final String[] LHC_VOS = {"alice", "atlas", "cms", "lhcb"};
 
   public static final String TEST_VO = "test";
 
   public static final String IGTF_PROFILES_FILTER = "policy-igtf-*.info";
   public static final String ALL_POLICIES_FILTER = "policy-*.info";
+
+  public static final String[] AUTHN_PROFILE_IGTF_FILES = {
+      "src/test/resources/certificates/policy-igtf-classic.info",
+      "src/test/resources/certificates/policy-igtf-iota.info",
+      "src/test/resources/certificates/policy-igtf-mics.info",
+      "src/test/resources/certificates/policy-igtf-slcs.info"
+  };
+  
+  public static final String AUTHN_PROFILE_IOTA_NO_CERN_FILE =
+      "src/test/resources/authn-profiles-iota-no-cern/policy-igtf-iota.info";
 
   public static final String IGTF_CLASSIC = "policy-igtf-classic";
   public static final String IGTF_MICS = "policy-igtf-mics";
@@ -98,7 +111,7 @@ public abstract class TestSupport {
 
   public static final String DUPLICATE_ANY_CERT_RULE_FILE =
       "src/test/resources/vo-ca-ap/multipleAnyCertRuleFile";
-  
+
   public static final String UNKNOWN_PROFILE_ATTRIBUTE_ID = "unknown-profile-attribute-id";
   public static final String UNKNOWN_PROFILE_ID = "unknown-profile-1.0";
 
@@ -119,9 +132,8 @@ public abstract class TestSupport {
   }
 
   public void addUnknownProfileIdToRequest(Request request) {
-    Attribute profileIdAttr =
-        createSingleStringValueAttribute(UNKNOWN_PROFILE_ATTRIBUTE_ID,
-            DATATYPE_STRING, UNKNOWN_PROFILE_ID);
+    Attribute profileIdAttr = createSingleStringValueAttribute(UNKNOWN_PROFILE_ATTRIBUTE_ID,
+        DATATYPE_STRING, UNKNOWN_PROFILE_ID);
 
     request.getEnvironment().getAttributes().add(profileIdAttr);
   }
@@ -155,47 +167,48 @@ public abstract class TestSupport {
   public Request createGliteRequest(String subjectDn, String issuerDn) {
     return createGliteRequest(subjectDn, issuerDn, null);
   }
-  
+
   public Request createRequestWithNullEnvironment(String subjectDn, String issuerDn) {
     Request request = new Request();
     Subject subject = new Subject();
-    
+
     Attribute subjectAttr = createGliteSubjectAttribute(subjectDn);
     subject.getAttributes().add(subjectAttr);
     Attribute issuerAttr = createGliteIssuerAttribute(issuerDn);
     subject.getAttributes().add(issuerAttr);
-    
+
     request.getSubjects().add(subject);
     return request;
   }
-  
-  public Request createUnknownProfileWithGliteAttrsRequest(String subjectDn, String issuerDn, String voName) {
+
+  public Request createUnknownProfileWithGliteAttrsRequest(String subjectDn, String issuerDn,
+      String voName) {
     Request request = new Request();
 
     Environment env = new Environment();
     request.setEnvironment(env);
     addUnknownProfileIdToRequest(request);
-    
+
     Subject subject = new Subject();
-    
+
     Attribute subjectAttr = createGliteSubjectAttribute(subjectDn);
     subject.getAttributes().add(subjectAttr);
-    
+
     Attribute issuerAttr = createGliteIssuerAttribute(issuerDn);
     subject.getAttributes().add(issuerAttr);
-    
+
     if (voName != null) {
       Attribute voAttr = createGliteVoAttribute(voName);
       Attribute pfqan = createGlitePrimaryFqanAttribute(voName);
       Attribute fqan = createGliteFqanAttribute(voName);
-      
-      subject.getAttributes().addAll(asList(voAttr,pfqan, fqan));
+
+      subject.getAttributes().addAll(asList(voAttr, pfqan, fqan));
     }
-    
+
     request.getSubjects().add(subject);
     return request;
   }
-  
+
   public Request createGliteRequest(String subjectDn, String issuerDn, String voName) {
     Request request = new Request();
 
@@ -203,21 +216,21 @@ public abstract class TestSupport {
     request.setEnvironment(env);
     addGliteWNProfileIdToRequest(request);
     Subject subject = new Subject();
-    
+
     Attribute subjectAttr = createGliteSubjectAttribute(subjectDn);
     subject.getAttributes().add(subjectAttr);
-    
+
     Attribute issuerAttr = createGliteIssuerAttribute(issuerDn);
     subject.getAttributes().add(issuerAttr);
-    
+
     if (voName != null) {
       Attribute voAttr = createGliteVoAttribute(voName);
       Attribute pfqan = createGlitePrimaryFqanAttribute(voName);
       Attribute fqan = createGliteFqanAttribute(voName);
-      
-      subject.getAttributes().addAll(asList(voAttr,pfqan, fqan));
+
+      subject.getAttributes().addAll(asList(voAttr, pfqan, fqan));
     }
-    
+
     request.getSubjects().add(subject);
     return request;
   }
@@ -354,4 +367,6 @@ public abstract class TestSupport {
 
     return tempFilePath;
   }
+
+
 }

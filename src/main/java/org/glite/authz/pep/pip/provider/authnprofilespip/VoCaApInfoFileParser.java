@@ -64,7 +64,7 @@ public class VoCaApInfoFileParser implements AuthenticationProfilePolicySetBuild
   final String filename;
   final AuthenticationProfileRepository repo;
 
-  private AuthenticationProfilePolicySetImpl.Builder builder;
+  private AuthenticationProfilePolicySetImpl.Builder policySetBuilder;
   private Properties properties;
 
   public VoCaApInfoFileParser(String filename, AuthenticationProfileRepository repo) {
@@ -145,7 +145,10 @@ public class VoCaApInfoFileParser implements AuthenticationProfilePolicySetBuild
 
     AuthenticationProfilePolicy policy = new AuthenticationProfilePolicyImpl(rules);
 
-    builder.anyCertificatePolicy(policy);
+    policySetBuilder.anyCertificatePolicy(policy);
+    
+    LOG.debug("\"-\" -> {}", policy);
+    
   }
 
   private void buildAnyVoPolicy() {
@@ -154,7 +157,9 @@ public class VoCaApInfoFileParser implements AuthenticationProfilePolicySetBuild
 
     AuthenticationProfilePolicy policy = new AuthenticationProfilePolicyImpl(rules);
 
-    builder.anyVoPolicy(policy);
+    policySetBuilder.anyVoPolicy(policy);
+    
+    LOG.debug("/* -> {}", policy);
   }
 
 
@@ -176,7 +181,9 @@ public class VoCaApInfoFileParser implements AuthenticationProfilePolicySetBuild
 
     AuthenticationProfilePolicy policy = new AuthenticationProfilePolicyImpl(rules);
 
-    builder.addVoPolicy(voKey.substring(1), policy);
+    policySetBuilder.addVoPolicy(voKey.substring(1), policy);
+    
+    LOG.debug("{} -> {}", voKey, policy);
 
   }
 
@@ -184,9 +191,10 @@ public class VoCaApInfoFileParser implements AuthenticationProfilePolicySetBuild
   @Override
   public AuthenticationProfilePolicySet build() {
 
+    LOG.info("Loading vo-ca-ap policies from: {}", filename);
     fileSanityChecks(filename);
     properties = parseAsProperties();
-    builder = new AuthenticationProfilePolicySetImpl.Builder();
+    policySetBuilder = new AuthenticationProfilePolicySetImpl.Builder();
 
     for (String key : properties.stringPropertyNames()) {
       keySanityCheck(key);
@@ -200,6 +208,6 @@ public class VoCaApInfoFileParser implements AuthenticationProfilePolicySetBuild
       }
     }
 
-    return builder.build();
+    return policySetBuilder.build();
   }
 }

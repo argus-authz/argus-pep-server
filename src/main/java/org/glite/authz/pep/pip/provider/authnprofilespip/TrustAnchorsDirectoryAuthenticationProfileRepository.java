@@ -60,7 +60,7 @@ public class TrustAnchorsDirectoryAuthenticationProfileRepository
 
   private static final String DEFAULT_AUTHN_PROFILE_FILE_PATTERN_STRING = "policy-*.info";
   private static final Pattern AUTHN_PROFILE_FILE_PATTERN = Pattern.compile("(.*).info");
-
+  
   private final String trustAnchorsDir;
   private final String authnProfileFilePattern;
   private final AuthenticationProfileFileParser authnProfileParser;
@@ -72,7 +72,7 @@ public class TrustAnchorsDirectoryAuthenticationProfileRepository
 
   protected final Lock readLock = rwLock.readLock();
   protected final Lock writeLock = rwLock.writeLock();
-
+   
   public TrustAnchorsDirectoryAuthenticationProfileRepository(String trustAnchorsDir,
       String policyFilePattern, AuthenticationProfileFileParser policyFileParser) {
     this.trustAnchorsDir = trustAnchorsDir;
