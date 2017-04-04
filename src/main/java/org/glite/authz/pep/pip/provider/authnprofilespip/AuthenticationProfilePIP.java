@@ -233,7 +233,7 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
     Decision decision = pdp.isCaAllowed(caSubject);
 
     if (!decision.isAllowed()) {
-      LOG.warn("CA '{}' does not belong to any allowed authentication profile", caSubject);
+      LOG.warn("CA '{}' does not belong to any allowed authentication profile. X.509 subject attributes will be removed from request", caSubject);
       removeSubjectAttributesFromRequestSubject(request);
     } else {
       LOG.debug("CA '{}' belongs to an allowed authentication profile: {}", caSubject,

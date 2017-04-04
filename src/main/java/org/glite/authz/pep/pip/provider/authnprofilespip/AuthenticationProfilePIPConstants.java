@@ -66,6 +66,10 @@ public interface AuthenticationProfilePIPConstants {
   /** The attribute used to hold the subjects of all the issuers in the certificate chain (common XACML profile) **/
   Attribute DCI_SEC_SUBJECT_ISSUER = new Attribute(ID_ATTRIBUTE_SUBJECT_ISSUER, DATATYPE_X500_NAME);
 
+  /** The attribute used to hold the subjects of all the issuers in the certificate chain (gLite XACML profile) **/
+  Attribute GLITE_SUBJECT_ISSUER = new Attribute(GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ISSUER,
+      DATATYPE_X500_NAME);
+  
   /** The attribute used to hold the virtual organization  (common XACML profile) **/
   Attribute DCI_SEC_VIRTUAL_ORGANIZATION = new Attribute(
       CommonXACMLAuthorizationProfileConstants.ID_ATTRIBUTE_VIRTUAL_ORGANIZATION, DATATYPE_STRING);
@@ -100,7 +104,8 @@ public interface AuthenticationProfilePIPConstants {
   /** The set of known attribute ids for X.509 certificate related attributes **/
   static final Set<String> X509_SUBJECT_ATTRS_IDS =
       newHashSet(X509_SUBJECT.getId(), DCI_SEC_X509_ISSUER.getId(),
-          DCI_SEC_SUBJECT_ISSUER.getId(), DCI_SEC_X509_AUTHN_PROFILE.getId());
+          DCI_SEC_SUBJECT_ISSUER.getId(), DCI_SEC_X509_AUTHN_PROFILE.getId(),
+          GLITE_X509_ISSUER.getId(), GLITE_X509_AUTHN_PROFILE.getId());
 
   /** The attributes used to resolve VO name in the request **/
   static final Set<Attribute> VO_NAME_ATTRS =

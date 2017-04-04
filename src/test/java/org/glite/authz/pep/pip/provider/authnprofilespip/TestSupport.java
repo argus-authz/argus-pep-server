@@ -98,6 +98,9 @@ public abstract class TestSupport {
 
   public static final String DUPLICATE_ANY_CERT_RULE_FILE =
       "src/test/resources/vo-ca-ap/multipleAnyCertRuleFile";
+  
+  public static final String UNKNOWN_PROFILE_ATTRIBUTE_ID = "unknown-profile-attribute-id";
+  public static final String UNKNOWN_PROFILE_ID = "unknown-profile-1.0";
 
   protected List<String> profilesToAliases(Set<AuthenticationProfile> profiles) {
     List<String> profileNames =
@@ -111,10 +114,17 @@ public abstract class TestSupport {
     return rfc2253Dn;
   }
 
-  public Request createRequest(String subjectDn, String issuerDn) {
-    return createRequest(subjectDn, issuerDn, null);
+  public Request createDciSecRequest(String subjectDn, String issuerDn) {
+    return createDciSecRequest(subjectDn, issuerDn, null);
   }
 
+  public void addUnknownProfileIdToRequest(Request request) {
+    Attribute profileIdAttr =
+        createSingleStringValueAttribute(UNKNOWN_PROFILE_ATTRIBUTE_ID,
+            DATATYPE_STRING, UNKNOWN_PROFILE_ID);
+
+    request.getEnvironment().getAttributes().add(profileIdAttr);
+  }
 
   public void addGliteCEProfileIdToRequest(Request request) {
 
@@ -142,26 +152,97 @@ public abstract class TestSupport {
     request.getEnvironment().getAttributes().add(profileIdAttr);
   }
 
-  public Request createRequest(String subjectDn, String issuerDn, String voName) {
+  public Request createGliteRequest(String subjectDn, String issuerDn) {
+    return createGliteRequest(subjectDn, issuerDn, null);
+  }
+  
+  public Request createRequestWithNullEnvironment(String subjectDn, String issuerDn) {
+    Request request = new Request();
+    Subject subject = new Subject();
+    
+    Attribute subjectAttr = createGliteSubjectAttribute(subjectDn);
+    subject.getAttributes().add(subjectAttr);
+    Attribute issuerAttr = createGliteIssuerAttribute(issuerDn);
+    subject.getAttributes().add(issuerAttr);
+    
+    request.getSubjects().add(subject);
+    return request;
+  }
+  
+  public Request createUnknownProfileWithGliteAttrsRequest(String subjectDn, String issuerDn, String voName) {
+    Request request = new Request();
+
+    Environment env = new Environment();
+    request.setEnvironment(env);
+    addUnknownProfileIdToRequest(request);
+    
+    Subject subject = new Subject();
+    
+    Attribute subjectAttr = createGliteSubjectAttribute(subjectDn);
+    subject.getAttributes().add(subjectAttr);
+    
+    Attribute issuerAttr = createGliteIssuerAttribute(issuerDn);
+    subject.getAttributes().add(issuerAttr);
+    
+    if (voName != null) {
+      Attribute voAttr = createGliteVoAttribute(voName);
+      Attribute pfqan = createGlitePrimaryFqanAttribute(voName);
+      Attribute fqan = createGliteFqanAttribute(voName);
+      
+      subject.getAttributes().addAll(asList(voAttr,pfqan, fqan));
+    }
+    
+    request.getSubjects().add(subject);
+    return request;
+  }
+  
+  public Request createGliteRequest(String subjectDn, String issuerDn, String voName) {
+    Request request = new Request();
+
+    Environment env = new Environment();
+    request.setEnvironment(env);
+    addGliteWNProfileIdToRequest(request);
+    Subject subject = new Subject();
+    
+    Attribute subjectAttr = createGliteSubjectAttribute(subjectDn);
+    subject.getAttributes().add(subjectAttr);
+    
+    Attribute issuerAttr = createGliteIssuerAttribute(issuerDn);
+    subject.getAttributes().add(issuerAttr);
+    
+    if (voName != null) {
+      Attribute voAttr = createGliteVoAttribute(voName);
+      Attribute pfqan = createGlitePrimaryFqanAttribute(voName);
+      Attribute fqan = createGliteFqanAttribute(voName);
+      
+      subject.getAttributes().addAll(asList(voAttr,pfqan, fqan));
+    }
+    
+    request.getSubjects().add(subject);
+    return request;
+  }
+
+  public Request createDciSecRequest(String subjectDn, String issuerDn, String voName) {
 
     Request request = new Request();
 
     Environment env = new Environment();
     request.setEnvironment(env);
+    addDciSecProfileIdToRequest(request);
 
     Subject subject = new Subject();
-    Attribute subjectAttr = createSubjectAttribute(subjectDn);
+    Attribute subjectAttr = createDciSecSubjectAttribute(subjectDn);
     subject.getAttributes().add(subjectAttr);
 
-    Attribute issuerAttr = createIssuerAttribute(issuerDn);
+    Attribute issuerAttr = createDciSecIssuerAttribute(issuerDn);
     subject.getAttributes().add(issuerAttr);
 
     if (voName != null) {
-      Attribute voAttr = createVoAttribute(voName);
-      Attribute fqanAttr = createFqanAttribute(voName);
-      Attribute pfqanAttr = createPrimaryFqanAttribute(voName);
+      Attribute voAttr = createDciSecVoAttribute(voName);
+      Attribute primaryGroupAttr = createDciSecPrimaryGroupAttribute(voName);
+      Attribute groupAttr = createDciSecGroupAttribute(voName);
 
-      subject.getAttributes().addAll(asList(voAttr, fqanAttr, pfqanAttr));
+      subject.getAttributes().addAll(asList(voAttr, primaryGroupAttr, groupAttr));
 
     }
 
@@ -170,35 +251,68 @@ public abstract class TestSupport {
     return request;
   }
 
-
-
-  Attribute createVoAttribute(String voName) {
+  Attribute createDciSecVoAttribute(String voName) {
 
     return createSingleStringValueAttribute(ID_ATTRIBUTE_VIRTUAL_ORGANIZATION, DATATYPE_STRING,
         voName);
   }
 
-  Attribute createPrimaryFqanAttribute(String voName) {
+  Attribute createGliteVoAttribute(String voName) {
+
+    return createSingleStringValueAttribute(
+        GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_VIRTUAL_ORGANIZATION, DATATYPE_STRING,
+        voName);
+  }
+
+  Attribute createDciSecGroupAttribute(String voName) {
+
+    return createSingleStringValueAttribute(
+        CommonXACMLAuthorizationProfileConstants.ID_ATTRIBUTE_GROUP, DATATYPE_STRING, "/voName");
+  }
+
+
+  Attribute createDciSecPrimaryGroupAttribute(String voName) {
+
+    return createSingleStringValueAttribute(
+        CommonXACMLAuthorizationProfileConstants.ID_ATTRIBUTE_PRIMARY_GROUP, DATATYPE_STRING,
+        "/voName");
+  }
+
+  Attribute createGlitePrimaryFqanAttribute(String voName) {
 
     return createSingleStringValueAttribute(ID_ATTRIBUTE_PRIMARY_FQAN, DATATYPE_FQAN, "/" + voName);
   }
 
-  Attribute createFqanAttribute(String voName) {
+  Attribute createGliteFqanAttribute(String voName) {
 
     return createSingleStringValueAttribute(ID_ATTRIBUTE_FQAN, DATATYPE_FQAN, "/" + voName);
   }
 
 
   @SuppressWarnings("deprecation")
-  Attribute createIssuerAttribute(String issuer) {
+  Attribute createDciSecIssuerAttribute(String issuer) {
 
     return createSingleStringValueAttribute(ID_ATTRIBUTE_X509_SUBJECT_ISSUER, DATATYPE_X500_NAME,
         opensslToRfc2253(issuer));
   }
 
+  @SuppressWarnings("deprecation")
+  Attribute createGliteIssuerAttribute(String issuer) {
+
+    return createSingleStringValueAttribute(
+        GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_X509_SUBJECT_ISSUER, DATATYPE_X500_NAME,
+        opensslToRfc2253(issuer));
+  }
 
   @SuppressWarnings("deprecation")
-  Attribute createSubjectAttribute(String subject) {
+  Attribute createGliteSubjectAttribute(String subject) {
+    return createSingleStringValueAttribute(
+        GLiteAuthorizationProfileConstants.ID_ATTRIBUTE_SUBJECT_ID, DATATYPE_X500_NAME,
+        opensslToRfc2253(subject));
+  }
+
+  @SuppressWarnings("deprecation")
+  Attribute createDciSecSubjectAttribute(String subject) {
 
     return createSingleStringValueAttribute(ID_ATTRIBUTE_SUBJECT_ID, DATATYPE_X500_NAME,
         opensslToRfc2253(subject));

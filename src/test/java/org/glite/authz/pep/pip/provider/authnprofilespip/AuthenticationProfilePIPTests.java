@@ -58,9 +58,18 @@ public class AuthenticationProfilePIPTests extends TestSupport
   }
 
   @Test
-  public void testVOWithSupportedProfile() throws PIPProcessingException {
+  public void testDciSecVOWithSupportedProfile() throws PIPProcessingException {
 
-    Request request = createRequest(CLASSIC_DN, CLASSIC_CA, "atlas");
+    Request request = createDciSecRequest(CLASSIC_DN, CLASSIC_CA, "atlas");
+    assertEquals(pip.populateRequest(request), true);
+    assertThat(requestSubjectAttributes(request), containsAuthnProfileAttr(IGTF_CLASSIC));
+
+  }
+  
+  @Test
+  public void testGliteVOWithSupportedProfile() throws PIPProcessingException {
+
+    Request request = createGliteRequest(CLASSIC_DN, CLASSIC_CA, "atlas");
     assertEquals(pip.populateRequest(request), true);
     assertThat(requestSubjectAttributes(request), containsAuthnProfileAttr(IGTF_CLASSIC));
 
@@ -68,9 +77,9 @@ public class AuthenticationProfilePIPTests extends TestSupport
  
 
   @Test
-  public void testVOWithNotSupportedProfile() throws PIPProcessingException {
+  public void testDciSecVOWithUnsupportedProfile() throws PIPProcessingException {
 
-    Request request = createRequest(IOTA_DN, IOTA_CA, TEST_VO);
+    Request request = createDciSecRequest(IOTA_DN, IOTA_CA, TEST_VO);
     assertEquals(pip.populateRequest(request), true);
 
     Set<Attribute> subjectAttributes = requestSubjectAttributes(request);
@@ -80,11 +89,30 @@ public class AuthenticationProfilePIPTests extends TestSupport
   }
   
   @Test
-   public void testPlainCertWithSupportedProfile() throws PIPProcessingException, IllegalStateException {
-     Request request = createRequest(CLASSIC_DN, CLASSIC_CA);
+  public void testGliteVOWithUnsupportedProfile() throws PIPProcessingException {
+
+    Request request = createGliteRequest(IOTA_DN, IOTA_CA, TEST_VO);
+    assertEquals(pip.populateRequest(request), true);
+
+    Set<Attribute> subjectAttributes = requestSubjectAttributes(request);
+
+    assertThat(subjectAttributes, not(containsVoAttrs()));
+    assertThat(subjectAttributes, not(containsSubjectAttrs()));
+  }
+  
+  @Test
+   public void testDciSecPlainCertWithSupportedProfile() throws PIPProcessingException, IllegalStateException {
+     Request request = createDciSecRequest(CLASSIC_DN, CLASSIC_CA);
      assertEquals(pip.populateRequest(request), true);
      assertThat(requestSubjectAttributes(request), containsAuthnProfileAttr(IGTF_CLASSIC));
    }
+  
+  @Test
+  public void testGlitePlainCertWithSupportedProfile() throws PIPProcessingException, IllegalStateException {
+    Request request = createGliteRequest(CLASSIC_DN, CLASSIC_CA);
+    assertEquals(pip.populateRequest(request), true);
+    assertThat(requestSubjectAttributes(request), containsAuthnProfileAttr(IGTF_CLASSIC));
+  }
   
   
   @Test
@@ -93,4 +121,17 @@ public class AuthenticationProfilePIPTests extends TestSupport
     assertEquals(pip.populateRequest(request), false);
   }
 
+  @Test
+  public void testRequestWithNullEnvironment() throws PIPProcessingException, IllegalStateException {
+    Request request = createRequestWithNullEnvironment(CLASSIC_DN, CLASSIC_CA);
+    assertEquals(pip.populateRequest(request), true);
+    assertThat(requestSubjectAttributes(request), containsAuthnProfileAttr(IGTF_CLASSIC));
+  }
+  
+  @Test
+  public void testRequestWithUnknownProfileAndGliteAttrs() throws PIPProcessingException, IllegalStateException {
+    Request request = createUnknownProfileWithGliteAttrsRequest(CLASSIC_DN, CLASSIC_CA, TEST_VO);
+    assertEquals(pip.populateRequest(request), true);
+    assertThat(requestSubjectAttributes(request), containsAuthnProfileAttr(IGTF_CLASSIC));
+  }
 }
