@@ -68,7 +68,7 @@ public class TrustAnchorsDirectoryAuthenticationProfileRepository
   private final AuthenticationProfileFileParser authnProfileParser;
 
   private Map<String, AuthenticationProfile> profiles = new HashMap<>();
-  private Map<X500Principal, Set<AuthenticationProfile>> dnLookupTable = new HashMap<>();
+  private Map<String, Set<AuthenticationProfile>> dnLookupTable = new HashMap<>();
 
   protected final ReadWriteLock rwLock = new ReentrantReadWriteLock();
 
@@ -151,7 +151,7 @@ public class TrustAnchorsDirectoryAuthenticationProfileRepository
     authnInfoParserSanityChecks();
 
     Map<String, AuthenticationProfile> loadedProfiles = new HashMap<>();
-    Map<X500Principal, Set<AuthenticationProfile>> lookupTable = new HashMap<>();
+    Map<String, Set<AuthenticationProfile>> lookupTable = new HashMap<>();
 
     try {
       DirectoryStream<Path> stream =
@@ -163,13 +163,15 @@ public class TrustAnchorsDirectoryAuthenticationProfileRepository
         loadedProfiles.put(profile.getAlias(), profile);
 
         profile.getCASubjects().forEach(dn -> {
-          if (lookupTable.containsKey(dn)) {
-            lookupTable.get(dn).add(profile);
+          String name = dn.getName();
+          if (lookupTable.containsKey(name)) {
+            lookupTable.get(name).add(profile);
           } else {
             Set<AuthenticationProfile> s = new HashSet<>();
             s.add(profile);
-            lookupTable.put(dn, s);
+            lookupTable.put(name, s);
           }
+          LOG.debug("Mapped CA dn '{}' to profile '{}'", name, profile.getAlias());
         });
 
       }
@@ -228,7 +230,7 @@ public class TrustAnchorsDirectoryAuthenticationProfileRepository
     readLock.lock();
 
     try {
-      Set<AuthenticationProfile> result = dnLookupTable.get(principal);
+      Set<AuthenticationProfile> result = dnLookupTable.get(principal.getName());
       if (result == null) {
         return Collections.emptySet();
       }

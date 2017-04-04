@@ -76,7 +76,8 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
     DCI_SEC_PROFILE
   }
 
-  public AuthenticationProfilePIP(AuthenticationProfilePDP pdp) {
+  public AuthenticationProfilePIP(String pipId, AuthenticationProfilePDP pdp) {
+    super(pipId);
     this.pdp = pdp;
   }
 

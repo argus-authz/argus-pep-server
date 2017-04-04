@@ -92,7 +92,7 @@ public class AuthenticationProfilePIPConfigurationParser
         .refreshIntervalInSecs(refreshIntervalInSecs)
         .build();
 
-      AuthenticationProfilePIP pip = new AuthenticationProfilePIP(pdp);
+      AuthenticationProfilePIP pip = new AuthenticationProfilePIP(pipId,pdp);
 
       return pip;
 

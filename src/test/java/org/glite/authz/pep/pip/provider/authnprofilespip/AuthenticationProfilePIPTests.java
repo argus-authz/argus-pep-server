@@ -45,7 +45,7 @@ public class AuthenticationProfilePIPTests extends TestSupport
       .policyFilePattern(IGTF_PROFILES_FILTER)
       .build();
 
-    pip = new AuthenticationProfilePIP(pdp);
+    pip = new AuthenticationProfilePIP("test",pdp);
     pip.start();
   }
 
