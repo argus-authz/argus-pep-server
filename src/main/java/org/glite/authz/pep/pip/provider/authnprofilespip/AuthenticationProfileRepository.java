@@ -21,8 +21,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.security.auth.x500.X500Principal;
-
 /**
  * 
  * An {@link AuthenticationProfileRepository} provides access and lookup functionality for
@@ -59,10 +57,10 @@ public interface AuthenticationProfileRepository extends ReloadingRepository{
   /**
    * Find profiles supporting a given {@link X500Principal} CA subject
    * 
-   * @param principal a {@link X500Principal} CA subject
+   * @param caSubject a CA subject, in RFC2253 format
    * @return the (possibly empty) set of {@link AuthenticationProfile} that supports the CA subject
    *         passed as argument
    */
-  Set<AuthenticationProfile> findProfilesForSubject(X500Principal principal);
+  Set<AuthenticationProfile> findProfilesForSubject(String caSubject);
 
 }

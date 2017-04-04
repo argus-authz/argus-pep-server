@@ -29,8 +29,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
 
-import javax.security.auth.x500.X500Principal;
-
 import org.junit.Test;
 
 public class AuthenticationProfileRepositoryTest {
@@ -187,9 +185,8 @@ public class AuthenticationProfileRepositoryTest {
     assertEquals(policyAlias, profile.getAlias());
     assertEquals(7, profile.getCASubjects().size());
 
-    X500Principal principal = new X500Principal(opensslToRfc2253("/C=JP/O=NII/OU=HPCI/CN=HPCI CA"));
-
-    assertThat(profile.getCASubjects(), hasItem(principal));
+    String caSubject = opensslToRfc2253("/C=JP/O=NII/OU=HPCI/CN=HPCI CA");
+    assertThat(profile.getCASubjects(), hasItem(caSubject));
   }
 
   @Test
@@ -211,12 +208,10 @@ public class AuthenticationProfileRepositoryTest {
     assertEquals(policyAlias, profile.getAlias());
     assertEquals(2, profile.getCASubjects().size());
 
-    X500Principal firstCa =
-        new X500Principal(opensslToRfc2253("/C=IT/L=Bologna/O=Policy Tester/CN=First CA"));
-    assertThat(profile.getCASubjects(), hasItem(firstCa));
+    String firstCaSubject = opensslToRfc2253("/C=IT/L=Bologna/O=Policy Tester/CN=First CA");
+    assertThat(profile.getCASubjects(), hasItem(firstCaSubject));
 
-    X500Principal secondCa =
-        new X500Principal(opensslToRfc2253("/C=IT/L=Bologna/O=Policy Tester/CN=Second CA"));
-    assertThat(profile.getCASubjects(), hasItem(secondCa));
+    String secondCaSubject = opensslToRfc2253("/C=IT/L=Bologna/O=Policy Tester/CN=Second CA");
+    assertThat(profile.getCASubjects(), hasItem(secondCaSubject));
   }
 }

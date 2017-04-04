@@ -26,8 +26,6 @@ import java.io.IOException;
 import java.util.Properties;
 import java.util.Set;
 
-import javax.security.auth.x500.X500Principal;
-
 import org.glite.authz.pep.pip.provider.authnprofilespip.error.ParseError;
 
 public class DefaultAuthenticationProfileFileParser implements AuthenticationProfileFileParser {
@@ -56,7 +54,7 @@ public class DefaultAuthenticationProfileFileParser implements AuthenticationPro
       throw new ParseError("Missing value for 'subjectdn' property");
     }
 
-    Set<X500Principal> caSubjects = convertCASubjects(subjectdn);
+    Set<String> caSubjects = convertCASubjects(subjectdn);
 
     return new AuthenticationProfileImpl(alias, caSubjects);
   }

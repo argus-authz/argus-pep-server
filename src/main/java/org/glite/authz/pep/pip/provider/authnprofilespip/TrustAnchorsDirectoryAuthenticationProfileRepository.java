@@ -40,8 +40,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.security.auth.x500.X500Principal;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -163,15 +161,15 @@ public class TrustAnchorsDirectoryAuthenticationProfileRepository
         loadedProfiles.put(profile.getAlias(), profile);
 
         profile.getCASubjects().forEach(dn -> {
-          String name = dn.getName();
-          if (lookupTable.containsKey(name)) {
-            lookupTable.get(name).add(profile);
+          
+          if (lookupTable.containsKey(dn)) {
+            lookupTable.get(dn).add(profile);
           } else {
             Set<AuthenticationProfile> s = new HashSet<>();
             s.add(profile);
-            lookupTable.put(name, s);
+            lookupTable.put(dn, s);
           }
-          LOG.debug("Mapped CA dn '{}' to profile '{}'", name, profile.getAlias());
+          LOG.debug("Mapped CA dn '{}' to profile '{}'", dn, profile.getAlias());
         });
 
       }
@@ -225,12 +223,12 @@ public class TrustAnchorsDirectoryAuthenticationProfileRepository
   }
 
   @Override
-  public Set<AuthenticationProfile> findProfilesForSubject(X500Principal principal) {
+  public Set<AuthenticationProfile> findProfilesForSubject(String caSubject) {
 
     readLock.lock();
 
     try {
-      Set<AuthenticationProfile> result = dnLookupTable.get(principal.getName());
+      Set<AuthenticationProfile> result = dnLookupTable.get(caSubject);
       if (result == null) {
         return Collections.emptySet();
       }

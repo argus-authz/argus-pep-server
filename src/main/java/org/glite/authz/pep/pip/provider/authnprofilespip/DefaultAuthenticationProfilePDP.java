@@ -29,8 +29,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-import javax.security.auth.x500.X500Principal;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,49 +81,49 @@ public class DefaultAuthenticationProfilePDP implements AuthenticationProfilePDP
         new RefreshRepositoryTask(policyRepository), 0, refreshIntervalInSecs, TimeUnit.SECONDS);
   }
 
-  private Set<AuthenticationProfile> lookupProfiles(X500Principal principal) {
-    requireNonNull(principal, "Please provide a non-null principal argument");
+  private Set<AuthenticationProfile> lookupProfiles(String caSubject) {
+    requireNonNull(caSubject, "Please provide a non-null caSubject argument");
 
-    Set<AuthenticationProfile> profiles = profileRepository.findProfilesForSubject(principal);
+    Set<AuthenticationProfile> profiles = profileRepository.findProfilesForSubject(caSubject);
 
     if (profiles.isEmpty()) {
       throw new AuthenticationProfileError(
-          "No authentication profile found for X500 principal: " + principal.getName());
+          "No authentication profile found for CA subject: " + caSubject);
     }
 
     return profiles;
   }
 
-  private Decision policyDecision(AuthenticationProfilePolicy policy, X500Principal principal,
+  private Decision policyDecision(AuthenticationProfilePolicy policy, String caSubject,
       Set<AuthenticationProfile> profiles) {
 
     requireNonNull(policy);
-    requireNonNull(principal);
+    requireNonNull(caSubject);
     requireNonNull(profiles);
 
     Optional<AuthenticationProfile> allowedProfile = policy.supportsAtLeastOneProfile(profiles);
 
     if (allowedProfile.isPresent()) {
-      return allow(principal, allowedProfile.get());
+      return allow(caSubject, allowedProfile.get());
     }
 
-    return deny(principal);
+    return deny(caSubject);
   }
 
   @Override
-  public Decision isCaAllowedForVO(X500Principal principal, String voName) {
+  public Decision isCaAllowedForVO(String caSubject, String voName) {
 
     requireNonNull(voName, "Please provide a non-null vo name");
-    Set<AuthenticationProfile> principalProfiles = lookupProfiles(principal);
+    Set<AuthenticationProfile> principalProfiles = lookupProfiles(caSubject);
 
     AuthenticationProfilePolicy voPolicy =
         policyRepository.getAuthenticationProfilePolicySet().getVoProfilePolicies().get(voName);
 
-    Decision decision = Decision.deny(principal);
+    Decision decision = Decision.deny(caSubject);
 
     if (voPolicy != null) {
 
-      decision = policyDecision(voPolicy, principal, principalProfiles);
+      decision = policyDecision(voPolicy, caSubject, principalProfiles);
 
       if (decision.isAllowed()) {
         return decision;
@@ -135,16 +133,16 @@ public class DefaultAuthenticationProfilePDP implements AuthenticationProfilePDP
     if (policyRepository.getAuthenticationProfilePolicySet().getAnyVoProfilePolicy().isPresent()) {
       AuthenticationProfilePolicy anyVoPolicy =
           policyRepository.getAuthenticationProfilePolicySet().getAnyVoProfilePolicy().get();
-      decision = policyDecision(anyVoPolicy, principal, principalProfiles);
+      decision = policyDecision(anyVoPolicy, caSubject, principalProfiles);
     }
 
     return decision;
   }
 
   @Override
-  public Decision isCaAllowed(X500Principal principal) {
+  public Decision isCaAllowed(String caSubject) {
 
-    Set<AuthenticationProfile> principalProfiles = lookupProfiles(principal);
+    Set<AuthenticationProfile> principalProfiles = lookupProfiles(caSubject);
 
     if (policyRepository.getAuthenticationProfilePolicySet()
       .getAnyCertificateProfilePolicy()
@@ -156,11 +154,11 @@ public class DefaultAuthenticationProfilePDP implements AuthenticationProfilePDP
           anyCertPolicy.supportsAtLeastOneProfile(principalProfiles);
 
       if (allowedProfile.isPresent()) {
-        return allow(principal, allowedProfile.get());
+        return allow(caSubject, allowedProfile.get());
       }
     }
 
-    return deny(principal);
+    return deny(caSubject);
   }
 
 

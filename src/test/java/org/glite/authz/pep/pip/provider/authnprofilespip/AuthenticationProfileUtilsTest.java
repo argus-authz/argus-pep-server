@@ -28,8 +28,6 @@ import static org.junit.Assert.assertThat;
 import java.io.IOException;
 import java.util.Set;
 
-import javax.security.auth.x500.X500Principal;
-
 import org.junit.Test;
 
 public class AuthenticationProfileUtilsTest {
@@ -41,7 +39,7 @@ public class AuthenticationProfileUtilsTest {
       + "\"/C=IT/L=Bologna/O=Policy Tester/CN=Second CA\", \\"
       + "\"/C=IT/L=Bologna/O=Policy Tester/CN=Third CA\"";
 
-    Set<X500Principal> issuer = convertCASubjects(subjectDN);
+    Set<String> issuer = convertCASubjects(subjectDN);
 
     assertNotNull(issuer);
     assertEquals(3, issuer.size());
@@ -54,7 +52,7 @@ public class AuthenticationProfileUtilsTest {
       + "\"this_is_not_a_valid_dn\", \\"
       + "\"/C=IT/L=Bologna/O=Policy Tester/CN=Third CA\"";
 
-    Set<X500Principal> issuer = null;
+    Set<String> issuer = null;
     try {
       issuer = convertCASubjects(subjectDN);
     } catch (IllegalArgumentException e) {

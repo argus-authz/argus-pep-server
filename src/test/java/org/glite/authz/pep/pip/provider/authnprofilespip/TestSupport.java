@@ -37,8 +37,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.security.auth.x500.X500Principal;
-
 import org.glite.authz.common.model.Attribute;
 import org.glite.authz.common.model.Environment;
 import org.glite.authz.common.model.Request;
@@ -107,11 +105,10 @@ public abstract class TestSupport {
     return profileNames;
   }
 
-  public X500Principal opensslDnToX500Principal(String dn) {
+  public String opensslDnToRFC2253(String dn) {
 
     String rfc2253Dn = OpensslNameUtils.opensslToRfc2253(dn);
-    X500Principal principal = new X500Principal(rfc2253Dn);
-    return principal;
+    return rfc2253Dn;
   }
 
   public Request createRequest(String subjectDn, String issuerDn) {

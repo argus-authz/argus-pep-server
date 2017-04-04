@@ -17,7 +17,6 @@
 
 package org.glite.authz.pep.pip.provider.authnprofilespip;
 
-import javax.security.auth.x500.X500Principal;
 /**
  * A {@link Decision} is rendered by the {@link AuthenticationProfilePDP} after having 
  * evaluated if a principal is allowed according to the set of current 
@@ -26,7 +25,7 @@ import javax.security.auth.x500.X500Principal;
 public class Decision {
 
   /** The principal for which the decision is rendered **/
-  final X500Principal principal;
+  final String principal;
 
   /** Whether the principal was was allowed or denied **/
   final boolean allowed;
@@ -34,14 +33,14 @@ public class Decision {
   /** The authentication profile, in case access was allowed **/
   final AuthenticationProfile profile;
 
-  private Decision(X500Principal principal, boolean allowed, AuthenticationProfile profile) {
+  private Decision(String principal, boolean allowed, AuthenticationProfile profile) {
 
     this.principal = principal;
     this.allowed = allowed;
     this.profile = profile;
   }
 
-  public X500Principal getPrincipal() {
+  public String getPrincipal() {
     return principal;
   }
 
@@ -59,11 +58,11 @@ public class Decision {
         + "]";
   }
   
-  public static Decision allow(X500Principal principal, AuthenticationProfile profile){
+  public static Decision allow(String principal, AuthenticationProfile profile){
     return new Decision(principal, true, profile);
   }
   
-  public static Decision deny(X500Principal principal){
+  public static Decision deny(String principal){
     return new Decision(principal, false, null);
   }
 }

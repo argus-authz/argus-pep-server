@@ -22,8 +22,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.security.auth.x500.X500Principal;
-
 import org.glite.authz.common.model.Attribute;
 import org.glite.authz.common.model.Environment;
 import org.glite.authz.common.model.Request;
@@ -199,13 +197,12 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
     return result;
   }
 
-  private Optional<X500Principal> findSubjectCertificateIssuer(Request request) {
+  private Optional<String> findSubjectCertificateIssuer(Request request) {
 
-    Optional<X500Principal> result = Optional.empty();
+    Optional<String> result = Optional.empty();
 
     for (Attribute attr : X509_ISSUER_ATTRS) {
-      result = findFirstSubjectAttribute(request, attr).map(this::extractFirstValueAsString)
-        .map(X500Principal::new);
+      result = findFirstSubjectAttribute(request, attr).map(this::extractFirstValueAsString);
 
       if (result.isPresent()) {
         break;
@@ -231,15 +228,15 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
 
 
   private Decision enforceCertificateAuthenticationProfile(Request request,
-      X500Principal principal) {
+      String caSubject) {
 
-    Decision decision = pdp.isCaAllowed(principal);
+    Decision decision = pdp.isCaAllowed(caSubject);
 
     if (!decision.isAllowed()) {
-      LOG.warn("CA '{}' does not belong to any allowed authentication profile", principal);
+      LOG.warn("CA '{}' does not belong to any allowed authentication profile", caSubject);
       removeSubjectAttributesFromRequestSubject(request);
     } else {
-      LOG.debug("CA '{}' belongs to an allowed authentication profile: {}", principal,
+      LOG.debug("CA '{}' belongs to an allowed authentication profile: {}", caSubject,
           decision.getProfile().getAlias());
       setAuthenticationProfileAttribute(request, decision);
     }
@@ -247,21 +244,21 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
     return decision;
   }
 
-  private Decision enforceVoAuthenticationProfile(Request request, X500Principal principal,
+  private Decision enforceVoAuthenticationProfile(Request request, String caSubject,
       String voName) {
 
-    Decision decision = pdp.isCaAllowedForVO(principal, voName);
+    Decision decision = pdp.isCaAllowedForVO(caSubject, voName);
 
     if (!decision.isAllowed()) {
       LOG.warn(
           "CA '{}' does not belong to any allowed authentication profiles for VO '{}'. VO attributes will be "
               + "removed from request",
-          principal, voName);
+          caSubject, voName);
       removeVoAttributesFromRequestSubject(request);
 
     } else {
 
-      LOG.debug("CA '{}' belongs to a supported authentication profile for VO '{}': {}", principal,
+      LOG.debug("CA '{}' belongs to a supported authentication profile for VO '{}': {}", caSubject,
           voName, decision.getProfile().getAlias());
 
       setAuthenticationProfileAttribute(request, decision);
@@ -275,7 +272,7 @@ public class AuthenticationProfilePIP extends AbstractPolicyInformationPoint
   public boolean populateRequest(Request request)
       throws PIPProcessingException, IllegalStateException {
 
-    Optional<X500Principal> issuerPrincipal = findSubjectCertificateIssuer(request);
+    Optional<String> issuerPrincipal = findSubjectCertificateIssuer(request);
 
     if (!issuerPrincipal.isPresent()) {
       LOG.debug("X509 issuer principal attribute in '{}' NOT found in request. This PIP will leave "

@@ -19,8 +19,6 @@ package org.glite.authz.pep.pip.provider.authnprofilespip;
 
 import java.util.Set;
 
-import javax.security.auth.x500.X500Principal;
-
 /**
  * 
  * A basic implementation for the {@link AuthenticationProfile} abstraction
@@ -29,11 +27,11 @@ import javax.security.auth.x500.X500Principal;
 public class AuthenticationProfileImpl implements AuthenticationProfile {
 
   private final String alias;
-  private final Set<X500Principal> caSubjects;
+  private final Set<String> caSubjects;
 
-  public AuthenticationProfileImpl(String alias, Set<X500Principal> caSubects) {
+  public AuthenticationProfileImpl(String alias, Set<String> caSubjects) {
     this.alias = alias;
-    this.caSubjects = caSubects;
+    this.caSubjects = caSubjects;
   }
 
   public String getAlias() {
@@ -41,7 +39,7 @@ public class AuthenticationProfileImpl implements AuthenticationProfile {
     return alias;
   }
 
-  public Set<X500Principal> getCASubjects() {
+  public Set<String> getCASubjects() {
 
     return caSubjects;
   }

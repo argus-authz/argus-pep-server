@@ -23,8 +23,6 @@ import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 
-import javax.security.auth.x500.X500Principal;
-
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
@@ -50,19 +48,19 @@ public class AuthenticationProfilePDPTests extends TestSupport {
 
   @Test(expected = NullPointerException.class)
   public void testNullX500PrincipalFailure() {
-    X500Principal principal = null;
+    String principal = null;
     try {
       pdp.isCaAllowed(principal);
     } catch (NullPointerException e) {
       Assert.assertThat(e.getMessage(),
-          Matchers.equalTo("Please provide a non-null principal argument"));
+          Matchers.equalTo("Please provide a non-null caSubject argument"));
       throw e;
     }
   }
 
   @Test(expected = NullPointerException.class)
   public void testNullVoArgumentFailure() {
-    X500Principal principal = opensslDnToX500Principal(CLASSIC_CA);
+    String principal = opensslDnToRFC2253(CLASSIC_CA);
     try {
       pdp.isCaAllowedForVO(principal, null);
     } catch (NullPointerException e) {
@@ -72,7 +70,7 @@ public class AuthenticationProfilePDPTests extends TestSupport {
   }
 
   private void assertCaAcceptableForLhcVos(String caSubject, String profile) {
-    X500Principal principal = opensslDnToX500Principal(caSubject);
+    String principal = opensslDnToRFC2253(caSubject);
     for (String lhcVo : LHC_VOS) {
       Decision d = pdp.isCaAllowedForVO(principal, lhcVo);
       assertThat(d.isAllowed(), equalTo(true));
@@ -103,7 +101,7 @@ public class AuthenticationProfilePDPTests extends TestSupport {
 
   @Test
   public void testIOTACaNotAcceptableNonLHC() {
-    X500Principal iotaCaPrincipal = opensslDnToX500Principal(IOTA_CA);
+    String iotaCaPrincipal = opensslDnToRFC2253(IOTA_CA);
 
     assertEquals(pdp.isCaAllowedForVO(iotaCaPrincipal, TEST_VO).isAllowed(), false);
 
@@ -111,7 +109,7 @@ public class AuthenticationProfilePDPTests extends TestSupport {
 
   @Test
   public void testIOTACaNotAcceptableForPlainCertificateAccess() {
-    X500Principal iotaCaPrincipal = opensslDnToX500Principal(IOTA_CA);
+    String iotaCaPrincipal = opensslDnToRFC2253(IOTA_CA);
 
     assertEquals(pdp.isCaAllowed(iotaCaPrincipal).isAllowed(), false);
     
@@ -119,7 +117,7 @@ public class AuthenticationProfilePDPTests extends TestSupport {
 
   @Test(expected = AuthenticationProfileError.class)
   public void testUnaccreditedCa() {
-    X500Principal unaccreditedCA = opensslDnToX500Principal(UNACCREDITED_CA);
+    String unaccreditedCA = opensslDnToRFC2253(UNACCREDITED_CA);
     pdp.isCaAllowedForVO(unaccreditedCA, "atlas");
   }
 }
