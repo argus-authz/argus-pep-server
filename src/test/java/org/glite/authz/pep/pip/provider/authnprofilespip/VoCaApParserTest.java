@@ -38,7 +38,7 @@ import org.junit.Test;
 
 
 
-public class VoCaApParserTests extends TestSupport {
+public class VoCaApParserTest extends TestSupport {
 
   private AuthenticationProfileRepository repo;
 

@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) Members of the EGEE Collaboration. 2006-2010.
+ * See http://www.eu-egee.org/partners/ for details on the copyright holders.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.glite.authz.pep.pip.provider.authnprofilespip;
 
 import static eu.emi.security.authn.x509.impl.OpensslNameUtils.opensslToRfc2253;
@@ -16,10 +33,10 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ConcurrentAuthenticationProfilePolicyLoadTests extends TestSupport {
+public class ConcurrentLoadTest extends TestSupport {
 
   public static final Logger LOG =
-      LoggerFactory.getLogger(ConcurrentAuthenticationProfilePolicyLoadTests.class);
+      LoggerFactory.getLogger(ConcurrentLoadTest.class);
 
   private AuthenticationProfileRepository profileRepo;
   private AuthenticationProfilePolicySetRepository policySetRepo;
@@ -56,7 +73,7 @@ public class ConcurrentAuthenticationProfilePolicyLoadTests extends TestSupport 
 
   }
 
-  private void testRun() {
+  void testRun() {
     List<Thread> threads = new ArrayList<>();
 
     for (int i = 0; i < DECISION_RUNNER_COUNT; i++) {
@@ -79,11 +96,9 @@ public class ConcurrentAuthenticationProfilePolicyLoadTests extends TestSupport 
 
   @Test
   public void testSyncCorrectness() {
-
     for (int i = 0; i < ITERATION_COUNT; i++) {
       testRun();
     }
-    
     assertThat(logicalClock.intValue(), equalTo(2 * ITERATION_COUNT * REPO_RELOADER_COUNT));
   }
 

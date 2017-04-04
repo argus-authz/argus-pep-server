@@ -31,7 +31,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class AuthenticationProfilePIPTests extends TestSupport
+public class AuthenticationProfilePIPTest extends TestSupport
     implements AuthenticationProfilePIPConstants {
 
   private PolicyInformationPoint pip;
