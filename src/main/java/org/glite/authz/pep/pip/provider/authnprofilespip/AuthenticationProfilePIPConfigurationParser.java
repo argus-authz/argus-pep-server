@@ -17,7 +17,7 @@
 
 package org.glite.authz.pep.pip.provider.authnprofilespip;
 
-
+import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 import org.glite.authz.common.config.AbstractConfigurationBuilder;
@@ -30,19 +30,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class AuthenticationProfilePIPConfigurationParser
-    implements IniSectionConfigurationParser<PolicyInformationPoint> {
+  implements IniSectionConfigurationParser<PolicyInformationPoint> {
 
-  static final Logger LOG =
-      LoggerFactory.getLogger(AuthenticationProfilePIPConfigurationParser.class);
+  static final Logger LOG = LoggerFactory
+    .getLogger(AuthenticationProfilePIPConfigurationParser.class);
 
-  static final String DEFAULT_PROFILE_POLICY_FILENAME = "/etc/grid-security/vo-ca-ap-file";
+  static final String DEFAULT_PROFILE_POLICY_FILENAME = "/etc/argus/pepd/vo-ca-ap-file";
 
   static final String PROFILE_POLICY_FILENAME_PROP = "authenticationProfilePolicyFile";
 
   static final String DEFAULT_TRUST_ANCHORS_DIRECTORY = "/etc/grid-security/certificates";
 
-  static final int DEFAULT_TRUST_ANCHORS_REFRESH_INTERVAL_IN_SECS =
-      (int) TimeUnit.HOURS.toSeconds(4);
+  static final int DEFAULT_TRUST_ANCHORS_REFRESH_INTERVAL_IN_SECS = (int) TimeUnit.HOURS
+    .toSeconds(4);
 
   static final String TRUST_ANCHORS_DIRECTORY_PROP = "trustAnchors.directory";
 
@@ -50,39 +50,45 @@ public class AuthenticationProfilePIPConfigurationParser
 
   static final String TRUST_ANCHORS_POLICY_FILE_PATTERN_PROP = "trustAnchors.policyFilePattern";
 
-  static final String TRUST_ANCHORS_REFRESH_INTERVAL_IN_SECS_PROP =
-      "trustAnchors.refreshIntervalInSecs";
-
+  static final String TRUST_ANCHORS_REFRESH_INTERVAL_IN_SECS_PROP = "trustAnchors.refreshIntervalInSecs";
 
   @Override
   public PolicyInformationPoint parse(Section iniConfig,
-      AbstractConfigurationBuilder<?> configBuilder) throws ConfigurationException {
+    AbstractConfigurationBuilder<?> configBuilder)
+    throws ConfigurationException {
 
     String pipId = iniConfig.getName();
 
-    final String authenticationProfilePolicyFile = IniConfigUtil.getString(iniConfig,
-        PROFILE_POLICY_FILENAME_PROP, DEFAULT_PROFILE_POLICY_FILENAME);
+    String authenticationProfilePolicyFile = IniConfigUtil.getString(iniConfig,
+      PROFILE_POLICY_FILENAME_PROP, DEFAULT_PROFILE_POLICY_FILENAME);
+
+    LOG.info("{}: {} = {}", new Object[] { pipId, PROFILE_POLICY_FILENAME_PROP,
+      authenticationProfilePolicyFile });
+
+    authenticationProfilePolicyFile = checkAuthnProfilePolicyFileConfConsistency(
+      pipId, authenticationProfilePolicyFile);
+
+    final String trustAnchorsDir = IniConfigUtil.getString(iniConfig,
+      TRUST_ANCHORS_DIRECTORY_PROP, DEFAULT_TRUST_ANCHORS_DIRECTORY);
 
     LOG.info("{}: {} = {}",
-        new Object[] {pipId, PROFILE_POLICY_FILENAME_PROP, authenticationProfilePolicyFile});
-
-    final String trustAnchorsDir = IniConfigUtil.getString(iniConfig, TRUST_ANCHORS_DIRECTORY_PROP,
-        DEFAULT_TRUST_ANCHORS_DIRECTORY);
-
-    LOG.info("{}: {} = {}", new Object[] {pipId, TRUST_ANCHORS_DIRECTORY_PROP, trustAnchorsDir});
+      new Object[] { pipId, TRUST_ANCHORS_DIRECTORY_PROP, trustAnchorsDir });
 
     final String policyFilePattern = IniConfigUtil.getString(iniConfig,
-        TRUST_ANCHORS_POLICY_FILE_PATTERN_PROP, DEFAULT_TRUST_ANCHORS_POLICY_FILE_PATTERN);
+      TRUST_ANCHORS_POLICY_FILE_PATTERN_PROP,
+      DEFAULT_TRUST_ANCHORS_POLICY_FILE_PATTERN);
 
-    LOG.info("{}: {} = {}", new Object[] {pipId, TRUST_ANCHORS_DIRECTORY_PROP, policyFilePattern});
+    LOG.info("{}: {} = {}",
+      new Object[] { pipId, TRUST_ANCHORS_DIRECTORY_PROP, policyFilePattern });
 
-    final int refreshIntervalInSecs =
-        IniConfigUtil.getInt(iniConfig, TRUST_ANCHORS_REFRESH_INTERVAL_IN_SECS_PROP,
-            DEFAULT_TRUST_ANCHORS_REFRESH_INTERVAL_IN_SECS, Integer.MIN_VALUE, 604_800);
-    
-    LOG.info("{}: {} = {}", new Object[] {pipId, TRUST_ANCHORS_REFRESH_INTERVAL_IN_SECS_PROP, 
-        refreshIntervalInSecs});
-    
+    final int refreshIntervalInSecs = IniConfigUtil.getInt(iniConfig,
+      TRUST_ANCHORS_REFRESH_INTERVAL_IN_SECS_PROP,
+      DEFAULT_TRUST_ANCHORS_REFRESH_INTERVAL_IN_SECS, Integer.MIN_VALUE,
+      604_800);
+
+    LOG.info("{}: {} = {}", new Object[] { pipId,
+      TRUST_ANCHORS_REFRESH_INTERVAL_IN_SECS_PROP, refreshIntervalInSecs });
+
     try {
 
       AuthenticationProfilePDP pdp = new DefaultAuthenticationProfilePDP.Builder()
@@ -92,20 +98,34 @@ public class AuthenticationProfilePIPConfigurationParser
         .refreshIntervalInSecs(refreshIntervalInSecs)
         .build();
 
-      AuthenticationProfilePIP pip = new AuthenticationProfilePIP(pipId,pdp);
+      AuthenticationProfilePIP pip = new AuthenticationProfilePIP(pipId, pdp);
 
       return pip;
 
     } catch (Exception e) {
 
-      String errorMsg =
-          String.format("%s: error building authentication profile PIP: %s", pipId, e.getMessage());
+      String errorMsg = String.format(
+        "%s: error building authentication profile PIP: %s", pipId,
+        e.getMessage());
 
       LOG.error(errorMsg, e);
       throw new ConfigurationException(errorMsg, e);
 
     }
 
+  }
+
+  private String checkAuthnProfilePolicyFileConfConsistency(String pipId,
+    String inputFileName) {
+
+    File input = new File(inputFileName);
+    if (!input.exists() || !input.isFile() || !input.canRead()) {
+      LOG.warn("{}: {} is not readable: fallback to default {}",
+        new Object[] { pipId, inputFileName, DEFAULT_PROFILE_POLICY_FILENAME });
+      return DEFAULT_PROFILE_POLICY_FILENAME;
+    }
+
+    return inputFileName;
   }
 
 }
