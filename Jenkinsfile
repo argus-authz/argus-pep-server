@@ -75,6 +75,12 @@ pipeline {
       }
     }
     
+    stage('package'){ 
+      steps{ 
+      	sh 'mvn -B -U clean package -DskipTests' 
+      }
+    }
+    
     stage('result'){
       steps {
         script {

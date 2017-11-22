@@ -73,6 +73,11 @@
 			<artifactId>oidc-client-common</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient</artifactId>
+			<version>4.5.3</version>
+		</dependency>
 
 		<!-- Provided Dependencies -->
 		<dependency>

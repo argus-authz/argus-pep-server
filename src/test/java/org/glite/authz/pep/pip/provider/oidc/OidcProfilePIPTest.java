@@ -1,8 +1,25 @@
+/*
+ * Copyright (c) Members of the EGEE Collaboration. 2006-2010. See http://www.eu-egee.org/partners/
+ * for details on the copyright holders.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package org.glite.authz.pep.pip.provider.oidc;
 
-import static org.glite.authz.common.profile.OidcProfileConstants.ID_ATTRIBUTE_OIDC_GROUPS;
+import static org.glite.authz.common.profile.OidcProfileConstants.ID_ATTRIBUTE_OIDC_CLIENTID;
+import static org.glite.authz.common.profile.OidcProfileConstants.ID_ATTRIBUTE_OIDC_GROUP;
 import static org.glite.authz.common.profile.OidcProfileConstants.ID_ATTRIBUTE_OIDC_ISSUER;
 import static org.glite.authz.common.profile.OidcProfileConstants.ID_ATTRIBUTE_OIDC_ORGANISATION;
+import static org.glite.authz.common.profile.OidcProfileConstants.ID_ATTRIBUTE_OIDC_SCOPE;
 import static org.glite.authz.common.profile.OidcProfileConstants.ID_ATTRIBUTE_OIDC_SUBJECT;
 import static org.glite.authz.common.profile.OidcProfileConstants.ID_ATTRIBUTE_OIDC_USER_ID;
 import static org.glite.authz.common.profile.OidcProfileConstants.ID_ATTRIBUTE_OIDC_USER_NAME;
@@ -11,7 +28,9 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.LinkedHashSet;
@@ -21,17 +40,20 @@ import org.glite.authz.common.model.Attribute;
 import org.glite.authz.common.model.Request;
 import org.glite.authz.pep.pip.PIPProcessingException;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
+import org.glite.authz.pep.pip.provider.oidc.error.HttpCommunicationException;
 import org.glite.authz.pep.pip.provider.oidc.error.TokenDecodingException;
+import org.glite.authz.pep.pip.provider.oidc.impl.OidcHttpServiceImpl;
 import org.glite.authz.pep.pip.provider.oidc.impl.OidcProfileTokenImpl;
-import org.glite.authz.pep.pip.provider.oidc.impl.TokenDecoderImpl;
+import org.glite.authz.pep.pip.provider.oidc.impl.OidcTokenDecoderImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import net.sf.ehcache.CacheManager;
 
@@ -39,9 +61,11 @@ public class OidcProfilePIPTest extends OidcTestUtils {
 
   private PolicyInformationPoint pip;
   private OidcProfileToken tokenService = new OidcProfileTokenImpl();
+  private OidcTokenDecoder decoder;
+  private ObjectMapper mapper = new ObjectMapper();
 
   @Mock
-  private TokenDecoder decoder = new TokenDecoderImpl("localhost", 1, 1, true);
+  private OidcHttpService httpService = new OidcHttpServiceImpl(TEST_OIDC_CLIENT);
 
   @Rule
   public MockitoRule mockitoRule = MockitoJUnit.rule();
@@ -49,31 +73,32 @@ public class OidcProfilePIPTest extends OidcTestUtils {
   @Before
   public void setup() throws Exception {
 
-    Mockito.when(decoder.decodeAccessToken(VALID_ACCESS_TOKEN_STRING))
-      .thenReturn(VALID_TOKEN_INFO);
+    when(httpService.postRequest(VALID_ACCESS_TOKEN_STRING))
+      .thenReturn(mapper.writeValueAsString(VALID_TOKEN_INFO));
 
-    Mockito.when(decoder.decodeAccessToken(EXPIRED_ACCESS_TOKEN_STRING))
-      .thenReturn(EXPIRED_TOKEN_INFO);
+    when(httpService.postRequest(EXPIRED_ACCESS_TOKEN_STRING))
+      .thenReturn(mapper.writeValueAsString(EXPIRED_TOKEN_INFO));
 
-    Mockito.when(decoder.decodeAccessToken(CLIENT_CRED_TOKEN_STRING))
-      .thenReturn(CLIENT_CRED_TOKEN_INFO);
+    when(httpService.postRequest(CLIENT_CRED_TOKEN_STRING))
+      .thenReturn(mapper.writeValueAsString(CLIENT_CRED_TOKEN_INFO));
 
-    Mockito.when(decoder.decodeAccessToken(DECODE_ERR_TOKEN_STRING))
-      .thenThrow(new TokenDecodingException("Error decoding access token",
-        new IOException()));
+    when(httpService.postRequest(DECODE_ERR_TOKEN_STRING))
+      .thenReturn("randoms-$tring.that-is_not.an^access-token");
 
+    when(httpService.postRequest(HTTP_ERR_TOKEN_STRING))
+      .thenThrow(new HttpCommunicationException("HTTP communication error", new IOException()));
+
+    decoder = new OidcTokenDecoderImpl(httpService, 1, 1, true);
     pip = new OidcProfilePIP("test", tokenService, decoder);
     pip.start();
   }
 
   @After
   public void teardown() throws Exception {
-
     if (pip != null) {
       pip.stop();
     }
-    CacheManager.getInstance()
-      .shutdown();
+    CacheManager.getInstance().shutdown();
   }
 
   @Test
@@ -84,22 +109,22 @@ public class OidcProfilePIPTest extends OidcTestUtils {
     Boolean retval = pip.populateRequest(request);
 
     assertThat(retval, equalTo(true));
-    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_SUBJECT).get()
-      .getValues(), everyItem(equalTo(SUBJECT)));
-    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_ISSUER).get()
-      .getValues(), everyItem(equalTo(ISSUER)));
-    assertThat(
-      getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_ORGANISATION).get()
-        .getValues(),
-      everyItem(equalTo(ORGANIZATION)));
-    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_USER_ID).get()
-      .getValues(), everyItem(equalTo(USER_ID)));
-    assertThat(
-      getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_USER_NAME).get()
-        .getValues(),
-      everyItem(equalTo(USER_NAME)));
-    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_GROUPS).get()
-      .getValues(), containsInAnyOrder("Production", "Analysis"));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_SUBJECT).get().getValues(),
+        everyItem(equalTo(SUBJECT)));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_ISSUER).get().getValues(),
+        everyItem(equalTo(ISSUER)));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_CLIENTID).get().getValues(),
+        everyItem(equalTo(PASSWD_GRANT_CLIENT_ID)));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_ORGANISATION).get().getValues(),
+        everyItem(equalTo(ORGANIZATION)));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_USER_ID).get().getValues(),
+        everyItem(equalTo(USER_ID)));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_USER_NAME).get().getValues(),
+        everyItem(equalTo(USER_NAME)));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_GROUP).get().getValues(),
+        containsInAnyOrder("Production", "Analysis"));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_SCOPE).get().getValues(),
+        containsInAnyOrder("openid", "profile", "email", "address"));
   }
 
   @Test(expected = PIPProcessingException.class)
@@ -122,23 +147,19 @@ public class OidcProfilePIPTest extends OidcTestUtils {
     try {
       pip.populateRequest(request);
     } catch (PIPProcessingException e) {
-      assertThat(e.getMessage(), containsString("expired access token"));
+      assertThat(e.getMessage(), containsString("Invalid access token"));
       throw e;
     }
   }
 
-  @Test(expected = PIPProcessingException.class)
+  @Test
   public void testRequestWithoutEnvironment() throws Exception {
 
     Request request = createOidcRequestWithoutEnv(VALID_ACCESS_TOKEN_STRING);
+    Boolean retval = pip.populateRequest(request);
 
-    try {
-      pip.populateRequest(request);
-    } catch (Exception e) {
-      assertThat(e.getMessage(),
-        containsString("Request doesn't match OIDC profile"));
-      throw e;
-    }
+    assertNotNull(retval);
+    assertThat(retval, is(false));
   }
 
   @Test
@@ -148,42 +169,34 @@ public class OidcProfilePIPTest extends OidcTestUtils {
 
     Set<Attribute> fakeAttrs = new LinkedHashSet<>();
 
-    Attribute attr = createAttribute(ID_ATTRIBUTE_OIDC_SUBJECT,
-      "fake_oidc_subject");
+    Attribute attr = createAttribute(ID_ATTRIBUTE_OIDC_SUBJECT, "fake_oidc_subject");
     fakeAttrs.add(attr);
 
     attr = createAttribute(ID_ATTRIBUTE_OIDC_ISSUER, "fake_oidc_issuer");
     fakeAttrs.add(attr);
 
-    attr = createAttribute(ID_ATTRIBUTE_OIDC_ORGANISATION,
-      "fake_oidc_organization");
+    attr = createAttribute(ID_ATTRIBUTE_OIDC_ORGANISATION, "fake_oidc_organization");
     fakeAttrs.add(attr);
 
-    request.getSubjects()
-      .iterator()
-      .next()
-      .getAttributes()
-      .addAll(fakeAttrs);
+    request.getSubjects().iterator().next().getAttributes().addAll(fakeAttrs);
 
     Boolean retval = pip.populateRequest(request);
 
     assertThat(retval, equalTo(true));
-    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_SUBJECT).get()
-      .getValues(), everyItem(equalTo(SUBJECT)));
-    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_ISSUER).get()
-      .getValues(), everyItem(equalTo(ISSUER)));
-    assertThat(
-      getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_ORGANISATION).get()
-        .getValues(),
-      everyItem(equalTo(ORGANIZATION)));
-    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_USER_ID).get()
-      .getValues(), everyItem(equalTo(USER_ID)));
-    assertThat(
-      getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_USER_NAME).get()
-        .getValues(),
-      everyItem(equalTo(USER_NAME)));
-    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_GROUPS).get()
-      .getValues(), containsInAnyOrder("Production", "Analysis"));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_SUBJECT).get().getValues(),
+        everyItem(equalTo(SUBJECT)));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_ISSUER).get().getValues(),
+        everyItem(equalTo(ISSUER)));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_ORGANISATION).get().getValues(),
+        everyItem(equalTo(ORGANIZATION)));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_USER_ID).get().getValues(),
+        everyItem(equalTo(USER_ID)));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_USER_NAME).get().getValues(),
+        everyItem(equalTo(USER_NAME)));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_GROUP).get().getValues(),
+        containsInAnyOrder("Production", "Analysis"));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_SCOPE).get().getValues(),
+        containsInAnyOrder("openid", "profile", "email", "address"));
 
   }
 
@@ -194,20 +207,19 @@ public class OidcProfilePIPTest extends OidcTestUtils {
     Boolean retval = pip.populateRequest(request);
 
     assertThat(retval, equalTo(true));
-    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_SUBJECT).get()
-      .getValues(), everyItem(equalTo(CLIENT_CRED_CLIENT_ID)));
-    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_ISSUER).get()
-      .getValues(), everyItem(equalTo(ISSUER)));
-    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_ORGANISATION)
-      .isPresent(), is(false));
-    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_USER_ID).get()
-      .getValues(), everyItem(equalTo(CLIENT_CRED_CLIENT_ID)));
-    assertThat(
-      getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_USER_NAME).isPresent(),
-      is(false));
-    assertThat(
-      getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_GROUPS).isPresent(),
-      is(false));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_SUBJECT).get().getValues(),
+        everyItem(equalTo(CLIENT_CRED_CLIENT_ID)));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_ISSUER).get().getValues(),
+        everyItem(equalTo(ISSUER)));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_ORGANISATION).isPresent(),
+        is(false));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_CLIENTID).get().getValues(),
+        everyItem(equalTo(CLIENT_CRED_CLIENT_ID)));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_USER_ID).isPresent(), is(false));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_USER_NAME).isPresent(), is(false));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_GROUP).isPresent(), is(false));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_SCOPE).get().getValues(),
+        containsInAnyOrder("read-tasks", "write-tasks"));
 
   }
 
@@ -219,6 +231,17 @@ public class OidcProfilePIPTest extends OidcTestUtils {
       pip.populateRequest(request);
     } catch (Exception e) {
       assertThat(e.getMessage(), containsString("Error decoding access token"));
+      throw e;
+    }
+  }
+
+  @Test(expected = HttpCommunicationException.class)
+  public void testHttpCommunicationError() throws Exception {
+    Request request = createOidcRequest(HTTP_ERR_TOKEN_STRING);
+    try {
+      pip.populateRequest(request);
+    } catch (Exception e) {
+      assertThat(e.getMessage(), containsString("HTTP communication error"));
       throw e;
     }
   }
