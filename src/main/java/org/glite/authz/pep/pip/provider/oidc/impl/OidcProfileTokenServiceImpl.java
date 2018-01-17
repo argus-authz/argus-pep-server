@@ -26,6 +26,7 @@ import static org.glite.authz.common.profile.OidcProfileConstants.ID_ATTRIBUTE_O
 import static org.glite.authz.common.profile.OidcProfileConstants.ID_ATTRIBUTE_OIDC_USER_NAME;
 
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -36,18 +37,18 @@ import org.glite.authz.common.model.Attribute;
 import org.glite.authz.common.model.Request;
 import org.glite.authz.common.model.Subject;
 import org.glite.authz.oidc.client.model.TokenInfo;
-import org.glite.authz.pep.pip.provider.oidc.OidcProfileToken;
+import org.glite.authz.pep.pip.provider.oidc.OidcProfileTokenService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OidcProfileTokenImpl implements OidcProfileToken {
+public class OidcProfileTokenServiceImpl implements OidcProfileTokenService {
 
-  private static final Logger LOG = LoggerFactory.getLogger(OidcProfileTokenImpl.class);
+  private static final Logger LOG = LoggerFactory.getLogger(OidcProfileTokenServiceImpl.class);
   private static final String SCOPE_SEPARATOR = " ";
 
   private final Set<String> oidcAttributes;
 
-  public OidcProfileTokenImpl() {
+  public OidcProfileTokenServiceImpl() {
 
     oidcAttributes = new LinkedHashSet<>();
     oidcAttributes.add(ID_ATTRIBUTE_OIDC_ISSUER);
@@ -65,10 +66,17 @@ public class OidcProfileTokenImpl implements OidcProfileToken {
 
     Optional<String> accessToken = Optional.empty();
     for (Subject sub : request.getSubjects()) {
-      for (Attribute attr : sub.getAttributes()) {
-        if (ID_ATTRIBUTE_OIDC_ACCESS_TOKEN.equals(attr.getId())) {
-          Set<Object> values = attr.getValues();
-          accessToken = Optional.of(values.iterator().next().toString());
+
+      Optional<Attribute> attr = sub.getAttributes()
+        .stream()
+        .filter(a -> ID_ATTRIBUTE_OIDC_ACCESS_TOKEN.equals(a.getId()))
+        .findFirst();
+
+      if (attr.isPresent()) {
+        Set<Object> values = attr.get().getValues();
+        Iterator<Object> it = values.iterator();
+        if (it.hasNext()) {
+          accessToken = Optional.of(it.next().toString());
         }
       }
     }
@@ -76,7 +84,7 @@ public class OidcProfileTokenImpl implements OidcProfileToken {
   }
 
   @Override
-  public void cleanOidcAttributes(Request request) {
+  public void removeOidcAttributesFromRequest(Request request) {
 
     for (Subject subj : request.getSubjects()) {
       List<Attribute> attributesToRemove =
@@ -91,7 +99,7 @@ public class OidcProfileTokenImpl implements OidcProfileToken {
   }
 
   @Override
-  public void addOidcAttributes(Request request, TokenInfo tokenInfo) {
+  public void addOidcAttributesToRequest(Request request, TokenInfo tokenInfo) {
 
     Set<Attribute> attributesToAdd = new LinkedHashSet<>();
 
@@ -104,8 +112,10 @@ public class OidcProfileTokenImpl implements OidcProfileToken {
     attributesToAdd.add(oidcIssuer);
     attributesToAdd.add(oidcSubject);
 
+    String token = extractTokenFromRequest(request).get();
+
     if (tokenInfo.getIntrospection() == null) {
-      LOG.warn("No introspection data into access token.");
+      LOG.warn("No introspection data returned by token service for access token : {}", token);
     } else {
       Attribute oidcClientId = new Attribute(ID_ATTRIBUTE_OIDC_CLIENTID);
       oidcClientId.getValues().add(tokenInfo.getIntrospection().getClientId());
@@ -118,7 +128,7 @@ public class OidcProfileTokenImpl implements OidcProfileToken {
     }
 
     if (tokenInfo.getUserinfo() == null) {
-      LOG.warn("No user info data into access token.");
+      LOG.warn("No userinfo data returned by token service for access token : {}", token);
     } else {
       Attribute oidcUserId = new Attribute(ID_ATTRIBUTE_OIDC_USER_ID);
       oidcUserId.getValues().add(tokenInfo.getUserinfo().getPreferredUsername());

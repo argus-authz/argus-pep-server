@@ -31,17 +31,17 @@ public class OidcProfilePIP extends AbstractPolicyInformationPoint {
 
   private static final Logger LOG = LoggerFactory.getLogger(OidcProfilePIP.class);
 
-  private final OidcProfileToken tokenService;
+  private final OidcProfileTokenService tokenService;
   private final OidcTokenDecoder decoder;
 
-  public OidcProfilePIP(String pipId, OidcProfileToken tokenService, OidcTokenDecoder decoder) {
+  public OidcProfilePIP(String pipId, OidcProfileTokenService tokenService, OidcTokenDecoder decoder) {
 
     super(pipId);
     this.tokenService = tokenService;
     this.decoder = decoder;
   }
 
-  protected boolean isOidcProfile(Request request) {
+  protected boolean isOidcProfileRequest(Request request) {
 
     Environment env = request.getEnvironment();
 
@@ -55,11 +55,12 @@ public class OidcProfilePIP extends AbstractPolicyInformationPoint {
   @Override
   public boolean populateRequest(Request request) throws PIPProcessingException {
 
-    if (!isOidcProfile(request)) {
-      String msg = "Request doesn't match OIDC profile";
-      LOG.error(msg);
+    if (!isOidcProfileRequest(request)) {
+      LOG.info("Request doesn't match OIDC profile");
       return false;
     }
+    
+    tokenService.removeOidcAttributesFromRequest(request);
 
     Optional<String> accessToken = tokenService.extractTokenFromRequest(request);
 
@@ -72,12 +73,11 @@ public class OidcProfilePIP extends AbstractPolicyInformationPoint {
 
     if (!tokenInfo.getIntrospection().isActive()) {
       String msg = String.format("Invalid access token: '%s'", request);
-      LOG.error(msg);
-      throw new PIPProcessingException(msg);
+      LOG.warn(msg);
+      return false;
     }
-
-    tokenService.cleanOidcAttributes(request);
-    tokenService.addOidcAttributes(request, tokenInfo);
+    
+    tokenService.addOidcAttributesToRequest(request, tokenInfo);
 
     return true;
   }

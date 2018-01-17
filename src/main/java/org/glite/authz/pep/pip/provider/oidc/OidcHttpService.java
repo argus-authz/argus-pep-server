@@ -13,12 +13,27 @@
  * the License.
  */
 
-
 package org.glite.authz.pep.pip.provider.oidc;
 
+/***
+ * 
+ * Utility service to connect to an OIDC client
+ *
+ */
 public interface OidcHttpService {
 
+  /***
+   * Return the OIDC client URL specified in the configuration file
+   * 
+   * @return the OIDC client URL
+   */
   String getOidcClientUrl();
 
-  String postRequest(String accessToken);
+  /***
+   * Send a JWT access token to the OIDC client
+   * 
+   * @param accessToken JWT access token to decode
+   * @return JSON string with response from the OIDC client
+   */
+  String inspectToken(String accessToken);
 }

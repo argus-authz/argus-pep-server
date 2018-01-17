@@ -21,7 +21,7 @@ import org.glite.authz.common.config.IniConfigUtil;
 import org.glite.authz.common.config.IniSectionConfigurationParser;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
 import org.glite.authz.pep.pip.provider.oidc.impl.OidcHttpServiceImpl;
-import org.glite.authz.pep.pip.provider.oidc.impl.OidcProfileTokenImpl;
+import org.glite.authz.pep.pip.provider.oidc.impl.OidcProfileTokenServiceImpl;
 import org.glite.authz.pep.pip.provider.oidc.impl.OidcTokenDecoderImpl;
 import org.ini4j.Profile.Section;
 import org.slf4j.Logger;
@@ -69,7 +69,7 @@ public class OidcProfilePIPConfigurationParser
     LOG.info(LOG_PROP_PATTERN, new Object[] {pipId, OIDC_CACHE_DISABLED_PROP, oidcCacheEnabled});
 
     try {
-      OidcProfileToken tokenService = new OidcProfileTokenImpl();
+      OidcProfileTokenService tokenService = new OidcProfileTokenServiceImpl();
       OidcHttpService httpService = new OidcHttpServiceImpl(oidcClientUrl);
 
       OidcTokenDecoder decoder = new OidcTokenDecoderImpl(httpService, oidcCacheTTL,

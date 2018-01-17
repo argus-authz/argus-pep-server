@@ -15,16 +15,16 @@
 
 package org.glite.authz.pep.pip.provider.oidc.error;
 
-public class HttpCommunicationException extends RuntimeException {
+public class HttpError extends RuntimeException {
 
   private static final long serialVersionUID = 1L;
 
-  public HttpCommunicationException(String message, Throwable cause) {
+  public HttpError(String message, Throwable cause) {
 
     super(message, cause);
   }
 
-  public HttpCommunicationException(String message) {
+  public HttpError(String message) {
 
     super(message);
   }

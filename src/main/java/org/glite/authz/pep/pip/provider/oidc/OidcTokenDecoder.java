@@ -17,8 +17,20 @@ package org.glite.authz.pep.pip.provider.oidc;
 
 import org.glite.authz.oidc.client.model.TokenInfo;
 
+/***
+ * 
+ * Decode a JWT token into a {@link TokenInfo}
+ *
+ */
+@FunctionalInterface
 public interface OidcTokenDecoder {
 
+  /***
+   * Given a JWT token, return its {@link TokenInfo} representation
+   * 
+   * @param accessToken The token to decode
+   * @return The decoded informations
+   */
   TokenInfo decodeAccessToken(String accessToken);
 
 }

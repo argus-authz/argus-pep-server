@@ -40,10 +40,10 @@ import org.glite.authz.common.model.Attribute;
 import org.glite.authz.common.model.Request;
 import org.glite.authz.pep.pip.PIPProcessingException;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
-import org.glite.authz.pep.pip.provider.oidc.error.HttpCommunicationException;
-import org.glite.authz.pep.pip.provider.oidc.error.TokenDecodingException;
+import org.glite.authz.pep.pip.provider.oidc.error.HttpError;
+import org.glite.authz.pep.pip.provider.oidc.error.TokenError;
 import org.glite.authz.pep.pip.provider.oidc.impl.OidcHttpServiceImpl;
-import org.glite.authz.pep.pip.provider.oidc.impl.OidcProfileTokenImpl;
+import org.glite.authz.pep.pip.provider.oidc.impl.OidcProfileTokenServiceImpl;
 import org.glite.authz.pep.pip.provider.oidc.impl.OidcTokenDecoderImpl;
 import org.junit.After;
 import org.junit.Before;
@@ -60,7 +60,7 @@ import net.sf.ehcache.CacheManager;
 public class OidcProfilePIPTest extends OidcTestUtils {
 
   private PolicyInformationPoint pip;
-  private OidcProfileToken tokenService = new OidcProfileTokenImpl();
+  private OidcProfileTokenService tokenService = new OidcProfileTokenServiceImpl();
   private OidcTokenDecoder decoder;
   private ObjectMapper mapper = new ObjectMapper();
 
@@ -73,20 +73,20 @@ public class OidcProfilePIPTest extends OidcTestUtils {
   @Before
   public void setup() throws Exception {
 
-    when(httpService.postRequest(VALID_ACCESS_TOKEN_STRING))
+    when(httpService.inspectToken(VALID_ACCESS_TOKEN_STRING))
       .thenReturn(mapper.writeValueAsString(VALID_TOKEN_INFO));
 
-    when(httpService.postRequest(EXPIRED_ACCESS_TOKEN_STRING))
+    when(httpService.inspectToken(EXPIRED_ACCESS_TOKEN_STRING))
       .thenReturn(mapper.writeValueAsString(EXPIRED_TOKEN_INFO));
 
-    when(httpService.postRequest(CLIENT_CRED_TOKEN_STRING))
+    when(httpService.inspectToken(CLIENT_CRED_TOKEN_STRING))
       .thenReturn(mapper.writeValueAsString(CLIENT_CRED_TOKEN_INFO));
 
-    when(httpService.postRequest(DECODE_ERR_TOKEN_STRING))
+    when(httpService.inspectToken(DECODE_ERR_TOKEN_STRING))
       .thenReturn("randoms-$tring.that-is_not.an^access-token");
 
-    when(httpService.postRequest(HTTP_ERR_TOKEN_STRING))
-      .thenThrow(new HttpCommunicationException("HTTP communication error", new IOException()));
+    when(httpService.inspectToken(HTTP_ERR_TOKEN_STRING))
+      .thenThrow(new HttpError("HTTP communication error", new IOException()));
 
     decoder = new OidcTokenDecoderImpl(httpService, 1, 1, true);
     pip = new OidcProfilePIP("test", tokenService, decoder);
@@ -139,17 +139,22 @@ public class OidcProfilePIPTest extends OidcTestUtils {
     }
   }
 
-  @Test(expected = PIPProcessingException.class)
+  @Test
   public void testWithExpiredAccessToken() throws Exception {
 
     Request request = createOidcRequest(EXPIRED_ACCESS_TOKEN_STRING);
 
-    try {
-      pip.populateRequest(request);
-    } catch (PIPProcessingException e) {
-      assertThat(e.getMessage(), containsString("Invalid access token"));
-      throw e;
-    }
+    Boolean retval = pip.populateRequest(request);
+    assertThat(retval, is(false));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_SUBJECT).isPresent(), is(false));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_ISSUER).isPresent(), is(false));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_ORGANISATION).isPresent(),
+        is(false));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_CLIENTID).isPresent(), is(false));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_USER_ID).isPresent(), is(false));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_USER_NAME).isPresent(), is(false));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_GROUP).isPresent(), is(false));
+    assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_SCOPE).isPresent(), is(false));
   }
 
   @Test
@@ -206,7 +211,7 @@ public class OidcProfilePIPTest extends OidcTestUtils {
     Request request = createOidcRequest(CLIENT_CRED_TOKEN_STRING);
     Boolean retval = pip.populateRequest(request);
 
-    assertThat(retval, equalTo(true));
+    assertThat(retval, is(true));
     assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_SUBJECT).get().getValues(),
         everyItem(equalTo(CLIENT_CRED_CLIENT_ID)));
     assertThat(getAttributeValuesById(request, ID_ATTRIBUTE_OIDC_ISSUER).get().getValues(),
@@ -223,7 +228,7 @@ public class OidcProfilePIPTest extends OidcTestUtils {
 
   }
 
-  @Test(expected = TokenDecodingException.class)
+  @Test(expected = TokenError.class)
   public void testTokenDecodingException() throws Exception {
 
     Request request = createOidcRequest(DECODE_ERR_TOKEN_STRING);
@@ -235,7 +240,7 @@ public class OidcProfilePIPTest extends OidcTestUtils {
     }
   }
 
-  @Test(expected = HttpCommunicationException.class)
+  @Test(expected = HttpError.class)
   public void testHttpCommunicationError() throws Exception {
     Request request = createOidcRequest(HTTP_ERR_TOKEN_STRING);
     try {

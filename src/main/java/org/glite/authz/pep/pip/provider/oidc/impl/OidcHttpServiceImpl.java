@@ -31,7 +31,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.glite.authz.pep.pip.provider.oidc.OidcHttpService;
-import org.glite.authz.pep.pip.provider.oidc.error.HttpCommunicationException;
+import org.glite.authz.pep.pip.provider.oidc.error.HttpError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +59,7 @@ public class OidcHttpServiceImpl implements OidcHttpService {
   }
 
   @Override
-  public String postRequest(String accessToken) {
+  public String inspectToken(String accessToken) {
 
     List<NameValuePair> urlParameters = new ArrayList<>();
     urlParameters.add(new BasicNameValuePair("token", accessToken));
@@ -70,24 +70,29 @@ public class OidcHttpServiceImpl implements OidcHttpService {
       HttpResponse response = client.execute(post);
       LOG.debug("Response Code : {}", response.getStatusLine());
 
-      BufferedReader rd =
-          new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
-
-      StringBuilder result = new StringBuilder();
-      String line = "";
-      while ((line = rd.readLine()) != null) {
-        result.append(line);
-      }
+      String result = readResponseBody(response);
       LOG.debug("Response Body : {}", result);
 
       if (HttpStatus.SC_OK != response.getStatusLine().getStatusCode()) {
-        throw new HttpCommunicationException("Error connecting to OIDC client: " + result);
+        throw new HttpError("Error connecting to OIDC client: " + result);
       }
 
-      return result.toString();
+      return result;
     } catch (IOException e) {
       LOG.error("HTTP communication error: {}", e.getMessage());
-      throw new HttpCommunicationException("HTTP communication error: " + e.getMessage(), e);
+      throw new HttpError("HTTP communication error: " + e.getMessage(), e);
     }
+  }
+
+  private String readResponseBody(HttpResponse response) throws IOException {
+    BufferedReader rd =
+        new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
+
+    StringBuilder result = new StringBuilder();
+    String line = "";
+    while ((line = rd.readLine()) != null) {
+      result.append(line);
+    }
+    return result.toString();
   }
 }

@@ -20,7 +20,7 @@ import java.io.IOException;
 import org.glite.authz.oidc.client.model.TokenInfo;
 import org.glite.authz.pep.pip.provider.oidc.OidcHttpService;
 import org.glite.authz.pep.pip.provider.oidc.OidcTokenDecoder;
-import org.glite.authz.pep.pip.provider.oidc.error.TokenDecodingException;
+import org.glite.authz.pep.pip.provider.oidc.error.TokenError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,8 +83,8 @@ public class OidcTokenDecoderImpl implements OidcTokenDecoder {
     LOG.debug("Cache miss for access token '{}'", accessToken);
     LOG.debug("Sending request to OIDC client '{}'", oidcHttpService.getOidcClientUrl());
 
-    String response = oidcHttpService.postRequest(accessToken);
-    LOG.debug("Get response from OIDC client: '{}'", response);
+    String response = oidcHttpService.inspectToken(accessToken);
+    LOG.debug("Response from OIDC client: '{}'", response);
 
     try {
       TokenInfo tokenInfo = mapper.readValue(response, TokenInfo.class);
@@ -93,7 +93,7 @@ public class OidcTokenDecoderImpl implements OidcTokenDecoder {
     } catch (IOException e) {
       String msg = "Error decoding access token: " + e.getMessage();
       LOG.error(msg, e);
-      throw new TokenDecodingException(msg, e);
+      throw new TokenError(msg, e);
     }
   }
 }

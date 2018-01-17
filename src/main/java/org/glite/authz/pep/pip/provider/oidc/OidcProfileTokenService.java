@@ -18,13 +18,37 @@ package org.glite.authz.pep.pip.provider.oidc;
 import java.util.Optional;
 
 import org.glite.authz.common.model.Request;
+import org.glite.authz.common.model.Subject;
 import org.glite.authz.oidc.client.model.TokenInfo;
 
-public interface OidcProfileToken {
+/***
+ * 
+ * Expose methods to manipulate OIDC profile attributes within a {@link Request}
+ *
+ */
+public interface OidcProfileTokenService {
 
+  /***
+   * Look into request {@link Subject} and return the JWT token
+   * 
+   * @param request Request to process
+   * @return The JWT access token if present, empty otherwise
+   */
   Optional<String> extractTokenFromRequest(Request request);
 
-  void cleanOidcAttributes(Request request);
+  /***
+   * Remove all OIDC attributes from the request
+   * 
+   * @param request Request to process
+   */
+  void removeOidcAttributesFromRequest(Request request);
 
-  void addOidcAttributes(Request request, TokenInfo tokenInfo);
+  /***
+   * Read OIDC information from a {@link TokenInfo} and add then into the corresponding OIDC
+   * attribute
+   * 
+   * @param request Request to process
+   * @param tokenInfo OIDC token and user information
+   */
+  void addOidcAttributesToRequest(Request request, TokenInfo tokenInfo);
 }
