@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<ehcache updateCheck="false" dynamicConfig="false" monitoring="off">
+<ehcache updateCheck="false" dynamicConfig="true" monitoring="off">
     <defaultCache eternal="false"
             maxElementsInMemory="10000"
             memoryStoreEvictionPolicy="LRU"
