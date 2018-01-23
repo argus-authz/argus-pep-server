@@ -38,6 +38,7 @@ import org.glite.authz.common.model.Request;
 import org.glite.authz.common.model.Subject;
 import org.glite.authz.oidc.client.model.TokenInfo;
 import org.glite.authz.pep.pip.provider.oidc.OidcProfileTokenService;
+import org.glite.authz.pep.pip.provider.oidc.error.TokenError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,7 +113,8 @@ public class OidcProfileTokenServiceImpl implements OidcProfileTokenService {
     attributesToAdd.add(oidcIssuer);
     attributesToAdd.add(oidcSubject);
 
-    String token = extractTokenFromRequest(request).get();
+    String token = extractTokenFromRequest(request).orElseThrow(
+        () -> new TokenError(String.format("Missing access token into request: %s ", request)));
 
     if (tokenInfo.getIntrospection() == null) {
       LOG.warn("No introspection data returned by token service for access token : {}", token);
