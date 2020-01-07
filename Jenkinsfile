@@ -22,12 +22,22 @@ pipeline {
   }
   
   stages {
-    stage('deploy') {
+    stage('build') {
       steps {
-        sh "mvn clean package"
+          sh 'mvn -B clean compile'
       }
     }
     
+    stage('test') {
+      steps {
+          sh 'mvn -B clean test'
+      }
+      post {
+        always {
+            junit '**/target/surefire-reports/TEST-*.xml'
+        }
+      }
+    }
     stage('result') {
       steps {
         script { currentBuild.result = 'SUCCESS' }
