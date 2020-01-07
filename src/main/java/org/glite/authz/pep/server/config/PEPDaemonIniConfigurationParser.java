@@ -21,9 +21,6 @@ import java.io.Reader;
 import java.util.List;
 import java.util.StringTokenizer;
 
-import javax.net.ssl.X509KeyManager;
-import javax.net.ssl.X509TrustManager;
-
 import net.jcip.annotations.ThreadSafe;
 
 import org.glite.authz.common.config.AbstractIniServiceConfigurationParser;
@@ -36,9 +33,7 @@ import org.glite.authz.pep.pip.PolicyInformationPoint;
 import org.ini4j.Ini;
 import org.opensaml.ws.soap.client.http.HttpClientBuilder;
 import org.opensaml.ws.soap.client.http.HttpSOAPClient;
-import org.opensaml.ws.soap.client.http.TLSProtocolSocketFactory;
 import org.opensaml.xml.parse.BasicParserPool;
-import org.opensaml.xml.security.x509.tls.StrictHostnameVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

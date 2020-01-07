@@ -319,7 +319,7 @@ public final class PEPDaemon {
     PEPDaemonConfiguration daemonConfig, Server server) {
 
     ServerConnector connector;
-    
+
     HttpConfiguration configuration = new HttpConfiguration();
     configuration.setOutputBufferSize(daemonConfig.getSendBufferSize());
 
@@ -344,16 +344,19 @@ public final class PEPDaemon {
         server, daemonConfig.getCertChainValidator());
 
       builder.withNeedClientAuth(daemonConfig.isClientCertAuthRequired());
-      
       builder.withKeyManager(daemonConfig.getKeyManager());
-      
+
       builder.httpConfiguration().setOutputBufferSize(
         daemonConfig.getSendBufferSize());
-
       builder.httpConfiguration().setSendDateHeader(false);
       builder.httpConfiguration().setSendServerVersion(false);
 
-      connector = builder.build();
+      connector = builder
+        .withWantClientAuth(true)
+        .withDisableJsseHostnameVerification(true)
+        .withTlsProtocol("TLS")
+        .build();
+
     }
 
     connector.setHost(daemonConfig.getHostname());

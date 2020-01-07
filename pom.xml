@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glite.authz</groupId>
     <artifactId>argus-parent</artifactId>
-    <version>1.7.1</version>
+    <version>1.7.3-SNAPSHOT</version>
   </parent>
 
   <name>Argus PEP Server</name>
@@ -103,7 +103,6 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.11</version>
       <scope>test</scope>
     </dependency>
     
@@ -124,6 +123,16 @@
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.8</source>
+          <target>1.8</target>
+          <showDeprecation>true</showDeprecation>
+          <showWarnings>true</showWarnings>
+        </configuration>
+        </plugin>
       <!-- license formatter -->
       <plugin>
         <groupId>com.mycila.maven-license-plugin</groupId>
