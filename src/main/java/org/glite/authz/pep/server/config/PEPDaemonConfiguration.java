@@ -47,12 +47,16 @@ public class PEPDaemonConfiguration extends AbstractServiceConfiguration {
     /** Obligation processing service. */
     private ObligationService obligationService;
 
+    /** Which TLS protocol should be used */
+    private String tlsProtocol;
+
     /** Constructor. */
     public PEPDaemonConfiguration() {
         super(new ServiceMetrics(Version.getServiceName(),Version.getServiceVersion()));
         pdpEndpoints = null;
         maxCachedResponses = 0;
         cachedResponseTTL = 0;
+        tlsProtocol = "TLS";
     }
 
     /**
@@ -60,7 +64,7 @@ public class PEPDaemonConfiguration extends AbstractServiceConfiguration {
      * 
      * @return duration, in milliseconds, responses will be cached
      */
-    public long getCachedResponseTTL() {
+    public synchronized long getCachedResponseTTL() {
         return cachedResponseTTL;
     }
 
@@ -69,7 +73,7 @@ public class PEPDaemonConfiguration extends AbstractServiceConfiguration {
      * 
      * @return maximum number of responses that will be cached
      */
-    public int getMaxCachedResponses() {
+    public synchronized int getMaxCachedResponses() {
         return maxCachedResponses;
     }
 
@@ -78,7 +82,7 @@ public class PEPDaemonConfiguration extends AbstractServiceConfiguration {
      * 
      * @return list of PDP endpoints to which requests may be sent
      */
-    public List<String> getPDPEndpoints() {
+    public synchronized List<String> getPDPEndpoints() {
         return pdpEndpoints;
     }
 
@@ -87,7 +91,7 @@ public class PEPDaemonConfiguration extends AbstractServiceConfiguration {
      * 
      * @return policy information points meant to be applied to each request
      */
-    public List<PolicyInformationPoint> getPolicyInformationPoints() {
+    public synchronized List<PolicyInformationPoint> getPolicyInformationPoints() {
         return pips;
     }
 
@@ -96,8 +100,17 @@ public class PEPDaemonConfiguration extends AbstractServiceConfiguration {
      * 
      * @return service used to process response obligations
      */
-    public ObligationService getObligationService() {
+    public synchronized ObligationService getObligationService() {
         return obligationService;
+    }
+
+    /**
+     * Gets the TLS protocol used when SSL is enabled.
+     *
+     * @return TLS protocol used
+     */
+    public synchronized String getTlsProtocol() {
+      return tlsProtocol;
     }
 
     /**
@@ -138,7 +151,7 @@ public class PEPDaemonConfiguration extends AbstractServiceConfiguration {
      * @param endpoints list of PDP endpoints (URLs) to which requests may be sent
      */
     protected final synchronized void setPDPEndpoints(List<String> endpoints) {
-        if (endpoints == null || endpoints.size() == 0) {
+        if (endpoints == null || endpoints.isEmpty()) {
             return;
         }
 
@@ -181,5 +194,14 @@ public class PEPDaemonConfiguration extends AbstractServiceConfiguration {
             throw new IllegalArgumentException("Obligation service has already been set, they may not be changed");
         }
         obligationService = service;
+    }
+
+    /**
+     * Sets the TLS protocol used by PEP daemon server when SSL is enabled.
+     *
+     * @param TLS protocol
+     */
+    protected final synchronized void setTlsProtocol(String tlsProtocol) {
+      this.tlsProtocol = tlsProtocol;
     }
 }

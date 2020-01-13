@@ -88,13 +88,13 @@ public final class PEPDaemon {
   public static final String PEP_GRACEFUL_PROP = "org.glite.authz.pep.server.graceful";
 
   /** Default admin port: {@value} */
-  public static int DEFAULT_ADMIN_PORT = 8155;
+  public static final int DEFAULT_ADMIN_PORT = 8155;
 
   /** Default admin host: {@value} */
-  public static String DEFAULT_ADMIN_HOST = "localhost";
+  public static final String DEFAULT_ADMIN_HOST = "localhost";
 
   /** Default service port: {@value} */
-  public static int DEFAULT_SERVICE_PORT = 8154;
+  public static final int DEFAULT_SERVICE_PORT = 8154;
 
   /** Default logging configuration refresh period: {@value} ms */
   public static final int DEFAULT_LOGGING_CONFIG_REFRESH_PERIOD = 5 * 60 * 1000;
@@ -354,7 +354,7 @@ public final class PEPDaemon {
       connector = builder
         .withWantClientAuth(true)
         .withDisableJsseHostnameVerification(true)
-        .withTlsProtocol("TLS")
+        .withTlsProtocol(daemonConfig.getTlsProtocol())
         .build();
 
     }

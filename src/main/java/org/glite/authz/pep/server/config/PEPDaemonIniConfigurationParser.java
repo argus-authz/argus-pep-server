@@ -31,6 +31,7 @@ import org.glite.authz.pep.obligation.ObligationService;
 import org.glite.authz.pep.pip.IniPIPConfigurationParserHelper;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
 import org.ini4j.Ini;
+import org.ini4j.Profile.Section;
 import org.opensaml.ws.soap.client.http.HttpClientBuilder;
 import org.opensaml.ws.soap.client.http.HttpSOAPClient;
 import org.opensaml.xml.parse.BasicParserPool;
@@ -104,7 +105,7 @@ public class PEPDaemonIniConfigurationParser extends
    * @return the port value, or the default port {@value #DEFAULT_PORT} if it is
    *         not set
    */
-  protected int getPort(Ini.Section configSection) {
+  protected int getPort(Section configSection) {
 
     return IniConfigUtil.getInt(configSection, PORT_PROP, DEFAULT_PORT, 1,
       65535);
@@ -116,7 +117,7 @@ public class PEPDaemonIniConfigurationParser extends
    * @return the admin port value, or the default admin port
    *         {@value #DEFAULT_ADMIN_PORT} if it is not set
    */
-  protected int getAdminPort(Ini.Section configSection) {
+  protected int getAdminPort(Section configSection) {
 
     return IniConfigUtil.getInt(configSection, ADMIN_PORT_PROP,
       DEFAULT_ADMIN_PORT, 1, 65535);
@@ -132,7 +133,7 @@ public class PEPDaemonIniConfigurationParser extends
    * 
    * @return the value
    */
-  protected int getCacheResponseTTL(Ini.Section configSection) {
+  protected int getCacheResponseTTL(Section configSection) {
 
     return IniConfigUtil.getInt(configSection, CACHED_RESP_TTL_PROP,
       DEFAULT_CACHED_RESP_TTL, 1, Integer.MAX_VALUE);
@@ -148,7 +149,7 @@ public class PEPDaemonIniConfigurationParser extends
    * 
    * @return the value
    */
-  protected int getMaxCachedResponses(Ini.Section configSection) {
+  protected int getMaxCachedResponses(Section configSection) {
 
     return IniConfigUtil.getInt(configSection, MAX_CACHED_RESP_PROP,
       DEFAULT_MAX_CACHED_RESP, 0, Integer.MAX_VALUE);
