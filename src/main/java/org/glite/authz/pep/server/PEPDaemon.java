@@ -352,9 +352,10 @@ public final class PEPDaemon {
       builder.httpConfiguration().setSendServerVersion(false);
 
       connector = builder
-        .withWantClientAuth(true)
+        .withWantClientAuth(daemonConfig.isClientCertAuthRequired())
         .withDisableJsseHostnameVerification(true)
         .withTlsProtocol(daemonConfig.getTlsProtocol())
+        .withIncludeProtocols(daemonConfig.getEnabledProtocols())
         .build();
 
     }
