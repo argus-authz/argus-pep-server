@@ -47,16 +47,12 @@ public class PEPDaemonConfiguration extends AbstractServiceConfiguration {
     /** Obligation processing service. */
     private ObligationService obligationService;
 
-    /** Which TLS protocol should be used */
-    private String tlsProtocol;
-
     /** Constructor. */
     public PEPDaemonConfiguration() {
         super(new ServiceMetrics(Version.getServiceName(),Version.getServiceVersion()));
         pdpEndpoints = null;
         maxCachedResponses = 0;
         cachedResponseTTL = 0;
-        tlsProtocol = "TLS";
     }
 
     /**
@@ -102,15 +98,6 @@ public class PEPDaemonConfiguration extends AbstractServiceConfiguration {
      */
     public synchronized ObligationService getObligationService() {
         return obligationService;
-    }
-
-    /**
-     * Gets the TLS protocol used when SSL is enabled.
-     *
-     * @return TLS protocol used
-     */
-    public synchronized String getTlsProtocol() {
-      return tlsProtocol;
     }
 
     /**
@@ -194,14 +181,5 @@ public class PEPDaemonConfiguration extends AbstractServiceConfiguration {
             throw new IllegalArgumentException("Obligation service has already been set, they may not be changed");
         }
         obligationService = service;
-    }
-
-    /**
-     * Sets the TLS protocol used by PEP daemon server when SSL is enabled.
-     *
-     * @param TLS protocol
-     */
-    protected final synchronized void setTlsProtocol(String tlsProtocol) {
-      this.tlsProtocol = tlsProtocol;
     }
 }
