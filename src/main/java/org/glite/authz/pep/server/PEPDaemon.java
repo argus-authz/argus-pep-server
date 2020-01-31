@@ -88,13 +88,13 @@ public final class PEPDaemon {
   public static final String PEP_GRACEFUL_PROP = "org.glite.authz.pep.server.graceful";
 
   /** Default admin port: {@value} */
-  public static int DEFAULT_ADMIN_PORT = 8155;
+  public static final int DEFAULT_ADMIN_PORT = 8155;
 
   /** Default admin host: {@value} */
-  public static String DEFAULT_ADMIN_HOST = "localhost";
+  public static final String DEFAULT_ADMIN_HOST = "localhost";
 
   /** Default service port: {@value} */
-  public static int DEFAULT_SERVICE_PORT = 8154;
+  public static final int DEFAULT_SERVICE_PORT = 8154;
 
   /** Default logging configuration refresh period: {@value} ms */
   public static final int DEFAULT_LOGGING_CONFIG_REFRESH_PERIOD = 5 * 60 * 1000;
@@ -319,7 +319,7 @@ public final class PEPDaemon {
     PEPDaemonConfiguration daemonConfig, Server server) {
 
     ServerConnector connector;
-    
+
     HttpConfiguration configuration = new HttpConfiguration();
     configuration.setOutputBufferSize(daemonConfig.getSendBufferSize());
 
@@ -344,16 +344,20 @@ public final class PEPDaemon {
         server, daemonConfig.getCertChainValidator());
 
       builder.withNeedClientAuth(daemonConfig.isClientCertAuthRequired());
-      
       builder.withKeyManager(daemonConfig.getKeyManager());
-      
+
       builder.httpConfiguration().setOutputBufferSize(
         daemonConfig.getSendBufferSize());
-
       builder.httpConfiguration().setSendDateHeader(false);
       builder.httpConfiguration().setSendServerVersion(false);
 
-      connector = builder.build();
+      connector = builder
+        .withWantClientAuth(daemonConfig.isClientCertAuthRequired())
+        .withDisableJsseHostnameVerification(true)
+        .withTlsProtocol(daemonConfig.getTlsProtocol())
+        .withIncludeProtocols(daemonConfig.getEnabledProtocols())
+        .build();
+
     }
 
     connector.setHost(daemonConfig.getHostname());
