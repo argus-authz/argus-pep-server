@@ -67,7 +67,7 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
     // populate with pool accounts
     for (String prefix : prefixes) {
       for (int i = 1; i <= N_POOL; i++) {
-        File f = new File(temp, prefix + "0" + i);
+        File f = new File(temp, prefix + "00" + i);
         f.createNewFile();
         f.deleteOnExit();
       }
@@ -75,7 +75,7 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
     // create invalid files
     for (String invalid : invalids) {
       for (int i = 1; i <= N_POOL; i++) {
-        File f = new File(temp, invalid + "0" + i);
+        File f = new File(temp, invalid + "00" + i);
         f.createNewFile();
         f.deleteOnExit();
       }
