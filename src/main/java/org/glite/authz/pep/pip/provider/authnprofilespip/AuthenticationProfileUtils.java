@@ -19,9 +19,19 @@ package org.glite.authz.pep.pip.provider.authnprofilespip;
 
 import static eu.emi.security.authn.x509.impl.OpensslNameUtils.opensslToRfc2253;
 
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+
+import com.opencsv.CSVParser;
+import com.opencsv.CSVParserBuilder;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
+import com.opencsv.exceptions.CsvException;
 
 /**
  * Utility methods for authentication profiles
@@ -37,9 +47,34 @@ public class AuthenticationProfileUtils {
 
     Set<String> caSet = new HashSet<>();
 
-    for (String dn : subjectDnLine.split("\\s*,\\s*")) {
-     
-      
+    if (subjectDnLine == null || subjectDnLine.isEmpty()) {
+      return caSet;
+    }
+
+    CSVParser parser = new CSVParserBuilder()
+      .withSeparator(',')
+      .build();
+
+    CSVReader reader = new CSVReaderBuilder(new StringReader(subjectDnLine))
+      .withCSVParser(parser)
+      .build();
+
+    List<String[]> lines = new ArrayList<>();
+    try {
+      lines = reader.readAll();
+    } catch (IOException | CsvException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    } finally {
+      try {
+        reader.close();
+      } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
+    }
+
+    for (String dn : lines.get(0)) {
       caSet.add(opensslToRfc2253(cleanPropertyValue(dn)));
     }
     return caSet;
