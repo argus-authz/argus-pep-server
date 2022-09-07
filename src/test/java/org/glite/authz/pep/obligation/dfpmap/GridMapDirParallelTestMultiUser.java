@@ -17,6 +17,8 @@
 
 package org.glite.authz.pep.obligation.dfpmap;
 
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,10 +36,11 @@ import java.util.concurrent.TimeUnit;
 
 import javax.security.auth.x500.X500Principal;
 
-import junit.framework.Assert;
-import junit.framework.TestCase;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
-public class GridMapDirParallelTestMultiUser extends TestCase {
+public class GridMapDirParallelTestMultiUser {
 
   public static final int NUM_THREADS = 30;
   public static final int NUM_ACCOUNTS = 30;
@@ -53,10 +56,9 @@ public class GridMapDirParallelTestMultiUser extends TestCase {
   final String subjectPrefix = "C=IT, O=IGI, CN=test";
   X500Principal[] principals = new X500Principal[NUM_THREADS];
 
-  @Override
-  protected void setUp() throws Exception {
+  @Before
+  public void setUp() throws Exception {
 
-    super.setUp();
     gridmapdir = TestUtils.createTempGridMapDir(accountPrefix, NUM_ACCOUNTS);
     
     PoolAccountResolver resolver = new CachingPoolAccountResolver(gridmapdir,
@@ -78,14 +80,14 @@ public class GridMapDirParallelTestMultiUser extends TestCase {
 
   }
 
-  @Override
+  @After
   protected void tearDown() throws Exception {
 
-    super.tearDown();
     assertTrue("Failed to delete temp gridmapdir: " + gridmapdir,
       TestUtils.deleteTempGridMapDir(gridmapdir));
   }
 
+  @Test
   public void testParallelMappingForMultipleUsers() {
 
     for (int iter = 0; iter < NUM_ITERATIONS; iter++) {
@@ -129,7 +131,7 @@ public class GridMapDirParallelTestMultiUser extends TestCase {
         }
       }
 
-      Assert.assertTrue("Wrong number of distinct pool account returned",
+      assertTrue("Wrong number of distinct pool account returned",
         poolAccounts.size() == NUM_THREADS);
 
     }
@@ -173,14 +175,5 @@ public class GridMapDirParallelTestMultiUser extends TestCase {
 
     }
 
-  }
-  
-  public static void main(String[] args) throws Exception {
-
-    GridMapDirParallelTestMultiUser test = new GridMapDirParallelTestMultiUser();
-    
-    test.setUp();
-    test.testParallelMappingForMultipleUsers();
-    test.tearDown();
   }
 }

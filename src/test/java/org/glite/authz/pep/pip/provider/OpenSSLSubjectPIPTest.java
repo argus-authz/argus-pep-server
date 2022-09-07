@@ -17,6 +17,8 @@
 
 package org.glite.authz.pep.pip.provider;
 
+import static org.junit.Assert.assertTrue;
+
 import org.glite.authz.common.model.Action;
 import org.glite.authz.common.model.Attribute;
 import org.glite.authz.common.model.Request;
@@ -25,13 +27,14 @@ import org.glite.authz.common.model.Subject;
 import org.glite.authz.common.profile.GLiteAuthorizationProfileConstants;
 import org.glite.authz.pep.pip.PIPException;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
-
-import junit.framework.TestCase;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  *
  */
-public class OpenSSLSubjectPIPTest extends TestCase {
+public class OpenSSLSubjectPIPTest {
 
     static String rid= "switch";
 
@@ -51,21 +54,20 @@ public class OpenSSLSubjectPIPTest extends TestCase {
 
     PolicyInformationPoint pip_;
 
-    /** {@inheritDoc} */
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() throws Exception {
         pip_= new OpenSSLSubjectPIP("OPENSSL_PIP");
         System.out.println("OpenSSL subject attribute IDs to convert: " + OpenSSLSubjectPIP.DEFAULT_OPENSSL_SUBJECT_ATTRIBUTE_IDS);
         System.out.println("OpenSSL subject attribute datatypes to convert: " + OpenSSLSubjectPIP.DEFAULT_OPENSSL_SUBJECT_ATTRIBUTE_DATATYPES);
         pip_.start();
     }
 
-    /** {@inheritDoc} */
-    protected void tearDown() throws Exception {
-        super.tearDown();
+    @After
+    public void tearDown() throws Exception {
         pip_.stop();
     }
 
+    @Test
     public void testOpenSSLSubjectPIP() throws PIPException {
         // Subject
         Subject openSSLSubject= new Subject();

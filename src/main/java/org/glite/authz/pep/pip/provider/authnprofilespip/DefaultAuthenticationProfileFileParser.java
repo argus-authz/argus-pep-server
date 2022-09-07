@@ -50,10 +50,6 @@ public class DefaultAuthenticationProfileFileParser implements AuthenticationPro
 
     String subjectdn = infoFile.getProperty("subjectdn");
 
-    if (subjectdn == null || subjectdn.isEmpty()) {
-      throw new ParseError("Missing value for 'subjectdn' property");
-    }
-
     Set<String> caSubjects = convertCASubjects(subjectdn);
 
     return new AuthenticationProfileImpl(alias, caSubjects);

@@ -17,8 +17,10 @@
 
 package org.glite.authz.pep.pip.provider.authnprofilespip;
 
+import static eu.emi.security.authn.x509.impl.OpensslNameUtils.opensslToRfc2253;
 import static java.lang.String.format;
 import static java.nio.file.Files.createTempFile;
+import static org.glite.authz.pep.pip.provider.authnprofilespip.AuthenticationProfileUtils.cleanPropertyValue;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -43,6 +45,17 @@ public class AuthenticationInfoParserTest {
     AuthenticationProfile profile = parser.parse(filename);
     assertNotNull(profile);
     assertEquals("policy-igtf-mics", profile.getAlias());
+  }
+
+  @Test
+  public void parsePolicyFileWithMultipleSubjectDNs() {
+
+    String filename = format("%s/%s", trustInfoDir, "policy-igtf-classic.info");
+
+    AuthenticationProfile profile = parser.parse(filename);
+    assertNotNull(profile);
+    assertEquals("policy-igtf-classic", profile.getAlias());
+    assertEquals(84, profile.getCASubjects().size());
   }
 
   @Test
@@ -153,12 +166,21 @@ public class AuthenticationInfoParserTest {
     String filename = format("%s/%s", trustInfoDir,
       "bad-policy-empty-subjectdn.info");
 
-    try {
-      parser.parse(filename);
-    } catch (Exception e) {
-      assertThat(e, instanceOf(ParseError.class));
-      assertEquals("Missing value for 'subjectdn' property", e.getMessage());
-    }
+    AuthenticationProfile ap = parser.parse(filename);
+    assertEquals(0, ap.getCASubjects().size());
+  }
+
+  @Test
+  @SuppressWarnings("deprecation")
+  public void parsePolicyFileWithCommaInSubjectDn() {
+
+    String expectedDn = opensslToRfc2253(cleanPropertyValue("/C=US/O=DigiCert, Inc./CN=DigiCert Assured ID Grid Client RSA2048 SHA256 2022 CA1"));
+    String filename = format("%s/%s", trustInfoDir,
+      "bad-policy-subjectdn-with-comma.info");
+
+    AuthenticationProfile ap = parser.parse(filename);
+    assertEquals(1, ap.getCASubjects().size());
+    assertEquals(expectedDn, ap.getCASubjects().iterator().next());
   }
 
 }

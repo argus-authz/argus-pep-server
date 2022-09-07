@@ -16,23 +16,26 @@
  */
 package org.glite.authz.pep.pip.provider;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.util.Collection;
 import java.util.List;
-
-import junit.framework.TestCase;
 
 import org.glite.authz.common.model.Attribute;
 import org.glite.authz.common.model.Subject;
 import org.glite.authz.common.profile.GLiteAuthorizationProfileConstants;
+import org.junit.Before;
+import org.junit.Test;
+
+import com.google.common.collect.Lists;
 
 /**
  * AuthorizationProfilePIPTest
  * 
  * @author Valery Tschopp &lt;valery.tschopp&#64;switch.ch&gt;
  */
-public class AbstractX509PIPTest extends TestCase {
+public class AbstractX509PIPTest {
 
     Subject subject;
 
@@ -42,19 +45,14 @@ public class AbstractX509PIPTest extends TestCase {
 
     String correctDN= "CN=John Doe,O=ACME,C=org";
 
-    List<String> wrongIssuers= Arrays.asList("C=org,O=ACME,OU=Issuing CA,CN=ACME Issuing CA",
-                                             "C=org,O=ACME,OU=Root CA,CN=ACME CA");
+    List<String> wrongIssuers = Lists.newArrayList("C=org,O=ACME,OU=Issuing CA,CN=ACME Issuing CA",
+        "C=org,O=ACME,OU=Root CA,CN=ACME CA");
 
-    List<String> correctIssuers= Arrays.asList("CN=ACME Issuing CA,OU=Issuing CA,O=ACME,C=org",
-                                               "CN=ACME CA,OU=Root CA,O=ACME,C=org");
+    List<String> correctIssuers = Lists.newArrayList(
+        "CN=ACME Issuing CA,OU=Issuing CA,O=ACME,C=org", "CN=ACME CA,OU=Root CA,O=ACME,C=org");
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see junit.framework.TestCase#setUp()
-     */
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() throws Exception {
         subject= new Subject();
         Attribute subjectId= new Attribute(Attribute.ID_SUB_ID,
                                            Attribute.DT_X500_NAME);
@@ -66,15 +64,7 @@ public class AbstractX509PIPTest extends TestCase {
         subject.getAttributes().add(subjectIssuer);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see junit.framework.TestCase#tearDown()
-     */
-    protected void tearDown() throws Exception {
-        super.tearDown();
-    }
-
+    @Test
     public void testUpdateSubjectCertificateAttributes() {
         Collection<Attribute> certAttributes= processCertChain();
         System.out.println("Incoming Subject: " + subject);
@@ -106,7 +96,7 @@ public class AbstractX509PIPTest extends TestCase {
     }
 
     private Collection<Attribute> processCertChain() {
-        List<Attribute> certAttributes= new ArrayList<Attribute>();
+        List<Attribute> certAttributes= Lists.newArrayList();
         Attribute subjectId= new Attribute(Attribute.ID_SUB_ID,
                                            Attribute.DT_X500_NAME);
         subjectId.getValues().add(correctDN);

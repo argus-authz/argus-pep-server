@@ -17,6 +17,9 @@
 
 package org.glite.authz.pep.obligation.dfpmap;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,10 +31,11 @@ import java.util.concurrent.CyclicBarrier;
 import javax.security.auth.x500.X500Principal;
 
 import org.apache.commons.io.FileUtils;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
-import junit.framework.TestCase;
-
-public class GridMapDirParallelTestSingleUser extends TestCase {
+public class GridMapDirParallelTestSingleUser {
 
   static int N_THREAD = 20;
 
@@ -82,23 +86,21 @@ public class GridMapDirParallelTestSingleUser extends TestCase {
     return lRetVal;
   }
 
-  @Override
-  protected void setUp() throws Exception {
+  @Before
+  public void setUp() throws Exception {
 
-    super.setUp();
     gridmapdir = createTempGridMapDir();
-
     gridmapPool = new GridMapDirPoolAccountManager(gridmapdir, true);
   }
 
-  @Override
-  protected void tearDown() throws Exception {
+  @After
+  public void tearDown() throws Exception {
 
-    super.tearDown();
     assertTrue("Failed to delete temp gridmapdir: " + gridmapdir,
       deleteTempGridMapDir(gridmapdir));
   }
 
+  @Test
   public void testParallelMappingForSingleUser() {
 
     X500Principal lSubjectDn = new X500Principal(mSubject);
