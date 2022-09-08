@@ -16,18 +16,20 @@
  */
 package org.glite.authz.pep.pip.provider;
 
-import junit.framework.TestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import javax.security.auth.x500.X500Principal;
 
 import org.glite.authz.pep.obligation.dfpmap.X509MatchStrategy;
+import org.junit.Test;
 
 import eu.emi.security.authn.x509.impl.OpensslNameUtils;
 
 /**
  * Test caNl OpensslNameUtils conversion functionalities
  */
-public class OpensslNameUtilsTest extends TestCase {
+public class OpensslNameUtilsTest {
 
     static String opensslDN= "/C=ch/O=SWITCH/CN=Valery Tschopp";
     static String rfc2253DN= "CN=Valery Tschopp,O=SWITCH,C=ch";
@@ -35,17 +37,8 @@ public class OpensslNameUtilsTest extends TestCase {
     static String slashedOpensslDN= "/DC=ch/DC=cern/OU=computers/CN=cmspilot02/vocms080.cern.ch";
     static String escapedSlashedOpensslDN= "/DC=ch/DC=cern/OU=computers/CN=cmspilot02\\/vocms080.cern.ch";
     static String slashedRfc2253DN = "CN=cmspilot02/vocms080.cern.ch,OU=computers,DC=cern,DC=ch";
-    
-    /** {@inheritDoc} */
-    protected void setUp() throws Exception {
-        super.setUp();
-    }
 
-    /** {@inheritDoc} */
-    protected void tearDown() throws Exception {
-        super.tearDown();
-    }
-
+    @Test
     @SuppressWarnings("deprecation")
     public void testRFC2253FromOpenSSL() {
         System.out.println(" input: " + opensslDN);
@@ -53,20 +46,23 @@ public class OpensslNameUtilsTest extends TestCase {
         assertEquals(rfc2253DN, subjectDN);
         System.out.println("output: " + subjectDN);
     }
-    
+
+    @Test
     public void testOpenSSLFromRFC2253() {
         System.out.println(" input: " + rfc2253DN);
         String subjectDN= OpensslNameUtils.convertFromRfc2253(rfc2253DN,false);
         assertEquals(opensslDN, subjectDN);
         System.out.println("output: " + subjectDN);
     }
-    
+
+    @Test
     public void testSlashedOpensslDN() {
       System.out.println(" input: " + slashedOpensslDN);
       assertTrue((new X509MatchStrategy()).isMatch(slashedOpensslDN, new X500Principal(slashedRfc2253DN)));
       System.out.println("output: " + slashedRfc2253DN);
     }
-    
+
+    @Test
     public void testEscapedSlashedOpensslDN() {
       System.out.println(" input: " + escapedSlashedOpensslDN);
       assertTrue((new X509MatchStrategy()).isMatch(escapedSlashedOpensslDN, new X500Principal(slashedRfc2253DN)));

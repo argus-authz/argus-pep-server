@@ -17,6 +17,10 @@
 
 package org.glite.authz.pep.obligation.dfpmap;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -29,16 +33,18 @@ import javax.security.auth.x500.X500Principal;
 import org.apache.commons.httpclient.URIException;
 import org.apache.commons.io.FileUtils;
 import org.glite.authz.pep.obligation.ObligationProcessingException;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 import eu.emi.security.authn.x509.impl.OpensslNameUtils;
-import junit.framework.Assert;
-import junit.framework.TestCase;
 
 /**
  * JUnit for pool account management and mapping for bug
  * https://savannah.cern.ch/bugs/?66574
  */
-public class GridMapDirPoolAccountManagerTest extends TestCase {
+public class GridMapDirPoolAccountManagerTest {
 
   File gridmapdir = null;
 
@@ -95,23 +101,21 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
     return lRetVal;
   }
 
-  @Override
-  protected void setUp() throws Exception {
+  @Before
+  public void setUp() throws Exception {
 
-    super.setUp();
     gridmapdir = createTempGridMapDir();
-
     gridmapPool = new GridMapDirPoolAccountManager(gridmapdir, true);
   }
 
-  @Override
-  protected void tearDown() throws Exception {
+  @After
+  public void tearDown() throws Exception {
 
-    super.tearDown();
     assertTrue("Failed to delete temp gridmapdir: " + gridmapdir,
       deleteTempGridMapDir(gridmapdir));
   }
 
+  @Test
   public void testMappingPersistency() {
 
     String prefix = "dteam";
@@ -149,6 +153,7 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
     }
   }
 
+  @Test
   public void testSaturatedPool() {
 
     String prefix = "dteam";
@@ -191,6 +196,7 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
 
   }
 
+  @Test
   public void testPoolAccountNamesPrefixed() {
 
     System.out.println("------------testPoolAccountNamesPrefixed------------");
@@ -207,6 +213,7 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
     System.out.println("TEST PASSED");
   }
 
+  @Test
   public void testPoolAccountNamesPrefixes() {
 
     System.out.println("------------testPoolAccountNamesPrefixes------------");
@@ -220,6 +227,7 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
     System.out.println("TEST PASSED");
   }
 
+  @Test
   public void testPoolAccountNames() {
 
     System.out.println("------------testPoolAccountNames------------");
@@ -230,6 +238,7 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
     System.out.println("TEST PASSED");
   }
 
+  @Test
   public void testMapToAccountPoolDteam() throws Exception {
 
     System.out.println("------------testMapToAccountPoolDteam------------");
@@ -245,6 +254,7 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
     System.out.println("TEST PASSED");
   }
 
+  @Test
   public void testMapToAccountPoolLTEDteam() throws Exception {
 
     System.out.println("------------testMapToAccountPoolLTEDteam------------");
@@ -264,6 +274,7 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
     System.out.println("TEST PASSED");
   }
 
+  @Test
   public void testSubjectIdentifierFileTimestampUpdate() throws Exception {
 
     System.out.println(
@@ -306,6 +317,7 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
 
   }
 
+  @Test
   public void testSubjectIdentifierFilenameWithSecGroups() throws URIException {
 
     System.out.println(
@@ -330,6 +342,7 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
     System.out.println("TEST PASSED");
   }
 
+  @Test
   public void testSubjectIdentifierFilenameWithoutSecGroups()
     throws URIException {
 
@@ -358,6 +371,7 @@ public class GridMapDirPoolAccountManagerTest extends TestCase {
     System.out.println("TEST PASSED");
   }
 
+  @Test
   public void testSubjectIdentifierEncoding() throws URIException {
 
     System.out.println("------------testSubjectIdentifierEncoding------------");

@@ -17,6 +17,10 @@
 
 package org.glite.authz.pep.obligation.dfpmap;
 
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -34,15 +38,16 @@ import javax.security.auth.x500.X500Principal;
 import org.glite.authz.common.config.ConfigurationException;
 import org.glite.authz.common.fqan.FQAN;
 import org.glite.authz.pep.obligation.ObligationProcessingException;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import junit.framework.TestCase;
 
 /**
  * JUnit test case for DN/FQAN account mapping
  */
-public class AccountMapperTest extends TestCase {
+public class AccountMapperTest {
 
   private Logger log = LoggerFactory.getLogger(AccountMapperTest.class);
 
@@ -112,20 +117,16 @@ public class AccountMapperTest extends TestCase {
     return is;
   }
 
-  /** {@inheritDoc} */
-  @Override
-  protected void setUp() throws Exception {
+  @Before
+  public void setUp() throws Exception {
 
-    super.setUp();
     gridMapDir = createTempGridMapDir();
     poolAccountManager = new GridMapDirPoolAccountManager(gridMapDir, true);
   }
 
-  /** {@inheritDoc} */
-  @Override
-  protected void tearDown() throws Exception {
+  @After
+  public void tearDown() throws Exception {
 
-    super.tearDown();
     TestUtils.deleteTempGridMapDir(gridMapDir);
   }
 
@@ -169,6 +170,7 @@ public class AccountMapperTest extends TestCase {
     return account;
   }
 
+  @Test
   public void testAccountMappingDN_WithFAQNs() throws Exception {
 
     X500Principal subjectDN = new X500Principal("OU=Grid User,CN=Batman");
@@ -189,6 +191,7 @@ public class AccountMapperTest extends TestCase {
     assertTrue(account.getSecondaryGroups().contains("switch"));
   }
 
+  @Test
   public void testAccountMappingDN_NoFQAN() throws Exception {
 
     X500Principal subjectDN = new X500Principal("OU=Grid User,CN=Batman");
@@ -206,6 +209,7 @@ public class AccountMapperTest extends TestCase {
     assertTrue(account.getSecondaryGroups().isEmpty());
   }
 
+  @Test
   public void testAccountMappingDN_NoFQAN_NoError() throws Exception {
 
     X500Principal subjectDN = new X500Principal("OU=Grid User,CN=Robin");
@@ -223,6 +227,7 @@ public class AccountMapperTest extends TestCase {
     assertTrue(account.getSecondaryGroups().isEmpty());
   }
 
+  @Test
   public void testAccountMappingDN_NoFQAN_NoPrmaryGroupError()
     throws Exception {
 
@@ -243,6 +248,7 @@ public class AccountMapperTest extends TestCase {
     }
   }
 
+  @Test
   public void testAccountMappingFQAN_dteam() throws Exception {
 
     X500Principal subjectDN = new X500Principal("OU=Grid User,CN=Batman");
@@ -264,6 +270,7 @@ public class AccountMapperTest extends TestCase {
 
   }
 
+  @Test
   public void testAccountMappingFQAN_atlasPool() throws Exception {
 
     X500Principal subjectDN = new X500Principal("OU=Grid User,CN=Batman");
@@ -285,6 +292,7 @@ public class AccountMapperTest extends TestCase {
 
   }
 
+  @Test
   public void testAccountMappingFQAN_NoPrmaryGroupError() throws Exception {
 
     X500Principal subjectDN = new X500Principal("OU=Grid User,CN=Robin");
@@ -305,6 +313,7 @@ public class AccountMapperTest extends TestCase {
     }
   }
 
+  @Test
   public void testAccountMappingNoDN_NoFQAN() throws Exception {
 
     X500Principal subjectDN = null;
@@ -324,6 +333,7 @@ public class AccountMapperTest extends TestCase {
     }
   }
 
+  @Test
   public void testAccountMappingUnknown() throws Exception {
 
     X500Principal subjectDN = new X500Principal("OU=Grid User,CN=Unknown");
@@ -344,6 +354,7 @@ public class AccountMapperTest extends TestCase {
     }
   }
 
+  @Test
   public void testSecondaryGroupMappingEncoding() throws Exception {
 
     X500Principal subjectDN = new X500Principal("OU=Test User,CN=Tester");
@@ -370,6 +381,7 @@ public class AccountMapperTest extends TestCase {
     assertTrue(subjIdFileName.endsWith(suffix));
   }
 
+  @Test
   public void testEmptySecondaryGroupMappingEncoding() throws Exception {
 
     X500Principal subjectDN = new X500Principal("OU=Test User,CN=Tester");
@@ -396,6 +408,7 @@ public class AccountMapperTest extends TestCase {
     assertTrue(subjIdFileName.endsWith(suffix));
   }
 
+  @Test
   public void testEmptySecondaryGroupsWithPrimaryFqanInSecondaryFqans()
     throws Exception {
 

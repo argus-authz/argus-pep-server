@@ -17,6 +17,9 @@
 
 package org.glite.authz.pep.pip.provider;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import org.glite.authz.common.model.Action;
 import org.glite.authz.common.model.Attribute;
 import org.glite.authz.common.model.Request;
@@ -24,26 +27,25 @@ import org.glite.authz.common.model.Resource;
 import org.glite.authz.common.model.Subject;
 import org.glite.authz.pep.pip.PIPProcessingException;
 import org.glite.authz.pep.pip.PolicyInformationPoint;
-
-import junit.framework.TestCase;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  *
  */
-public class RequestValidatorPIPTest extends TestCase {
+public class RequestValidatorPIPTest {
 
     PolicyInformationPoint pip;
 
-    /** {@inheritDoc} */
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() throws Exception {
         pip = new RequestValidatorPIP("VALIDATOR_PIP");
         pip.start();
     }
 
-    /** {@inheritDoc} */
-    protected void tearDown() throws Exception {
-        super.tearDown();
+    @After
+    public void tearDown() throws Exception {
         pip.stop();
     }
 
@@ -64,7 +66,7 @@ public class RequestValidatorPIPTest extends TestCase {
         }        
         return applied;
     }
-    
+
     protected Request createValidRequest() {
         Request request= new Request();
         Subject subject= new Subject();
@@ -88,36 +90,42 @@ public class RequestValidatorPIPTest extends TestCase {
         return request;
     }
 
+    @Test
     public void testValidRequest() throws Exception {
         Request request= createValidRequest();
         pip.populateRequest(request);
     }
 
+    @Test
     public void testNoSubject() {
         Request request= createValidRequest();
         request.getSubjects().clear();
         throwsPIPProcessingException(request, "any Subject");
     }
-    
+
+    @Test
     public void testNoResource() {
         Request request= createValidRequest();
         request.getResources().clear();
         throwsPIPProcessingException(request, "any Resource");
     }
-    
+
+    @Test
     public void testNoAction() {
         Request request= createValidRequest();
         request.setAction(null);
         throwsPIPProcessingException(request, "an Action");
 
     }
-    
+
+    @Test
     public void testNoActionAttribute() {
         Request request= createValidRequest();
         request.getAction().getAttributes().clear();
         throwsPIPProcessingException(request, "Action without any attribute");
     }
 
+    @Test
     public void testNoSubjectAttribute() {
         Request request= createValidRequest();
         for (Subject subject : request.getSubjects() ) {
@@ -127,6 +135,7 @@ public class RequestValidatorPIPTest extends TestCase {
         throwsPIPProcessingException(request, "Subject without any attribute");
     }
 
+    @Test
     public void testNoResourceAttribute() {
         Request request= createValidRequest();
         for (Resource resource : request.getResources() ) {
@@ -136,6 +145,7 @@ public class RequestValidatorPIPTest extends TestCase {
         throwsPIPProcessingException(request, "Resource without any attribute");
     }
 
+    @Test
     public void testNullActionAttribute() {
         Request request= createValidRequest();
         for (Attribute attribute: request.getAction().getAttributes()) {
@@ -145,6 +155,7 @@ public class RequestValidatorPIPTest extends TestCase {
         throwsPIPProcessingException(request, "with a null value");
     }
 
+    @Test
     public void testNullSubjectAttribute() {
         Request request= createValidRequest();
         for (Subject subject : request.getSubjects() ) {
@@ -157,6 +168,7 @@ public class RequestValidatorPIPTest extends TestCase {
         throwsPIPProcessingException(request, "with a null value");
     }
 
+    @Test
     public void testNullResourceAttribute() {
         Request request= createValidRequest();
         for (Resource resource : request.getResources() ) {
@@ -168,7 +180,8 @@ public class RequestValidatorPIPTest extends TestCase {
         }
         throwsPIPProcessingException(request, "with a null value");
     }
-    
+
+    @Test
     public void testEmptyActionAttribute() {
         Request request= createValidRequest();
         for (Attribute attribute: request.getAction().getAttributes()) {
@@ -178,6 +191,7 @@ public class RequestValidatorPIPTest extends TestCase {
         throwsPIPProcessingException(request, "with an empty (stripped) value");
     }
 
+    @Test
     public void testEmptySubjectAttribute() {
         Request request= createValidRequest();
         for (Subject subject : request.getSubjects() ) {
@@ -190,6 +204,7 @@ public class RequestValidatorPIPTest extends TestCase {
         throwsPIPProcessingException(request, "with an empty (stripped) value");
     }
 
+    @Test
     public void testEmptyResourceAttribute() {
         Request request= createValidRequest();
         for (Resource resource : request.getResources() ) {
@@ -201,7 +216,4 @@ public class RequestValidatorPIPTest extends TestCase {
         }
         throwsPIPProcessingException(request, "with an empty (stripped) value");
     }
-
-
-
 }
