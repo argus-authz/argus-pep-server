@@ -147,7 +147,7 @@
           <showDeprecation>true</showDeprecation>
           <showWarnings>true</showWarnings>
         </configuration>
-        </plugin>
+      </plugin>
       <!-- license formatter -->
       <plugin>
         <groupId>com.mycila.maven-license-plugin</groupId>

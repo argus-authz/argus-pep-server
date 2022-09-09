@@ -121,6 +121,7 @@ public abstract class TestSupport {
     return profileNames;
   }
 
+  @SuppressWarnings("deprecation")
   public String opensslDnToRFC2253(String dn) {
 
     String rfc2253Dn = OpensslNameUtils.opensslToRfc2253(dn);
