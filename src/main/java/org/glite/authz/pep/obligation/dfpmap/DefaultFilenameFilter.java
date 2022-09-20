@@ -17,26 +17,33 @@
 package org.glite.authz.pep.obligation.dfpmap;
 
 import java.io.File;
+import java.io.FilenameFilter;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-public class DefaultPoolAccountResolver implements PoolAccountResolver {
+public class DefaultFilenameFilter implements FilenameFilter {
 
-  final File gridmapDir;
-
-  public DefaultPoolAccountResolver(final File gridmapDir) {
-    this.gridmapDir = gridmapDir;
-  }
+  private final String prefix;
 
   /**
-   * Gets a list of account files where the file names begin with the given prefix.
+   * RegExp pattern used to identify pool account names.
    * 
-   * @param prefix prefix with which the file names should begin, may be null to signify all file
-   *        names
+   * Contains a single group match whose value is the pool account name prefix.
    * 
-   * @return the selected account files
    */
-  public File[] getAccountFiles(final String prefix) {
+  private final Pattern poolAccountNamePattern =
+      Pattern.compile("^([a-zA-Z][a-zA-Z0-9._-]*?)[0-9]{3,3}$");
 
-    return gridmapDir.listFiles(new DefaultFilenameFilter(prefix));
+  public DefaultFilenameFilter(String prefix) {
+    this.prefix = prefix;
+  }
+
+  @Override
+  public boolean accept(File dir, String name) {
+
+    Matcher nameMatcher = poolAccountNamePattern.matcher(name);
+
+    return nameMatcher.matches() && (prefix == null || prefix.equals(nameMatcher.group(1)));
   }
 
 }

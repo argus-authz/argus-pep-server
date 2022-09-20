@@ -65,7 +65,7 @@ public class GridMapDirParallelTestSingleUser {
     temp.deleteOnExit();
 
     for (int idx = 1; idx <= N_POOL; idx++) {
-      String lFileName = String.format("%s%02d", mAccountPrefix, idx);
+      String lFileName = String.format("%s%03d", mAccountPrefix, idx);
       File f = new File(temp, lFileName);
       f.createNewFile();
       f.deleteOnExit();
